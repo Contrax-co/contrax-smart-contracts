@@ -15,7 +15,7 @@ curl https://dapp.tools/install | sh
 ```
 
 ```bash
-git clone git@github.com:pickle-finance/protocol.git
+git clone https://github.com/Contrax-co/contrax-smart-contracts.git
 cd protocol
 dapp update
 dapp --use solc:0.6.12 build
