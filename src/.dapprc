@@ -1,0 +1,10 @@
+export DAPP_SOLC_VERSION=0.6.7
+
+export ETH_RPC_ACCOUNTS=true
+
+if [ "$DEEP_FUZZ" = "true" ]
+then 
+  export DAPP_TEST_FUZZ_RUNS=50000 # Fuzz for a long time if DEEP_FUZZ is set to true.
+else
+  export DAPP_TEST_FUZZ_RUNS=100 # Only fuzz briefly if DEEP_FUZZ is not set to true.
+fi
