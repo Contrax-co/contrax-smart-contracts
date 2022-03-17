@@ -1,8 +1,6 @@
-# Pickle Protocol
+# Contrax Protocol
 
-[![circleci](https://circleci.com/gh/pickle-finance/protocol.svg?style=svg)](https://circleci.com/gh/pickle-finance/protocol)
-
-Solidity files relating to the PICKLE protocol.
+Solidity files relating to the Contrax protocol.
 
 ## Getting Started
 
