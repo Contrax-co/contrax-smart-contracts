@@ -27,7 +27,7 @@ export async function setStrategy(name: string, Controller: Contract,
 
 export async function whitelistHarvester(name: string, Strategy: Contract,
     governanceSigner: Signer, wallet_addr: string[]) {
-    const whitelist = await Strategy.connect(governanceSigner).whitelistHarvesters(wallet_addr);
+    const whitelist = await Strategy.connect(governanceSigner).whitelistHarvester(wallet_addr);
     const tx_whitelist = await whitelist.wait(1);
     if (!tx_whitelist.status) {
         console.error(`Error whitelisting harvester for: ${name}`);

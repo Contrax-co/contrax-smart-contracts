@@ -101,7 +101,7 @@ abstract contract StrategyBase {
 
     // **** Setters **** //
 
-    function whitelistHarvesters(address[] calldata _harvesters) external {
+    function whitelistHarvester(address[] calldata _harvesters) external {
         require(msg.sender == governance ||
              msg.sender == strategist || harvesters[msg.sender], "not authorized");
              
