@@ -122,7 +122,7 @@ export async function increaseTime(sec: number) {
 export function returnController(controller: string): string {
     let address;
     switch (controller) {
-        case "sushi": address = "0xaBfD0aB24F4291725627a6FDb9267f32b2a93d8C"; break;
+        case "sushi": address = "0x2A4676a9c5E69D77FA1DD778DAC57dE97073185e"; break;
         default: address = ""; break;
     }
     return address;

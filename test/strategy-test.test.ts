@@ -77,14 +77,14 @@ export function doStrategyTest(test_case: TestableStrategy) {
             // Add a new case here when including a new family of folding strategies
 
             // controller_addr = returnController(controller);
-            // Controller = await ethers.getContractAt("SushiController", controller_addr, governanceSigner);
+            // Controller = await ethers.getContractAt("Controller", controller_addr, governanceSigner);
             // console.log(`Using controller: ${controller_addr}\n`);
 
             timelock_addr = await timelockSigner.getAddress();
             governance_addr = await governanceSigner.getAddress();
             strategist_addr = await strategistSigner.getAddress(); 
 
-            const controllerFactory = await ethers.getContractFactory("SushiController", timelockSigner);
+            const controllerFactory = await ethers.getContractFactory("Controller", timelockSigner);
             Controller = await controllerFactory.deploy(governance_addr, strategist_addr, timelock_addr, timelock_addr, timelock_addr);
 
 
@@ -164,7 +164,6 @@ export function doStrategyTest(test_case: TestableStrategy) {
             // let cost = (await Strategy.estimateGas.harvest()).toNumber();
             // console.log("cost %d", cost);
             await Strategy.connect(walletSigner).harvest();
-            console.log(`prints here`)
             await increaseBlock(2);
 
             harvestable = await Strategy.functions[harvestable_function]();

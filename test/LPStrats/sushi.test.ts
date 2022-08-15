@@ -7,7 +7,8 @@ const tests = [
     //     vaultAddress: "0x99019bb5a75de37Ca8581BAdDE617d83e8D5B4b6"
     // },
     {
-        name: "SushiWethUsdc"
+        name: "SushiWethUsdc",
+
     }
 
 ];
