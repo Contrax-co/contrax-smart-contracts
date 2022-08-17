@@ -75,17 +75,16 @@ export function doStrategyTest(test_case: TestableStrategy) {
             [timelockSigner, strategistSigner, governanceSigner] = await setupSigners(timelockIsStrategist);  
             
             // Add a new case here when including a new family of folding strategies
-
-            // controller_addr = returnController(controller);
-            // Controller = await ethers.getContractAt("Controller", controller_addr, governanceSigner);
-            // console.log(`Using controller: ${controller_addr}\n`);
+            controller_addr = returnController(controller);
+            Controller = await ethers.getContractAt("Controller", controller_addr, governanceSigner);
+            console.log(`Using controller: ${controller_addr}\n`);
 
             timelock_addr = await timelockSigner.getAddress();
             governance_addr = await governanceSigner.getAddress();
             strategist_addr = await strategistSigner.getAddress(); 
 
-            const controllerFactory = await ethers.getContractFactory("Controller", timelockSigner);
-            Controller = await controllerFactory.deploy(governance_addr, strategist_addr, timelock_addr, timelock_addr, timelock_addr);
+            // const controllerFactory = await ethers.getContractFactory("Controller", timelockSigner);
+            // Controller = await controllerFactory.deploy(governance_addr, strategist_addr, timelock_addr, timelock_addr, timelock_addr);
 
 
             /** Strategy Mock **/
