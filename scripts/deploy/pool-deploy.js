@@ -205,7 +205,7 @@ async function main() {
         if(!pools[name].whitelist){
             const IStrategy = new ethers.utils.Interface(strategy_ABI);
             pools[name].targets.push(pools[name].strategy_addr);
-            pools[name].data.push(IStrategy.encodeFunctionData("whitelistHarvester", ["0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80"]));  ///?????
+            pools[name].data.push(IStrategy.encodeFunctionData("whitelistHarvester", ["0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80"]));
             pools[name].whitelist = true;
             writeFileSync("./scripts/deploy/deploy.json", JSON.stringify(pools));
             console.log(`encoded whitelistHarvester for ${name}`);
