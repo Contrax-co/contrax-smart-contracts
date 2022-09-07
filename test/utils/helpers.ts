@@ -26,7 +26,7 @@ export async function setStrategy(name: string, Controller: Contract,
 }
 
 export async function whitelistHarvester(name: string, Strategy: Contract,
-    governanceSigner: Signer, wallet_addr: string[]) {
+    governanceSigner: Signer, wallet_addr: string) {
     const whitelist = await Strategy.connect(governanceSigner).whitelistHarvester(wallet_addr);
     const tx_whitelist = await whitelist.wait(1);
     if (!tx_whitelist.status) {
@@ -122,8 +122,8 @@ export async function increaseTime(sec: number) {
 export function returnController(controller: string): string {
     let address;
     switch (controller) {
-        case "sushi": address = "0xaBfD0aB24F4291725627a6FDb9267f32b2a93d8C"; break;
-        default: address = "0xaBfD0aB24F4291725627a6FDb9267f32b2a93d8C"; break;
+        case "sushi": address = "0xd7bc9a6Ee68e125169E96024Ef983Fee76520569"; break;
+        default: address = "0xd7bc9a6Ee68e125169E96024Ef983Fee76520569"; break;
     }
     return address;
 }

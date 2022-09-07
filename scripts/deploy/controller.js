@@ -9,11 +9,11 @@ async function main() {
     const [deployer] = await ethers.getSigners();
     console.log("Deploying contracts with the account:", deployer.address);
 
-    const governance_addr = "0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80";
-    const strategist_addr = "0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80";
-    const timelock_addr = "0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80"; 
-    const devfund_addr = "0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80";
-    const treasury_addr = "0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80";
+    const governance_addr = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
+    const strategist_addr = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
+    const timelock_addr = "0xCb410A689A03E06de0a6247b13C13D14237DecC8"; 
+    const devfund_addr = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
+    const treasury_addr = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 
     const controllerFactory = await ethers.getContractFactory(controller_name);
 

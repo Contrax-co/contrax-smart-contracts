@@ -121,8 +121,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
 
             /** Access **/
             await setStrategy(name, Controller, timelockSigner, asset_addr, strategy_addr);
-            let address = [wallet_addr];
-            await whitelistHarvester(name, Strategy, governanceSigner, address);
+            await whitelistHarvester(name, Strategy, governanceSigner, wallet_addr);
             if (test_case.type == "FOLD") {
                 await setKeeper(name, Strategy, governanceSigner, wallet_addr);
             }

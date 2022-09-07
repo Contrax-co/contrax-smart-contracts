@@ -1016,92 +1016,95 @@ interface IUniswapV2Factory {
 }
 
 
-// File contracts/interfaces/staking-rewards.sol
+// File contracts/lib/square-root.sol
+
+// File: @uniswap/lib/contracts/libraries/Babylonian.sol
+
+pragma solidity 0.8.4;
+
+// computes square roots using the babylonian method
+// https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method
+library Babylonian {
+    // credit for this implementation goes to
+    // https://github.com/abdk-consulting/abdk-libraries-solidity/blob/master/ABDKMath64x64.sol#L687
+    function sqrt(uint256 x) internal pure returns (uint256) {
+        if (x == 0) return 0;
+        // this block is equivalent to r = uint256(1) << (BitMath.mostSignificantBit(x) / 2);
+        // however that code costs significantly more gas
+        uint256 xx = x;
+        uint256 r = 1;
+        if (xx >= 0x100000000000000000000000000000000) {
+            xx >>= 128;
+            r <<= 64;
+        }
+        if (xx >= 0x10000000000000000) {
+            xx >>= 64;
+            r <<= 32;
+        }
+        if (xx >= 0x100000000) {
+            xx >>= 32;
+            r <<= 16;
+        }
+        if (xx >= 0x10000) {
+            xx >>= 16;
+            r <<= 8;
+        }
+        if (xx >= 0x100) {
+            xx >>= 8;
+            r <<= 4;
+        }
+        if (xx >= 0x10) {
+            xx >>= 4;
+            r <<= 2;
+        }
+        if (xx >= 0x8) {
+            r <<= 1;
+        }
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1; // Seven iterations should be enough
+        uint256 r1 = x / r;
+        return (r < r1 ? r : r1);
+    }
+}
+
+
+// File contracts/interfaces/weth.sol
+
 
 
 pragma solidity 0.8.4;
 
-interface IStakingRewards {
-    function balanceOf(address account) external view returns (uint256);
+interface WETH {
+    function name() external view returns (string memory);
 
-    function balances(address account) external view returns (uint256);
-
-    function earned(address account) external view returns (uint256);
-
-    function exit() external;
-
-    function getReward() external;
-
-    function getRewardForDuration() external view returns (uint256);
-
-    function lastTimeRewardApplicable() external view returns (uint256);
-
-    function lastUpdateTime() external view returns (uint256);
-
-    function notifyRewardAmount(uint256 reward) external;
-
-    function periodFinish() external view returns (uint256);
-
-    function rewardPerToken() external view returns (uint256);
-
-    function rewardPerTokenStored() external view returns (uint256);
-
-    function rewardRate() external view returns (uint256);
-
-    function rewards(address) external view returns (uint256);
-
-    function rewardsDistribution() external view returns (address);
-
-    function rewardsDuration() external view returns (uint256);
-
-    function rewardsToken() external view returns (address);
-
-    function stake(uint256 amount) external;
-
-    function deposit(uint256 amount) external;
-
-    function stakeWithPermit(
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
-
-    function stakingToken() external view returns (address);
+    function approve(address guy, uint256 wad) external returns (bool);
 
     function totalSupply() external view returns (uint256);
 
-    function userRewardPerTokenPaid(address) external view returns (uint256);
+    function transferFrom(
+        address src,
+        address dst,
+        uint256 wad
+    ) external returns (bool);
 
-    function withdraw(uint256 amount) external;
-}
+    function withdraw(uint256 wad) external;
 
-interface IStakingRewardsFactory {
-    function deploy(address stakingToken, uint256 rewardAmount) external;
+    function decimals() external view returns (uint8);
 
-    function isOwner() external view returns (bool);
+    function balanceOf(address) external view returns (uint256);
 
-    function notifyRewardAmount(address stakingToken) external;
+    function symbol() external view returns (string memory);
 
-    function notifyRewardAmounts() external;
+    function transfer(address dst, uint256 wad) external returns (bool);
 
-    function owner() external view returns (address);
+    function deposit() external payable;
 
-    function renounceOwnership() external;
-
-    function rewardsToken() external view returns (address);
-
-    function stakingRewardsGenesis() external view returns (uint256);
-
-    function stakingRewardsInfoByStakingToken(address)
-        external
-        view
-        returns (address stakingRewards, uint256 rewardAmount);
-
-    function stakingTokens(uint256) external view returns (address);
-
-    function transferOwnership(address newOwner) external;
+    function allowance(address, address) external view returns (uint256);
 }
 
 
@@ -1135,697 +1138,291 @@ interface IVault is IERC20 {
 }
 
 
-// File contracts/interfaces/controller.sol
+// File contracts/zapper/zapper-base.sol
 
 
 pragma solidity 0.8.4;
 
-interface IController {
-    function vaults(address) external view returns (address);
-
-    function rewards() external view returns (address);
-
-    function devfund() external view returns (address);
-
-    function treasury() external view returns (address);
-
-    function balanceOf(address) external view returns (uint256);
-
-    function withdraw(address, uint256) external;
-
-    function earn(address, uint256) external;
-
-    // For Big Green Button:
-
-    function setVault(address _token, address _vault) external;
-
-    function approveStrategy(address _token, address _strategy) external;
-
-    function revokeStrategy(address _token, address _strategy) external;
-
-    function setStrategy(address _token, address _strategy) external;
-
-    function setStrategist(address _strategist) external;
-
-    function setGovernance(address _governance) external;
-
-    function setTimelock(address _timelock) external;
-}
-
-
-// File contracts/strategies/strategy-base.sol
-
-	
-pragma solidity 0.8.4;
 
 
 
 
 
-/**
- * The is the Strategy Base that most LPs will inherit 
- */
-abstract contract StrategyBase {
+abstract contract ZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
+    using SafeERC20 for IVault;
 
-    // Tokens
-    address public want;
+    address public router;
+
     address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
-    address public constant uni = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
 
-    // Dex
-    address public univ2Router2 = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106;
-    address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
+    uint256 public constant minimumAmount = 1000;
 
-    // Perfomance fees - start with 20%
-    uint256 public performanceTreasuryFee = 2000;
-    uint256 public constant performanceTreasuryMax = 10000;
-
-    uint256 public performanceDevFee = 0;
-    uint256 public constant performanceDevMax = 10000;
-
-    // Withdrawal fee 0%
-    // - 0% to treasury
-    // - 0% to dev fund
-    uint256 public withdrawalTreasuryFee = 0;
-    uint256 public constant withdrawalTreasuryMax = 100000;
-
-    uint256 public withdrawalDevFundFee = 0;
-    uint256 public constant withdrawalDevFundMax = 100000;
-
-    // User accounts
-    address public governance;
-    address public controller;
-    address public strategist;
-    address public timelock;
-
-    // Dex 
-    address public sushiRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
-
-    mapping(address => bool) public harvesters;
-
-    constructor(
-        address _want,
-        address _governance,
-        address _strategist,
-        address _controller,
-        address _timelock
-    ) {
-        require(_want != address(0));
-        require(_governance != address(0));
-        require(_strategist != address(0));
-        require(_controller != address(0));
-        require(_timelock != address(0));
-
-        want = _want;
-        governance = _governance;
-        strategist = _strategist;
-        controller = _controller;
-        timelock = _timelock;
+    constructor(address _router) {
+        // Safety checks to ensure WETH token address
+        WETH(weth).deposit{value: 0}();
+        WETH(weth).withdraw(0);
+        router = _router;
     }
 
-    // **** Modifiers **** //
-
-    modifier onlyBenevolent {
-        require(
-            harvesters[msg.sender] ||
-                msg.sender == governance ||
-                msg.sender == strategist
-        );
-        _;
+    receive() external payable {
+        assert(msg.sender == weth);
     }
 
-    // **** Views **** //
+    function _getSwapAmount(uint256 investmentA, uint256 reserveA, uint256 reserveB) public view virtual returns (uint256 swapAmount);
 
-    function balanceOfWant() public view returns (uint256) {
-        return IERC20(want).balanceOf(address(this));
-    }
-
-    function balanceOfPool() public virtual view returns (uint256);
-
-    function balanceOf() public view returns (uint256) {
-        return balanceOfWant().add(balanceOfPool());
-    }
-
-    function getName() external virtual pure returns (string memory);
-
-    // **** Setters **** //
-
-    function whitelistHarvester(address _harvester) external {
-        require(msg.sender == governance ||
-             msg.sender == strategist || harvesters[msg.sender], "not authorized");
-        harvesters[_harvester] = true;
-    }
-
-    function revokeHarvester(address _harvester) external {
-        require(msg.sender == governance ||
-             msg.sender == strategist, "not authorized");
-        harvesters[_harvester] = false;
-    }
-
-    function setFeeDistributor(address _feeDistributor) external {
-        require(msg.sender == governance, "not authorized");
-        feeDistributor = _feeDistributor;
-    }
-
-    function setWithdrawalDevFundFee(uint256 _withdrawalDevFundFee) external {
-        require(msg.sender == timelock, "!timelock");
-        withdrawalDevFundFee = _withdrawalDevFundFee;
-    }
-
-    function setWithdrawalTreasuryFee(uint256 _withdrawalTreasuryFee) external {
-        require(msg.sender == timelock, "!timelock");
-        withdrawalTreasuryFee = _withdrawalTreasuryFee;
-    }
-
-    function setPerformanceDevFee(uint256 _performanceDevFee) external {
-        require(msg.sender == timelock, "!timelock");
-        performanceDevFee = _performanceDevFee;
-    }
-
-    function setPerformanceTreasuryFee(uint256 _performanceTreasuryFee)
-        external
-    {
-        require(msg.sender == timelock, "!timelock");
-        performanceTreasuryFee = _performanceTreasuryFee;
-    }
-
-    function setStrategist(address _strategist) external {
-        require(msg.sender == governance, "!governance");
-        strategist = _strategist;
-    }
-
-    function setGovernance(address _governance) external {
-        require(msg.sender == governance, "!governance");
-        governance = _governance;
-    }
-
-    function setTimelock(address _timelock) external {
-        require(msg.sender == timelock, "!timelock");
-        timelock = _timelock;
-    }
-
-    function setController(address _controller) external {
-        require(msg.sender == timelock, "!timelock");
-        controller = _controller;
-    }
-
-    // **** State mutations **** //
-    function deposit() public virtual;
-
-    // Controller only function for creating additional rewards from dust
-    function withdraw(IERC20 _asset) external returns (uint256 balance) {
-        require(msg.sender == controller, "!controller");
-        require(want != address(_asset), "want");
-        balance = _asset.balanceOf(address(this));
-        _asset.safeTransfer(controller, balance);
-    }
-
-    // Withdraw partial funds, normally used with a vault withdrawal
-    function withdraw(uint256 _amount) external {
-        require(msg.sender == controller, "!controller");
-        uint256 _balance = IERC20(want).balanceOf(address(this));
-        if (_balance < _amount) {
-            _amount = _withdrawSome(_amount.sub(_balance));
-            _amount = _amount.add(_balance);
-        }
-
-        uint256 _feeDev = _amount.mul(withdrawalDevFundFee).div(
-            withdrawalDevFundMax
-        );
-        IERC20(want).safeTransfer(IController(controller).devfund(), _feeDev);
-
-        uint256 _feeTreasury = _amount.mul(withdrawalTreasuryFee).div(
-            withdrawalTreasuryMax
-        );
-        IERC20(want).safeTransfer(
-            IController(controller).treasury(),
-            _feeTreasury
-        );
-
-        address _vault = IController(controller).vaults(address(want));
-        require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-
-        IERC20(want).safeTransfer(_vault, _amount.sub(_feeDev).sub(_feeTreasury));
-    }
-
-    // Withdraw funds, used to swap between strategies
-    function withdrawForSwap(uint256 _amount)
-        external
-        returns (uint256 balance)
-    {
-        require(msg.sender == controller, "!controller");
-        _withdrawSome(_amount);
-
-        balance = IERC20(want).balanceOf(address(this));
-
-        address _vault = IController(controller).vaults(address(want));
-        require(_vault != address(0), "!vault");
-        IERC20(want).safeTransfer(_vault, balance);
-    }
-
-    // Withdraw all funds, normally used when migrating strategies
-    function withdrawAll() external returns (uint256 balance) {
-        require(msg.sender == controller, "!controller");
-        _withdrawAll();
-
-        balance = IERC20(want).balanceOf(address(this));
-
-        address _vault = IController(controller).vaults(address(want));
-        require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-        IERC20(want).safeTransfer(_vault, balance);
-    }
-
-    function _withdrawAll() internal {
-        _withdrawSome(balanceOfPool());
-    }
-
-    function _withdrawSome(uint256 _amount) internal virtual returns (uint256);
-
-    function harvest() public virtual;
-
-    // **** Emergency functions ****
-
-    function execute(address _target, bytes memory _data)
-        public
-        payable
-        returns (bytes memory response)
-    {
-        require(msg.sender == timelock, "!timelock");
-        require(_target != address(0), "!target");
-
-        // call contract in current context
-        assembly {
-            let succeeded := delegatecall(
-                sub(gas(), 5000),
-                _target,
-                add(_data, 0x20),
-                mload(_data),
-                0,
-                0
-            )
-            let size := returndatasize()
-
-            response := mload(0x40)
-            mstore(
-                0x40,
-                add(response, and(add(add(size, 0x20), 0x1f), not(0x1f)))
-            )
-            mstore(response, size)
-            returndatacopy(add(response, 0x20), 0, size)
-
-            switch iszero(succeeded)
-                case 1 {
-                    // throw if delegatecall failed
-                    revert(add(response, 0x20), size)
+    //returns DUST
+    function _returnAssets(address[] memory tokens) internal {
+        uint256 balance;
+        for (uint256 i; i < tokens.length; i++) {
+            balance = IERC20(tokens[i]).balanceOf(address(this));
+            if (balance > 0) {
+                if (tokens[i] == weth) {
+                    WETH(weth).withdraw(balance);
+                    (bool success, ) = msg.sender.call{value: balance}(
+                        new bytes(0)
+                    );
+                    require(success, "ETH transfer failed");
+                } else {
+                    IERC20(tokens[i]).safeTransfer(msg.sender, balance);
                 }
-        }
-    }
-
-    // **** Internal functions ****
-    function _swapSushiswap(
-        address _from,
-        address _to,
-        uint256 _amount
-    ) internal {
-        require(_to != address(0));
-
-        address[] memory path;
-
-        if (_from == weth || _to == weth) {
-            path = new address[](2);
-            path[0] = _from;
-            path[1] = _to;
-        } else {
-            path = new address[](3);
-            path[0] = _from;
-            path[1] = weth;
-            path[2] = _to;
-        }
-        
-        IERC20(_from).safeApprove(sushiRouter, 0);
-        IERC20(_from).safeApprove(sushiRouter, _amount);
-        UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
-            _amount,
-            0,
-            path,
-            address(this),
-            block.timestamp.add(60)
-        );
-    }
-
-    function _swapSushiswapWithPath(
-        address[] memory path,
-        uint256 _amount
-    ) internal {
-        require(path[1] != address(0));
-
-        IERC20(path[0]).safeApprove(sushiRouter, 0);
-        IERC20(path[0]).safeApprove(sushiRouter, _amount);
-        UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
-            _amount,
-            0,
-            path,
-            address(this),
-            block.timestamp.add(60)
-        );
-    }
-
-    function _distributePerformanceFeesAndDeposit() internal {
-        uint256 _want = IERC20(want).balanceOf(address(this));
-
-        if (_want > 0) {
-            // Treasury fees
-            IERC20(want).safeTransfer(
-                IController(controller).treasury(),
-                _want.mul(performanceTreasuryFee).div(performanceTreasuryMax)
-            );
-
-            // Performance fee
-            IERC20(want).safeTransfer(
-                IController(controller).devfund(),
-                _want.mul(performanceDevFee).div(performanceDevMax)
-            );
-
-            deposit();
-        }
-    }
-
-    function _distributePerformanceFeesBasedAmountAndDeposit(uint256 _amount) internal {
-        uint256 _want = IERC20(want).balanceOf(address(this));
-
-        if (_amount > _want) {
-            _amount = _want;
-        }
-
-        if (_amount > 0) {
-            // Treasury fees
-            IERC20(want).safeTransfer(
-                IController(controller).treasury(),
-                _amount.mul(performanceTreasuryFee).div(performanceTreasuryMax)
-            );
-
-            // Performance fee
-            IERC20(want).safeTransfer(
-                IController(controller).devfund(),
-                _amount.mul(performanceDevFee).div(performanceDevMax)
-            );
-
-            deposit();
-        }
-    }
-
-}
-
-
-// File contracts/lib/BoringERC20.sol
-
-pragma solidity 0.8.4;
-
-library BoringERC20 {
-    function safeSymbol(IERC20 token) internal view returns(string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x95d89b41));
-        return success && data.length > 0 ? abi.decode(data, (string)) : "???";
-    }
-
-    function safeName(IERC20 token) internal view returns(string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x06fdde03));
-        return success && data.length > 0 ? abi.decode(data, (string)) : "???";
-    }
-
-    function safeDecimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567));
-        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
-    }
-
-    function safeTransfer(IERC20 token, address to, uint256 amount) internal {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, to, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: Transfer failed");
-    }
-
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 amount) internal {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0x23b872dd, from, to, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: TransferFrom failed");
-    }
-}
-
-
-// File contracts/interfaces/IRewarder.sol
-
-
-
-pragma solidity 0.8.4;
-
-interface IRewarder {
-    function onSushiReward(uint256 pid, address user, address recipient, uint256 sushiAmount, uint256 newLpAmount) external;
-    function pendingTokens(uint256 pid, address user, uint256 sushiAmount) external view returns (IERC20[] memory, uint256[] memory);
-}
-
-
-// File contracts/interfaces/minichefv2.sol
-
-
-pragma solidity 0.8.4;
-pragma experimental ABIEncoderV2;
-
-interface IMiniChefV2{
-    struct UserInfo {
-        uint256 amount;
-        uint256 rewardDebt;
-    }
-
-    struct PoolInfo {
-        uint128 accSushiPerShare;
-        uint64 lastRewardTime;
-        uint64 allocPoint;
-    }
-
-    function rewarder(uint256 _pid) external view returns (IRewarder);
-    function poolLength() external view returns (uint256);
-    function updatePool(uint256 pid) external returns (IMiniChefV2.PoolInfo memory);
-    function userInfo(uint256 _pid, address _user) external view returns (uint256, uint256);
-    function deposit(uint256 pid, uint256 amount, address to) external;
-    function withdraw(uint256 pid, uint256 amount, address to) external;
-    function harvest(uint256 pid, address to) external;
-    function withdrawAndHarvest(uint256 pid, uint256 amount, address to) external;
-    function emergencyWithdraw(uint256 pid, address to) external;
-    function pendingSushi(uint256 _pid, address _user) external view returns (uint256 pending);
-}
-
-
-// File contracts/strategies/strategy-sushi-farm-base.sol
-
-
-pragma solidity 0.8.4;
-
-
-
-abstract contract StrategySushiFarmBase is StrategyBase {
-    using SafeERC20 for IERC20;
-    using Address for address;
-    using SafeMath for uint256;
-
-    // Token addresses
-    address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
-    address public constant miniChef = 0xF4d73326C13a4Fc5FD7A064217e12780e9Bd62c3;
-
-    // WETH/<token1> pair
-    address public token0;
-    address public token1;
-    address rewardToken;
-
-    // How much tokens to keep?
-    uint256 public keep = 2000;
-    uint256 public keepReward = 2000;
-    uint256 public constant keepMax = 10000;
-
-    uint256 public poolId;
-
-    constructor(
-        address _token0,
-        address _token1,
-        uint256 _poolId,
-        address _lp,
-        address _governance,
-        address _strategist,
-        address _controller,
-        address _timelock
-    )
-        StrategyBase(_lp, _governance, _strategist, _controller, _timelock)
-    {
-        poolId = _poolId;
-        token0 = _token0;
-        token1 = _token1;
-    }
-
-    function balanceOfPool() public view override returns (uint256) {
-        (uint256 amount, ) = IMiniChefV2(miniChef).userInfo(
-            poolId,
-            address(this)
-        );
-        return amount;
-    }
-
-    function getHarvestable() external view returns (uint256) {
-        uint256 _pendingSushi = IMiniChefV2(miniChef).pendingSushi(
-            poolId,
-            address(this)
-        );
-        return (_pendingSushi);
-    }
-
-    // **** Setters ****
-
-    function deposit() public override {
-        uint256 _want = IERC20(want).balanceOf(address(this));
-        if (_want > 0) {
-            IERC20(want).safeApprove(miniChef, 0);
-            IERC20(want).safeApprove(miniChef, _want);
-            IMiniChefV2(miniChef).deposit(poolId, _want, address(this));
-        }
-    }
-
-    function _withdrawSome(uint256 _amount)
-        internal
-        override
-        returns (uint256)
-    {
-        IMiniChefV2(miniChef).withdraw(poolId, _amount, address(this));
-        return _amount;
-    }
-
-    // **** Setters ****
-
-    function setKeep(uint256 _keepSUSHI) external {
-        require(msg.sender == timelock, "!timelock");
-        keep = _keepSUSHI;
-    }
-
-    function setKeepReward(uint256 _keepReward) external {
-        require(msg.sender == timelock, "!timelock");
-        keepReward = _keepReward;
-    }
-
-    function setRewardToken(address _rewardToken) external {
-        require(
-            msg.sender == timelock || msg.sender == strategist,
-            "!timelock"
-        );
-        rewardToken = _rewardToken;
-    }
-
-    // **** State Mutations ****
-
-    function harvest() public override onlyBenevolent {
-        // Collects SUSHI tokens
-        IMiniChefV2(miniChef).harvest(poolId, address(this));
-        uint256 _sushi = IERC20(sushi).balanceOf(address(this));
-        if (_sushi > 0) {
-            // 10% is locked up for future gov
-            uint256 _keepSUSHI = _sushi.mul(keep).div(keepMax);
-            IERC20(sushi).safeTransfer(
-                IController(controller).treasury(),
-                _keepSUSHI
-            );
-            _swapSushiswap(sushi, weth, _sushi.sub(_keepSUSHI));
-        }
-
-        // Collect reward tokens
-        if (rewardToken != address(0)) {
-            uint256 _reward = IERC20(rewardToken).balanceOf(address(this));
-            if (_reward > 0) {
-                uint256 _keepReward = _reward.mul(keepReward).div(keepMax);
-                IERC20(rewardToken).safeTransfer(
-                    IController(controller).treasury(),
-                    _keepReward
-                );
-                _swapSushiswap(rewardToken, weth, _reward.sub(_keepReward));
             }
         }
+    }
 
-        // Swap half WETH for token0
-        uint256 _weth = IERC20(weth).balanceOf(address(this));
-        if (_weth > 0 && token0 != weth) {
-            _swapSushiswap(weth, token0, _weth.div(2));
-        }
+    function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual;
 
-        // Swap half WETH for token1
-        if (_weth > 0 && token1 != weth) {
-            _swapSushiswap(weth, token1, _weth.div(2));
-        }
+    function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable{
+        require(msg.value >= minimumAmount, "Insignificant input amount");
 
-        // Adds in liquidity for token0/token1
-        uint256 _token0 = IERC20(token0).balanceOf(address(this));
-        uint256 _token1 = IERC20(token1).balanceOf(address(this));
-        if (_token0 > 0 && _token1 > 0) {
-            IERC20(token0).safeApprove(sushiRouter, 0);
-            IERC20(token0).safeApprove(sushiRouter, _token0);
-            IERC20(token1).safeApprove(sushiRouter, 0);
-            IERC20(token1).safeApprove(sushiRouter, _token1);
+        WETH(weth).deposit{value: msg.value}();
 
-            UniswapRouterV2(sushiRouter).addLiquidity(
-                token0,
-                token1,
-                _token0,
-                _token1,
-                0,
-                0,
+        // allows us to zapIn if eth isn't part of the original pair
+        if (tokenIn != weth){
+            uint256 _amount = IERC20(weth).balanceOf(address(this));
+
+            (, IUniswapV2Pair pair) = _getVaultPair(vault);
+
+            (uint256 reserveA, uint256 reserveB, ) = pair.getReserves();
+            require(reserveA > minimumAmount && reserveB > minimumAmount, "Liquidity pair reserves too low");
+
+            bool isInputA = pair.token0() == tokenIn;
+            require(isInputA || pair.token1() == tokenIn, "Input token not present in liquidity pair");
+
+            address[] memory path = new address[](2);
+            path[0] = weth;
+            path[1] = tokenIn;
+
+            uint256 swapAmountIn;
+        
+            swapAmountIn = _getSwapAmount(_amount, reserveA, reserveB);
+       
+            _approveTokenIfNeeded(path[0], address(router));
+            UniswapRouterV2(router).swapExactTokensForTokens(
+                swapAmountIn,
+                tokenAmountOutMin,
+                path,
                 address(this),
-                block.timestamp.add(60)
+                block.timestamp
             );
+            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+        }else{
+            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+        }
+    }
 
-            // Donates DUST
-            IERC20(token0).transfer(
-                IController(controller).treasury(),
-                IERC20(token0).balanceOf(address(this))
-            );
-            IERC20(token1).safeTransfer(
-                IController(controller).treasury(),
-                IERC20(token1).balanceOf(address(this))
-            );
+    // transfers tokens from msg.sender to this contract 
+    function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external {
+        require(tokenInAmount >= minimumAmount, "Insignificant input amount");
+        require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
+
+        // transfer token 
+        IERC20(tokenIn).safeTransferFrom(
+            msg.sender,
+            address(this),
+            tokenInAmount
+        );
+        _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+    }
+
+    function zapOutAndSwap(address vault, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public virtual;
+
+    function _removeLiquidity(address pair, address to) internal {
+        IERC20(pair).safeTransfer(pair, IERC20(pair).balanceOf(address(this)));
+        (uint256 amount0, uint256 amount1) = IUniswapV2Pair(pair).burn(to);
+
+        require(amount0 >= minimumAmount, "Router: INSUFFICIENT_A_AMOUNT");
+        require(amount1 >= minimumAmount, "Router: INSUFFICIENT_B_AMOUNT");
+    }
+
+    function _getVaultPair(address vault_addr) internal view returns (IVault vault, IUniswapV2Pair pair){
+
+        vault = IVault(vault_addr);
+        pair = IUniswapV2Pair(vault.token());
+
+        require(pair.factory() == IUniswapV2Pair(router).factory(), "Incompatible liquidity pair factory");
+    }
+
+    function _approveTokenIfNeeded(address token, address spender) internal {
+        if (IERC20(token).allowance(address(this), spender) == 0) {
+            IERC20(token).safeApprove(spender, uint256(0));
+        }
+    }
+
+    function zapOut(address vault_addr, uint256 withdrawAmount) external {
+        (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
+
+        IERC20(vault_addr).safeTransferFrom(msg.sender, address(this), withdrawAmount);
+        vault.withdraw(withdrawAmount);
+
+        if (pair.token0() != weth && pair.token1() != weth) {
+            return _removeLiquidity(address(pair), msg.sender);
         }
 
-        // We want to get back SUSHI LP tokens
-        _distributePerformanceFeesAndDeposit();
+
+        _removeLiquidity(address(pair), address(this));
+
+        address[] memory tokens = new address[](2);
+        tokens[0] = pair.token0();
+        tokens[1] = pair.token1();
+
+        _returnAssets(tokens);
     }
 }
 
 
-// File contracts/strategies/sushi/strategy-sushi-weth-dai.sol
+// File contracts/zapper/vault-zapper.sol
 
 
 pragma solidity 0.8.4;
 
-contract StrategySushiWethDai is StrategySushiFarmBase {
-    // Token/ETH pool id in MasterChef contract
-    uint256 public sushi_dai_poolId = 14;
-    // Token addresses
-    address public sushi_weth_dai_lp = 0x692a0B300366D1042679397e40f3d2cb4b8F7D30;
-    address public dai = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+contract VaultZapEthSushi is ZapperBase {
+    using SafeERC20 for IERC20;
+    using Address for address;
+    using SafeMath for uint256;
+    using SafeERC20 for IVault;
 
-    constructor(
-        address _governance,
-        address _strategist,
-        address _controller,
-        address _timelock
-    )
-        StrategySushiFarmBase(
-            weth,
-            dai,
-            sushi_dai_poolId,
-            sushi_weth_dai_lp,
-            _governance,
-            _strategist,
-            _controller,
-            _timelock
-        )
-    {}
+    constructor()
+        ZapperBase(0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506){}
 
-    // **** Views ****
+    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override {
+        (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
+        address token0 = pair.token0();
+        address token1 = pair.token1();
+        require(token0 == desiredToken || token1 == desiredToken, "desired token not present in liquidity pair");
 
-    function getName() external override pure returns (string memory) {
-        return "StrategySushiWethDai";
+        vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
+        vault.withdraw(withdrawAmount);
+        _removeLiquidity(address(pair), address(this));
+
+        address swapToken = token1 == desiredToken ? token0 : token1;
+        address[] memory path = new address[](2);
+        path[0] = swapToken;
+        path[1] = desiredToken;
+
+        _approveTokenIfNeeded(path[0], address(router));
+        UniswapRouterV2(router).swapExactTokensForTokens(
+            IERC20(swapToken).balanceOf(address(this)),
+            desiredTokenOutMin,
+            path,
+            address(this),
+            block.timestamp
+        );
+
+        _returnAssets(path);
+    }
+
+    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override {
+        (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
+
+        (uint256 reserveA, uint256 reserveB, ) = pair.getReserves();
+        require(reserveA > minimumAmount && reserveB > minimumAmount, "Liquidity pair reserves too low");
+
+        bool isInputA = pair.token0() == tokenIn;
+        require(isInputA || pair.token1() == tokenIn, "Input token not present in liquidity pair");
+
+        address[] memory path = new address[](2);
+        path[0] = tokenIn;
+        path[1] = isInputA ? pair.token1() : pair.token0();
+
+        uint256 fullInvestment = IERC20(tokenIn).balanceOf(address(this));
+        uint256 swapAmountIn;
+        if (isInputA) {
+            swapAmountIn = _getSwapAmount(fullInvestment, reserveA, reserveB);
+        } else {
+            swapAmountIn = _getSwapAmount(fullInvestment, reserveB, reserveA);
+        }
+
+        _approveTokenIfNeeded(path[0], address(router));
+        uint256[] memory swappedAmounts = UniswapRouterV2(router)
+            .swapExactTokensForTokens(
+                swapAmountIn,
+                tokenAmountOutMin,
+                path,
+                address(this),
+                block.timestamp
+            );
+
+        _approveTokenIfNeeded(path[1], address(router));
+        (, , uint256 amountLiquidity) = UniswapRouterV2(router).addLiquidity(
+            path[0],
+            path[1],
+            fullInvestment.sub(swappedAmounts[0]),
+            swappedAmounts[1],
+            1,
+            1,
+            address(this),
+            block.timestamp
+        );
+
+        _approveTokenIfNeeded(address(pair), address(vault));
+        vault.deposit(amountLiquidity);
+
+        //add to guage if possible instead of returning to user, and so no receipt token
+        vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
+
+        //taking receipt token and sending back to user
+        vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
+
+        _returnAssets(path);
+    }
+
+    function _getSwapAmount(uint256 investmentA, uint256 reserveA, uint256 reserveB) public view override returns (uint256 swapAmount) {
+        uint256 halfInvestment = investmentA.div(2);
+        uint256 nominator = UniswapRouterV2(router).getAmountOut(
+            halfInvestment,
+            reserveA,
+            reserveB
+        );
+        uint256 denominator = UniswapRouterV2(router).quote(
+            halfInvestment,
+            reserveA.add(halfInvestment),
+            reserveB.sub(nominator)
+        );
+        swapAmount = investmentA.sub(
+            Babylonian.sqrt(
+                (halfInvestment * halfInvestment * nominator) / denominator
+            )
+        );
+    }
+
+    function estimateSwap(address vault_addr, address tokenIn, uint256 fullInvestmentIn) public view returns (uint256 swapAmountIn, uint256 swapAmountOut, address swapTokenOut){
+        (, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
+
+        bool isInputA = pair.token0() == tokenIn;
+        require(isInputA || pair.token1() == tokenIn, "Input token not present in liquidity pair");
+
+        (uint256 reserveA, uint256 reserveB, ) = pair.getReserves();
+        (reserveA, reserveB) = isInputA ? (reserveA, reserveB) : (reserveB, reserveA);
+
+        swapAmountIn = _getSwapAmount(fullInvestmentIn, reserveA, reserveB);
+        swapAmountOut = UniswapRouterV2(router).getAmountOut(
+            swapAmountIn,
+            reserveA,
+            reserveB
+        );
+        swapTokenOut = isInputA ? pair.token1() : pair.token0();
     }
 }

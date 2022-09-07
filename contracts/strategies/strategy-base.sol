@@ -101,22 +101,16 @@ abstract contract StrategyBase {
 
     // **** Setters **** //
 
-    function whitelistHarvester(address[] calldata _harvesters) external {
+    function whitelistHarvester(address _harvester) external {
         require(msg.sender == governance ||
              msg.sender == strategist || harvesters[msg.sender], "not authorized");
-             
-        for (uint i = 0; i < _harvesters.length; i ++) {
-            harvesters[_harvesters[i]] = true;
-        }
+        harvesters[_harvester] = true;
     }
 
-    function revokeHarvesters(address[] calldata _harvesters) external {
+    function revokeHarvester(address _harvester) external {
         require(msg.sender == governance ||
              msg.sender == strategist, "not authorized");
-
-        for (uint i = 0; i < _harvesters.length; i ++) {
-            harvesters[_harvesters[i]] = false;
-        }
+        harvesters[_harvester] = false;
     }
 
     function setFeeDistributor(address _feeDistributor) external {

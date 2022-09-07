@@ -3,14 +3,14 @@ const { ethers, network } = require("hardhat");
 import { Signer, BigNumber } from "ethers";
 
 export const reward_addr: string = "0xd4d42F0b6DEF4CE0383636770eF773390d85c61A";
-export const treasury_addr: string = "0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80";
+export const treasury_addr: string = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 /***
  * NOTE: Single Staking expects the timelock signer to have the address of the strategist.
  */
  export async function setupSigners(timelockIsStrategist: boolean = false) {
-    const governanceAddr: string = "0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80";
-    const strategistAddr: string = "0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80";
-    const timelockAddr: string = timelockIsStrategist ? "0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80" : "0x0B11B4399DA7c88F5C7Cd42DE7F4290bBD150e80";
+    const governanceAddr: string = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
+    const strategistAddr: string = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
+    const timelockAddr: string = timelockIsStrategist ? "0xCb410A689A03E06de0a6247b13C13D14237DecC8" : "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 
     await network.provider.send('hardhat_impersonateAccount', [timelockAddr]);
     await network.provider.send('hardhat_impersonateAccount', [strategistAddr]);
