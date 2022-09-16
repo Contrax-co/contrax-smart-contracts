@@ -11,6 +11,19 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of accounts) {
     console.log(account.address);
   }
+
+  await hre.network.provider.request({
+    method: 'hardhat_reset',
+    params: [
+      {
+        forking: {
+          jsonRpcUrl: 'https://rinkeby.arbitrum.io/rpc',
+          blockNumber: 15216420,
+          ignoreUnknownTxType: true,
+        },
+      },
+    ],
+  });
 });
 
 // You need to export an object to set up your config
@@ -36,9 +49,11 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       forking: {
-        url: "https://arb1.arbitrum.io/rpc",
-        ignoreUnknownTxType: true
-      }
+        url: 'https://rinkeby.arbitrum.io/rpc',
+        blockNumber: 15216420,
+        ignoreUnknownTxType: true,
+      },
+      chainId: 421611,
     },
     // arbitrum: {
     //   chainId: 42161,
