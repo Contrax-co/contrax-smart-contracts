@@ -11,19 +11,6 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of accounts) {
     console.log(account.address);
   }
-
-  await hre.network.provider.request({
-    method: 'hardhat_reset',
-    params: [
-      {
-        forking: {
-          jsonRpcUrl: 'https://rinkeby.arbitrum.io/rpc',
-          blockNumber: 15216420,
-          ignoreUnknownTxType: true,
-        },
-      },
-    ],
-  });
 });
 
 // You need to export an object to set up your config
@@ -49,27 +36,27 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       forking: {
-        url: 'https://rinkeby.arbitrum.io/rpc',
+        url: 'https://nitro-devnet.arbitrum.io/rpc',
         blockNumber: 15216420,
         ignoreUnknownTxType: true,
       },
       chainId: 421611,
     },
-    // arbitrum: {
-    //   chainId: 42161,
-    //   url: 'https://arb1.arbitrum.io/rpc',
-    //   accounts: [process.env.PRIVATE_KEY ?? ''],
-    // },
-    // mainnet: {
-    //   chainId: 42161,
-    //   url: 'https://arb1.arbitrum.io/rpc',
-    //   accounts: [process.env.PRIVATE_KEY ?? ''],
-    // },
-    // testnet: {
-    //   chainId: 421611,
-    //   url: 'https://rinkeby.arbitrum.io/rpc',
-    //   accounts: [process.env.PRIVATE_KEY ?? ''],
-    // },
+    arbitrum: {
+      url: 'https://arb1.arbitrum.io/rpc',
+      chainId: 42161,
+      accounts: [process.env.PRIVATE_KEY ?? ''],
+    },
+    rinkebyArbitrum: {
+      url: 'https://rinkeby.arbitrum.io/rpc',
+      chainId: 421611,
+      accounts: [process.env.PRIVATE_KEY ?? ''],
+    },
+    devnetArbitrum: {
+      url: 'https://nitro-devnet.arbitrum.io/rpc',
+      chainId: 421612,
+      accounts: [process.env.PRIVATE_KEY ?? ''],
+    },
   },
   mocha: {
     timeout: 1000000,
