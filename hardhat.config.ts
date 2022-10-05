@@ -11,19 +11,6 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   for (const account of accounts) {
     console.log(account.address);
   }
-
-  await hre.network.provider.request({
-    method: 'hardhat_reset',
-    params: [
-      {
-        forking: {
-          jsonRpcUrl: 'https://arb1.arbitrum.io/rpc',
-          blockNumber: 15216420,
-          ignoreUnknownTxType: true,
-        },
-      },
-    ],
-  });
 });
 
 // You need to export an object to set up your config
@@ -69,12 +56,6 @@ const config: HardhatUserConfig = {
       url: "https://rinkeby.arbitrum.io/rpc",
       accounts: [process.env.PRIVATE_KEY ?? '']
     },
-  },
-  paths: { 
-    sources: "./contracts", 
-    tests: "./test",
-    cache: "./cache", 
-    artifacts: "./artifacts"
   },
   mocha: {
     timeout: 1000000
