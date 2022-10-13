@@ -2,17 +2,19 @@
 pragma solidity 0.8.4;
 
 import "./strategy-base.sol";
-import "../interfaces/minichefv2.sol";
+import "../interfaces/gmx-reward-router.sol";
 import "../interfaces/IRewarder.sol";
 
-abstract contract StrategySushiFarmBase is StrategyBase {
+abstract contract StrategyGMXFarmBase is StrategyBase {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
 
     // Token addresses
-    address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
-    address public constant miniChef = 0xF4d73326C13a4Fc5FD7A064217e12780e9Bd62c3;
+    address public constant gmx = 0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a;
+    address public constant rewardRouter = 0xA906F338CB21815cBc4Bc87ace9e68c87eF8d8F1;
+
+    address public constant rewardTracker = 0x908C4D94D34924765f1eDc22A1DD098397c59dD4;
 
     // WETH/<token1> pair
     address public token0;
@@ -43,41 +45,37 @@ abstract contract StrategySushiFarmBase is StrategyBase {
         token1 = _token1;
     }
 
+    // BUILT 
     function balanceOfPool() public view override returns (uint256) {
-        (uint256 amount, ) = IMiniChefV2(miniChef).userInfo(
-            poolId,
-            address(this)
-        );
+        uint256 amount = IRewardTracker(rewardTracker).stakedAmounts(address(this)); 
         return amount;
     }
 
+    // BUILT
     function getHarvestable() external view returns (uint256) {
-        uint256 _pendingSushi = IMiniChefV2(miniChef).pendingSushi(
-            poolId,
-            address(this)
-        );
-        return (_pendingSushi);
+        uint256 _pendingesGMX = IRewardTracker(rewardTracker).claimable(address(this));
+        return (_pendingesGMX);
     }
 
     // **** Setters ****
-
+    //BUILT
     function deposit() public override {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
-            IERC20(want).safeApprove(miniChef, 0);
-            IERC20(want).safeApprove(miniChef, _want);
-            IMiniChefV2(miniChef).deposit(poolId, _want, address(this));
+            IERC20(want).safeApprove(rewardTracker, 0);
+            IERC20(want).safeApprove(rewardTracker, _want);
+            IRewardRouterV2(rewardRouter).stakeGmx(_want);
         }
     }
 
-    function _withdrawSome(uint256 _amount)
-        internal
-        override
-        returns (uint256)
-    {
-        IMiniChefV2(miniChef).withdraw(poolId, _amount, address(this));
-        return _amount;
-    }
+    // function _withdrawSome(uint256 _amount)
+    //     internal
+    //     override
+    //     returns (uint256)
+    // {
+    //     IMiniChefV2(miniChef).withdraw(poolId, _amount, address(this));
+    //     return _amount;
+    // }
 
     // **** Setters ****
 
@@ -102,18 +100,18 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     // **** State Mutations ****
 
     function harvest() public override onlyBenevolent {
-        // Collects SUSHI tokens
-        IMiniChefV2(miniChef).harvest(poolId, address(this));
-        uint256 _sushi = IERC20(sushi).balanceOf(address(this));
-        if (_sushi > 0) {
-            // 10% is locked up for future gov
-            uint256 _keepSUSHI = _sushi.mul(keep).div(keepMax);
-            IERC20(sushi).safeTransfer(
-                IController(controller).treasury(),
-                _keepSUSHI
-            );
-            _swapSushiswap(sushi, weth, _sushi.sub(_keepSUSHI));
-        }
+        // // Collects SUSHI tokens
+        // IMiniChefV2(miniChef).harvest(poolId, address(this));
+        // uint256 _sushi = IERC20(sushi).balanceOf(address(this));
+        // if (_sushi > 0) {
+        //     // 10% is locked up for future gov
+        //     uint256 _keepSUSHI = _sushi.mul(keep).div(keepMax);
+        //     IERC20(sushi).safeTransfer(
+        //         IController(controller).treasury(),
+        //         _keepSUSHI
+        //     );
+        //     _swapSushiswap(sushi, weth, _sushi.sub(_keepSUSHI));
+        // }
 
         // Collect reward tokens
         if (rewardToken != address(0)) {

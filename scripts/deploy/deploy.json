@@ -1,8 +1,25 @@
 {
-  "SushiWethUsdc": { 
-    "controller": "Sushi"
-  },
-  "SushiWethUsdt": { 
-    "controller": "Sushi"
+  "SushiWethWbtc": {
+    "controller": "sushi",
+    "targets": [
+      "0xd7bc9a6Ee68e125169E96024Ef983Fee76520569",
+      "0xd7bc9a6Ee68e125169E96024Ef983Fee76520569",
+      "0xd7bc9a6Ee68e125169E96024Ef983Fee76520569",
+      "0x28bd4C1567c5607f81d786DbcA4089bdF3F0259E"
+    ],
+    "data": [
+      "0x714ccf7b000000000000000000000000515e252b2b5c22b4b2b6df66c2ebeea871aa4d690000000000000000000000003043e7675c956eafcdf006458b296f1fe8b0ca7c",
+      "0xc494448e000000000000000000000000515e252b2b5c22b4b2b6df66c2ebeea871aa4d6900000000000000000000000028bd4c1567c5607f81d786dbca4089bdf3f0259e",
+      "0x72cb5d97000000000000000000000000515e252b2b5c22b4b2b6df66c2ebeea871aa4d6900000000000000000000000028bd4c1567c5607f81d786dbca4089bdf3f0259e",
+      "0x54df7b630000000000000000000000004e63ca83731351ebf109e16928a69d77d4e06469"
+    ],
+    "strategy_addr": "0x28bd4C1567c5607f81d786DbcA4089bdF3F0259E",
+    "vault_addr": "0x3043e7675c956EAfcDF006458b296F1fe8B0CA7C",
+    "setVault": true,
+    "approveStrategy": true,
+    "harvest": true,
+    "setStrategy": true,
+    "earn": true,
+    "whitelist": true
   }
 }

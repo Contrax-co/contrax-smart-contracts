@@ -51,7 +51,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
     let snapshotId: string;
 
     let txnAmt: string = "25000000000000000000000";
-
+   
     describe( "Tests for: " + name, async () => {
         
         // These reset the state after each test is executed 
@@ -85,7 +85,6 @@ export function doStrategyTest(test_case: TestableStrategy) {
 
             // const controllerFactory = await ethers.getContractFactory("Controller", timelockSigner);
             // Controller = await controllerFactory.deploy(governance_addr, strategist_addr, timelock_addr, timelock_addr, timelock_addr);
-
 
             /** Strategy Mock **/
             Strategy = await setupMockStrategy(
@@ -150,6 +149,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
 
             let balAfter = await assetContract.connect(walletSigner).balanceOf(vault_addr);
             expect(balBefore).to.be.lt(balAfter);
+            
             await Vault.connect(walletSigner).earn();
 
             await fastForwardAWeek();

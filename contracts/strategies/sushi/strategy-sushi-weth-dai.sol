@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../strategy-sushi-farm-base.sol";
+import "../sushi-farm-bases/strategy-sushi-farm-base.sol";
 
 contract StrategySushiWethDai is StrategySushiFarmBase {
     // Token/ETH pool id in MasterChef contract
