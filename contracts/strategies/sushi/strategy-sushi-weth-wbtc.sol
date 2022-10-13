@@ -3,11 +3,12 @@ pragma solidity 0.8.4;
 
 import "../sushi-farm-bases/strategy-sushi-farm-base.sol";
 
-contract StrategySushiWethUsdc is StrategySushiFarmBase {
-    uint256 public sushi_weth_usdc_poolId = 0;
+contract StrategySushiWethWbtc is StrategySushiFarmBase {
+    // Token/ETH pool id in MasterChef contract
+    uint256 public sushi_weth_wbtc_poolId = 3;
     // Token addresses
-    address public sushi_weth_usdc_lp = 0x905dfCD5649217c42684f23958568e533C711Aa3;
-    address public usdc = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+    address public sushi_weth_wbtc_lp = 0x515e252b2b5c22b4b2b6Df66c2eBeeA871AA4d69;
+    address public wbtc = 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f;
 
     constructor(
         address _governance,
@@ -17,9 +18,9 @@ contract StrategySushiWethUsdc is StrategySushiFarmBase {
     )
         StrategySushiFarmBase(
             weth,
-            usdc,
-            sushi_weth_usdc_poolId,
-            sushi_weth_usdc_lp,
+            wbtc,
+            sushi_weth_wbtc_poolId,
+            sushi_weth_wbtc_lp,
             _governance,
             _strategist,
             _controller,
@@ -30,6 +31,6 @@ contract StrategySushiWethUsdc is StrategySushiFarmBase {
     // **** Views ****
 
     function getName() external override pure returns (string memory) {
-        return "StrategySushiWethUsdc";
+        return "StrategySushiWethWbtc";
     }
 }

@@ -23,7 +23,7 @@ export async function setupMockStrategy(
         let timelock_addr = await timelockSigner.getAddress()
         let governance_addr = await governanceSigner.getAddress()
         let strategist_addr = await strategistSigner.getAddress()
-        let controller_addr = await Controller.address;
+        let controller_addr = Controller.address;
 
         console.log(`Deploying strategy ${contract_name}`);
         const stratFactory = await ethers.getContractFactory(contract_name);

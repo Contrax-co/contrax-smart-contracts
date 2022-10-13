@@ -3,11 +3,11 @@ pragma solidity 0.8.4;
 
 import "../sushi-farm-bases/strategy-sushi-farm-base.sol";
 
-contract StrategySushiWethUsdc is StrategySushiFarmBase {
-    uint256 public sushi_weth_usdc_poolId = 0;
+contract StrategySushiWethUsdt is StrategySushiFarmBase {
+    uint256 public sushi_weth_usdt_poolId = 4;
     // Token addresses
-    address public sushi_weth_usdc_lp = 0x905dfCD5649217c42684f23958568e533C711Aa3;
-    address public usdc = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+    address public sushi_weth_usdt_lp = 0xCB0E5bFa72bBb4d16AB5aA0c60601c438F04b4ad;
+    address public usdt = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
 
     constructor(
         address _governance,
@@ -17,9 +17,9 @@ contract StrategySushiWethUsdc is StrategySushiFarmBase {
     )
         StrategySushiFarmBase(
             weth,
-            usdc,
-            sushi_weth_usdc_poolId,
-            sushi_weth_usdc_lp,
+            usdt,
+            sushi_weth_usdt_poolId,
+            sushi_weth_usdt_lp,
             _governance,
             _strategist,
             _controller,
@@ -30,6 +30,6 @@ contract StrategySushiWethUsdc is StrategySushiFarmBase {
     // **** Views ****
 
     function getName() external override pure returns (string memory) {
-        return "StrategySushiWethUsdc";
+        return "StrategySushiWethUsdt";
     }
 }
