@@ -3,7 +3,7 @@ require("@nomiclabs/hardhat-waffle");
 require('dotenv').config();
 
 async function main() {
-    const platform = "Sushi";
+    const platform = "DPX";
     const controller_name = platform+"Controller";
 
     const [deployer] = await ethers.getSigners();

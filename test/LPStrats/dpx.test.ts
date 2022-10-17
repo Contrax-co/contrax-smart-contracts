@@ -4,7 +4,11 @@ import { TestableStrategy, LPTestDefault } from "../strategy-test-case";
 const tests = [
     {
         name: "DpxWethDpx",
-        controller: "sushi"
+        controller: "dpx"
+    },
+    {
+        name: "DpxWethRdpx",
+        controller: "dpx"
     },
 
 ];

@@ -46,12 +46,12 @@ interface UniswapRouterV2 {
     function removeLiquidity(
         address tokenA,
         address tokenB,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
+        uint liquidity,
+        uint amountAMin,
+        uint amountBMin,
         address to,
-        uint256 deadline
-    ) external returns (uint256 amountA, uint256 amountB);
+        uint deadline
+    ) external returns (uint amountA, uint amountB);
 
      function quote(
         uint256 amountA,

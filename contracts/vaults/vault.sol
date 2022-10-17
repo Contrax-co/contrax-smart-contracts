@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "./interfaces/controller.sol";
+import "../interfaces/controller.sol";
 
-import "./lib/erc20.sol";
-import "./lib/safe-math.sol";
+import "../lib/erc20.sol";
+import "../lib/safe-math.sol";
 
 contract Vault is ERC20 {
     using SafeERC20 for IERC20;

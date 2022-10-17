@@ -123,6 +123,7 @@ export function returnController(controller: string): string {
     let address;
     switch (controller) {
         case "sushi": address = "0xd7bc9a6Ee68e125169E96024Ef983Fee76520569"; break;
+        case "dpx": address = "0x19390136f374A1Ef3CD15C97d8a430eDa26596cC"; break;
         default: address = ""; break;
     }
     return address;

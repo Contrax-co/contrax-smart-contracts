@@ -28,6 +28,7 @@ async function main() {
 
         switch(pools[name].controller){
             case "sushi": controller_addr="0xd7bc9a6Ee68e125169E96024Ef983Fee76520569"; break;
+            case "dpx": controller_addr="0x19390136f374A1Ef3CD15C97d8a430eDa26596cC"; break;
         }
 
         // if there is no targets or data array, create one
