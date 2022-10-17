@@ -1,6 +1,6 @@
 {
   "SushiWethDai": {  // contract name (use vault/strategy naming convention)
-    "controller": "Sushi", // specifiy the controller
+    "controller": "sushi", // specifiy the controller
     "vault_addr": "0x124F5991e1EAD696D3082139154dB787E52f4C87" // only necesary if the controller for the vault is set
   },
 }
