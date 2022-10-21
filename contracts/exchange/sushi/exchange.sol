@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../lib/erc20.sol";
-import "../lib/safe-math.sol";
+import "../../lib/erc20.sol";
+import "../../lib/safe-math.sol";
 
-import "../interfaces/uniswapv2.sol";
-import "../interfaces/controller.sol";
+import "../../interfaces/uniswapv2.sol";
+import "../../interfaces/controller.sol";
 import "hardhat/console.sol";
 
 contract SushiExchange {
@@ -28,10 +28,19 @@ contract SushiExchange {
         controller = _controller;
     }
 
-    function swapFromTokenToToken(address _from, address _to, uint256 _amount) public {
+    function swapFromTokenToToken(
+        address _from, 
+        address _to, 
+        uint256 _amount
+    ) public {
         require(_to != address(0));
 
         address[] memory path;
+
+        IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
+
+        uint256 bal2 = IERC20(_from).balanceOf(address(this));
+        console.log("the balance of the from token for contract is", bal2);
         
         if(_from == weth || _to == weth){
             path = new address[](2);
@@ -47,6 +56,9 @@ contract SushiExchange {
 
         IERC20(_from).safeApprove(sushiRouter, 0);
         IERC20(_from).safeApprove(sushiRouter, _amount);
+
+        console.log("the amount is", _amount);
+   
         UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
             _amount,
             0,
@@ -54,6 +66,7 @@ contract SushiExchange {
             address(this),
             block.timestamp.add(60)
         );
+
     }
 
 
@@ -64,12 +77,12 @@ contract SushiExchange {
         address token1 = IUniswapV2Pair(_to).token1();
 
         if(_from == token0){
-            swapTokenForPair(_from, token1, _amount.div(2));
+            swapFromTokenToToken(_from, token1, _amount.div(2));
         }else if (_from == token1){
-            swapTokenForPair(_from, token0, _amount.div(2));
+            swapFromTokenToToken(_from, token0, _amount.div(2));
         }else{
-            swapTokenForPair(_from, token1, _amount.div(2));
-            swapTokenForPair(_from, token0, _amount.div(2));
+            swapFromTokenToToken(_from, token1, _amount.div(2));
+            swapFromTokenToToken(_from, token0, _amount.div(2));
         }
         
         // Adds in liquidity for token0/token1

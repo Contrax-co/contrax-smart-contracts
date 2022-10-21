@@ -83,10 +83,10 @@ interface UniswapRouterV2 {
     ) external payable returns (uint256[] memory amounts);
 
     function swapExactETHForTokens(
-        uint256 amountOutMin,
+        uint amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint deadline
     ) external payable returns (uint256[] memory amounts);
 }
 

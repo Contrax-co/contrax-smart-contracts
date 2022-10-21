@@ -3,6 +3,7 @@ const { ethers, network } = require("hardhat");
 const hre = require("hardhat");
 import { expect } from "chai";
 import {Contract, ContractFactory, Signer, BigNumber} from "ethers";
+import { setupMockERC20 } from "../mocks/ERC20";
 import { overwriteTokenAmount, returnSigner } from "../utils/helpers";
 
 let stratABI = [{"inputs": [{"internalType": "address","name": "_logic","type": "address"},{"internalType": "address","name": "admin_","type": "address"},{"internalType": "bytes","name": "_data","type": "bytes"}],"stateMutability": "payable","type": "constructor"},{"anonymous": false,"inputs": [{"indexed": false,"internalType": "address","name": "previousAdmin","type": "address"},{"indexed": false,"internalType": "address","name": "newAdmin","type": "address"}],"name": "AdminChanged","type": "event"},{"anonymous": false,"inputs": [{"indexed": true,"internalType": "address","name": "implementation","type": "address"}],"name": "Upgraded","type": "event"},{"stateMutability": "payable","type": "fallback"},{"inputs": [],"name": "admin","outputs": [{"internalType": "address","name": "admin_","type": "address"}],"stateMutability": "nonpayable","type": "function"},{"inputs": [{"internalType": "address","name": "newAdmin","type": "address"}],"name": "changeAdmin","outputs": [],"stateMutability": "nonpayable","type": "function"},{"inputs": [],"name": "implementation","outputs": [{"internalType": "address","name": "implementation_","type": "address"}],"stateMutability": "nonpayable","type": "function"},{"inputs": [{"internalType": "address","name": "newImplementation","type": "address"}],"name": "upgradeTo","outputs": [],"stateMutability": "nonpayable","type": "function"},{"inputs": [{"internalType": "address","name": "newImplementation","type": "address"},{"internalType": "bytes","name": "data","type": "bytes"}],"name": "upgradeToAndCall","outputs": [],"stateMutability": "payable","type": "function"},{"stateMutability": "payable","type": "receive"}];
@@ -13,6 +14,9 @@ let walletSigner: Signer;
 let snapshotId: string;
 
 let controller_addr = "0xd7bc9a6Ee68e125169E96024Ef983Fee76520569";
+
+let token1: Contract;
+let token2: Contract;
 
 let initialWethBal: string;
 let initialUsdcBal: string; 
@@ -49,11 +53,11 @@ describe( "Tests for Sushi Swap Exchange", async () => {
         console.log(`Impersonating account: ${wallet_addr}`);
         walletSigner = await returnSigner(wallet_addr);
 
-        // // load user wallet with initial amount
-        // await hre.network.provider.send("hardhat_setBalance", [
-        //     await walletSigner.getAddress(), 
-        //     "0x10000000000000000000000",]
-        // );
+        // load user wallet with initial amount
+        await hre.network.provider.send("hardhat_setBalance", [
+            await walletSigner.getAddress(), 
+            "0x10000000000000000000000",]
+        );
         
         const exchangeFactory = await ethers.getContractFactory('SushiExchange');
         Exchange = await exchangeFactory.connect(walletSigner).deploy(
@@ -64,56 +68,45 @@ describe( "Tests for Sushi Swap Exchange", async () => {
 
         console.log(`Deployed SushiExchange at ${exchange_addr}`);
 
-        wethUsdcContract = await ethers.getContractAt("ERC20", weth_usdc_lp, walletSigner);
-        initialWethUsdcBal = await wethUsdcContract.connect(walletSigner).balanceOf(wallet_addr);
-        await overwriteTokenAmount(weth_usdc_lp, wallet_addr, txnAmt, 1);
 
+        token1 = await setupMockERC20("TOKEN1", "T1", walletSigner, wallet_addr, txnAmt);
+        token2 = await setupMockERC20("TOKEN2", "T2", walletSigner, wallet_addr, txnAmt);
 
-        wethUsdcContract = await ethers.getContractAt("ERC20", weth_usdc_lp, walletSigner);
-        initialWethUsdcBal = await wethUsdcContract.connect(walletSigner).balanceOf(wallet_addr);
-        await overwriteTokenAmount(weth_usdc_lp, wallet_addr, txnAmt, 1);
+        wethContract = await ethers.getContractAt("ERC20", weth_addr, walletSigner);
+        initialWethBal = await wethContract.connect(walletSigner).balanceOf(wallet_addr);
+        await overwriteTokenAmount (weth_addr, wallet_addr, txnAmt, 1);
 
-        // wethContract = await ethers.getContractAt("ERC20", weth_addr, walletSigner);
-        // usdcContract = await ethers.getContractAt("ERC20", usdc_addr, walletSigner);
-
-        // initialWethBal = await wethContract.connect(walletSigner).balanceOf(wallet_addr); 
-        // initialUsdcBal = await usdcContract.connect(walletSigner).balanceOf(wallet_addr);
-
-        // console.log(`the initial amount of weth is ${initialWethBal}`)
-        // console.log(`the initial amount of usdc is ${initialUsdcBal}`)
-
-        // await overwriteTokenAmount(weth_addr, wallet_addr, txnAmt, 2);
-        // await overwriteTokenAmount(usdc_addr, wallet_addr, txnAmt, 2);
-
-        // initialWethBal = await wethContract.connect(walletSigner).balanceOf(wallet_addr); 
-        // initialUsdcBal = await usdcContract.connect(walletSigner).balanceOf(wallet_addr);
-
-        // console.log(`the initial amount of weth is ${initialWethBal}`)
-        // console.log(`the initial amount of usdc is ${initialUsdcBal}`)
-
+        usdcContract = await ethers.getContractAt("ERC20", usdc_addr, walletSigner);
+        initialUsdcBal = await usdcContract.connect(walletSigner).balanceOf(wallet_addr);
+        await overwriteTokenAmount (usdc_addr, wallet_addr, txnAmt, 1);
         
     })
 
-    it("user wallet contains an initial balance of wethUsdc tokens", async function() {
-        let wethUsdcBal = await wethUsdcContract.connect(walletSigner).balanceOf(wallet_addr);
+    it("user wallet contains an initial balance of tokens", async function() {
+        let token1Bal = await token1.connect(walletSigner).balanceOf(wallet_addr);
+        let token2Bal = await token2.connect(walletSigner).balanceOf(wallet_addr);
+
         const BN = ethers.BigNumber.from(txnAmt)._hex.toString();
 
-        console.log(`\nthe balance of weth-usdc tokens in user wallet is ${wethUsdcBal}`);
+        console.log(`\nthe balance of token1 in user wallet is ${token1Bal}`);
+        console.log(`the balance of token2 in user wallet is ${token2Bal}`);
 
-        expect(wethUsdcBal.sub(initialWethUsdcBal)).to.be.equals(BN); 
+        console.log(`the balance of weth in user wallet is ${initialWethBal}`);
+        console.log(`the balance of usdc in user wallet is ${initialUsdcBal}`);
 
+        let finalWETH = await wethContract.connect(walletSigner).balanceOf(wallet_addr);
+        let finalUSDC = await usdcContract.connect(walletSigner).balanceOf(wallet_addr);
+
+        console.log(`the FINAL balance of weth in user wallet is ${finalWETH}`);
+        console.log(`the FINAL balance of usdc in user wallet is ${finalUSDC}`);
+
+        expect(token1Bal).to.be.equals(BN); 
+        expect(token2Bal).to.be.equals(BN); 
     })
 
-    it("swaps user from lp token to an erc20 token", async function() {
-        let amt = await wethUsdcContract.connect(walletSigner).balanceOf(wallet_addr);
-        await wethUsdcContract.connect(walletSigner).approve(exchange_addr, amt);
-
-        await Exchange.swapPairForToken(weth_usdc_lp, weth_addr, amt.div(2)); 
-
-        let finalAmt = await wethUsdcContract.connect(walletSigner).balanceOf(wallet_addr);
-
-        console.log(`the final amt after transferring is ${amt}`);
-
+    it("swap from one token to another token", async function() {
+        await wethContract.approve(exchange_addr, txnAmt);
+        await Exchange.connect(walletSigner).swapFromTokenToToken(weth_addr, usdc_addr, "2000000000000"); 
     })
 
 })
