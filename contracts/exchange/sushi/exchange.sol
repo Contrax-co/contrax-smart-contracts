@@ -38,9 +38,6 @@ contract SushiExchange {
         address[] memory path;
 
         IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
-
-        uint256 bal2 = IERC20(_from).balanceOf(address(this));
-        console.log("the balance of the from token for contract is", bal2);
         
         if(_from == weth || _to == weth){
             path = new address[](2);
@@ -56,8 +53,43 @@ contract SushiExchange {
 
         IERC20(_from).safeApprove(sushiRouter, 0);
         IERC20(_from).safeApprove(sushiRouter, _amount);
+   
+        UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
+            _amount,
+            0,
+            path,
+            address(this),
+            block.timestamp.add(60)
+        );
 
-        console.log("the amount is", _amount);
+        uint256 _toBal = IERC20(_to).balanceOf(address(this));
+        IERC20(_to).safeTransfer(msg.sender, _toBal);
+    }
+
+
+    function swapFromTokenToTokenInternal(
+        address _from, 
+        address _to, 
+        uint256 _amount
+    ) internal {
+        require(_to != address(0));
+
+        address[] memory path;
+        
+        if(_from == weth || _to == weth){
+            path = new address[](2);
+            path[0] = _from;
+            path[1] = _to;
+
+        }else{
+            path = new address[](3);
+            path[0] = _from;
+            path[1] = weth;
+            path[2] = _to;
+        }
+
+        IERC20(_from).safeApprove(sushiRouter, 0);
+        IERC20(_from).safeApprove(sushiRouter, _amount);
    
         UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
             _amount,
@@ -70,19 +102,25 @@ contract SushiExchange {
     }
 
 
-    function swapTokenForPair(address _from, address _to, uint256 _amount) public {
+    function swapTokenForPair(
+        address _from, 
+        address _to, 
+        uint256 _amount
+    ) public {
         require(_to != address(0));
+
+        IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
 
         address token0 = IUniswapV2Pair(_to).token0();
         address token1 = IUniswapV2Pair(_to).token1();
 
         if(_from == token0){
-            swapFromTokenToToken(_from, token1, _amount.div(2));
+            swapFromTokenToTokenInternal(_from, token1, _amount.div(2));
         }else if (_from == token1){
-            swapFromTokenToToken(_from, token0, _amount.div(2));
+            swapFromTokenToTokenInternal(_from, token0, _amount.div(2));
         }else{
-            swapFromTokenToToken(_from, token1, _amount.div(2));
-            swapFromTokenToToken(_from, token0, _amount.div(2));
+            swapFromTokenToTokenInternal(_from, token1, _amount.div(2));
+            swapFromTokenToTokenInternal(_from, token0, _amount.div(2));
         }
         
         // Adds in liquidity for token0/token1
@@ -116,19 +154,27 @@ contract SushiExchange {
             );
         }
 
+        uint256 _toBal = IERC20(_to).balanceOf(address(this));
+        IERC20(_to).safeTransfer(msg.sender, _toBal);
     }
 
 
-    function swapPairForToken(address _from, address _to, uint256 _amount) public {
+    function swapPairForToken(
+        address _from, 
+        address _to, 
+        uint256 _amount
+    ) public {
         require(_to != address(0));
 
-        address token0 = address(IUniswapV2Pair(_from).token0());
-        address token1 = address(IUniswapV2Pair(_from).token1());
+        IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
+
+        address token0 = IUniswapV2Pair(_from).token0();
+        address token1 = IUniswapV2Pair(_from).token1();
 
         IERC20(_from).safeApprove(sushiRouter, 0); 
         IERC20(_from).safeApprove(sushiRouter, _amount); 
 
-        (uint256 _token0, uint256 _token1) = UniswapRouterV2(sushiRouter).removeLiquidity(
+        (uint _token0, uint _token1) = UniswapRouterV2(sushiRouter).removeLiquidity(
             token0, 
             token1, 
             _amount, 
@@ -138,19 +184,23 @@ contract SushiExchange {
             block.timestamp.add(60)
         );
 
-        console.log("are we reaching the far1");
+        console.log("are we reaching the far2");
 
         _token0 = IERC20(token0).balanceOf(address(this));
         _token1 = IERC20(token1).balanceOf(address(this)); 
 
         if(_to == token0){
-            swapFromTokenToToken(token1, _to, _token1); 
+            swapFromTokenToTokenInternal(token1, _to, _token1); 
         }else if(_to == token1) {
-            swapFromTokenToToken(token0, _to, _token0);
+            swapFromTokenToTokenInternal(token0, _to, _token0);
         }else {
-            swapFromTokenToToken(token1, _to, _token1); 
-            swapFromTokenToToken(token0, _to, _token0);
+            swapFromTokenToTokenInternal(token1, _to, _token1); 
+            swapFromTokenToTokenInternal(token0, _to, _token0);
         }
+
+        uint256 _toBal = IERC20(_to).balanceOf(address(this));
+        IERC20(_to).safeTransfer(msg.sender, _toBal);
     }
+    
 
 }
