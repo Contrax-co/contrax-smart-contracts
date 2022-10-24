@@ -6,7 +6,6 @@ import "../../lib/safe-math.sol";
 
 import "../../interfaces/uniswapv2.sol";
 import "../../interfaces/controller.sol";
-import "hardhat/console.sol";
 
 contract SushiExchange {
     using SafeERC20 for IERC20;
@@ -167,27 +166,26 @@ contract SushiExchange {
         require(_to != address(0));
 
         IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 _liquidity = IERC20(_from).balanceOf(address(this));
 
         address token0 = IUniswapV2Pair(_from).token0();
         address token1 = IUniswapV2Pair(_from).token1();
 
         IERC20(_from).safeApprove(sushiRouter, 0); 
-        IERC20(_from).safeApprove(sushiRouter, _amount); 
+        IERC20(_from).safeApprove(sushiRouter, _liquidity); 
 
-        (uint _token0, uint _token1) = UniswapRouterV2(sushiRouter).removeLiquidity(
+        UniswapRouterV2(sushiRouter).removeLiquidity(
             token0, 
             token1, 
-            _amount, 
+            _liquidity, 
             0, 
             0, 
             address(this), 
             block.timestamp.add(60)
         );
 
-        console.log("are we reaching the far2");
-
-        _token0 = IERC20(token0).balanceOf(address(this));
-        _token1 = IERC20(token1).balanceOf(address(this)); 
+        uint256 _token0 = IERC20(token0).balanceOf(address(this));
+        uint256 _token1 = IERC20(token1).balanceOf(address(this)); 
 
         if(_to == token0){
             swapFromTokenToTokenInternal(token1, _to, _token1); 
@@ -200,6 +198,103 @@ contract SushiExchange {
 
         uint256 _toBal = IERC20(_to).balanceOf(address(this));
         IERC20(_to).safeTransfer(msg.sender, _toBal);
+    }
+
+    function removeLiquidityInternal(address _from, uint256 _amount) internal {
+        address token0 = IUniswapV2Pair(_from).token0();
+        address token1 = IUniswapV2Pair(_from).token1();
+
+        IERC20(_from).safeApprove(sushiRouter, 0); 
+        IERC20(_from).safeApprove(sushiRouter, _amount); 
+
+        UniswapRouterV2(sushiRouter).removeLiquidity(
+            token0, 
+            token1, 
+            _amount, 
+            0, 
+            0, 
+            address(this), 
+            block.timestamp.add(60)
+        );
+
+        uint256 _token0 = IERC20(token0).balanceOf(address(this));
+        uint256 _token1 = IERC20(token1).balanceOf(address(this)); 
+
+        if(token0 == weth){
+            swapFromTokenToTokenInternal(token1, weth, _token1);
+        }else if(token1 == weth){
+            swapFromTokenToTokenInternal(token0, weth, _token0);
+        }else{
+            swapFromTokenToTokenInternal(token0, weth, _token0);
+            swapFromTokenToTokenInternal(token1, weth, _token1);
+        }
+    }
+
+    function addLiquidityInternal(address token0, address token1) internal {
+        // Adds in liquidity for token0/token1
+        uint256 _token0 = IERC20(token0).balanceOf(address(this));
+        uint256 _token1 = IERC20(token1).balanceOf(address(this));
+
+         if (_token0 > 0 && _token1 > 0) {
+            IERC20(token0).safeApprove(sushiRouter, 0);
+            IERC20(token0).safeApprove(sushiRouter, _token0);
+            IERC20(token1).safeApprove(sushiRouter, 0);
+            IERC20(token1).safeApprove(sushiRouter, _token1);
+
+             UniswapRouterV2(sushiRouter).addLiquidity(
+                token0,
+                token1,
+                _token0,
+                _token1,
+                0,
+                0,
+                address(this),
+                block.timestamp.add(60)
+            );
+
+            // Donates DUST
+            IERC20(token0).transfer(
+                IController(controller).treasury(),
+                IERC20(token0).balanceOf(address(this))
+            );
+            IERC20(token1).safeTransfer(
+                IController(controller).treasury(),
+                IERC20(token1).balanceOf(address(this))
+            );
+
+         }
+    }
+
+    function swapPairForPair(
+        address _from, 
+        address _to, 
+        uint256 _amount
+    ) public {
+        require(_to != address(0));
+
+        IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
+        
+        removeLiquidityInternal(_from, _amount); 
+
+        uint256 _wethBal = IERC20(weth).balanceOf(address(this));
+
+        address token0 = IUniswapV2Pair(_to).token0();
+        address token1 = IUniswapV2Pair(_to).token1();
+
+        if(token0 == weth){
+            swapFromTokenToTokenInternal(weth, token1, _wethBal.div(2)); 
+        }else if(token1 == weth){
+            swapFromTokenToTokenInternal(weth, token0, _wethBal.div(2)); 
+        }else{
+            swapFromTokenToTokenInternal(weth, token0, _wethBal.div(2)); 
+            swapFromTokenToTokenInternal(weth, token1, _wethBal.div(2)); 
+        }
+
+        addLiquidityInternal(token0, token1); 
+
+        uint256 _toBal = IERC20(_to).balanceOf(address(this)); 
+        IERC20(_to).safeTransfer(msg.sender, _toBal);
+
     }
     
 

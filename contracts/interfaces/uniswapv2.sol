@@ -53,6 +53,15 @@ interface UniswapRouterV2 {
         uint deadline
     ) external returns (uint amountA, uint amountB);
 
+    function removeLiquidityETH(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountToken, uint amountETH); 
+
      function quote(
         uint256 amountA,
         uint256 reserveA,

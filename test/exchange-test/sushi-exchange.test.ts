@@ -18,6 +18,7 @@ let controller_addr = "0xd7bc9a6Ee68e125169E96024Ef983Fee76520569";
 let wethContract: Contract;
 let usdcContract: Contract;
 let wethUsdcContract: Contract;
+let wethDaiContract: Contract;
 
 let Exchange: Contract; 
 let exchange_addr: string;
@@ -25,9 +26,10 @@ let exchange_addr: string;
 
 let weth_addr = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 let usdc_addr = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"; 
-let weth_usdc_lp= "0x905dfCD5649217c42684f23958568e533C711Aa3";
+let weth_usdc_lp = "0x905dfCD5649217c42684f23958568e533C711Aa3";
+let weth_dai_lp = "0x692a0B300366D1042679397e40f3d2cb4b8F7D30"; 
 
-let txnAmt: string = "25000000000000000000000";
+let txnAmt: string = "2500000000000000";
 
 
 describe( "Tests for Sushi Swap Exchange", async () => {
@@ -69,6 +71,9 @@ describe( "Tests for Sushi Swap Exchange", async () => {
         
         wethUsdcContract = await ethers.getContractAt("ERC20", weth_usdc_lp, walletSigner); 
         await overwriteTokenAmount(wethUsdcContract.address, wallet_addr, txnAmt, 1);
+
+        wethDaiContract = await ethers.getContractAt("ERC20", weth_dai_lp, walletSigner); 
+        await overwriteTokenAmount(wethDaiContract.address, wallet_addr, txnAmt, 1);
     })
 
     it("user wallet contains an initial balance of tokens", async function() {
@@ -101,7 +106,7 @@ describe( "Tests for Sushi Swap Exchange", async () => {
         await Exchange.connect(walletSigner).swapTokenForPair(usdc_addr, weth_usdc_lp, txnAmt); 
 
         let weth_usdc_bal = await wethUsdcContract.connect(walletSigner).balanceOf(wallet_addr);
-        console.log(`\nthe bal of te lp token is ${weth_usdc_bal}`);
+        console.log(`\nThe bal of the lp token is ${weth_usdc_bal}`);
 
         const BN = ethers.BigNumber.from(txnAmt)._hex.toString();
 
@@ -109,22 +114,39 @@ describe( "Tests for Sushi Swap Exchange", async () => {
         await Exchange.connect(walletSigner).swapTokenForPair(weth_addr, weth_usdc_lp, txnAmt);
 
         let final_weth_usdc_bal = await wethUsdcContract.connect(walletSigner).balanceOf(wallet_addr);
-        console.log(`the final bal of te lp token is ${final_weth_usdc_bal}`)
+        console.log(`The final bal of the lp token is ${final_weth_usdc_bal}`)
 
 
         expect(weth_usdc_bal).to.be.gt(BN);
         expect(final_weth_usdc_bal).to.be.gt(weth_usdc_bal);
     })
 
-    it.only("should swap from lp pair to token", async function() {
+    it("should swap from lp pair to token", async function() {
         await wethUsdcContract.approve(exchange_addr, txnAmt);
         await Exchange.connect(walletSigner).swapPairForToken(weth_usdc_lp, usdc_addr, txnAmt);
 
         let usdc_bal = await usdcContract.connect(walletSigner).balanceOf(wallet_addr);
-        console.log(`\nthe bal of te lp token is ${usdc_bal}`);
+        console.log(`\nThe bal of the usdc token is ${usdc_bal}`);
 
         const BN = ethers.BigNumber.from(txnAmt)._hex.toString();
         expect(usdc_bal).to.be.gt(BN);
+    })
+
+    it("should swap from one lp pair to another lp pair", async () => {
+        await wethUsdcContract.approve(exchange_addr, txnAmt);
+        await Exchange.connect(walletSigner).swapPairForPair(weth_usdc_lp, weth_dai_lp, txnAmt); 
+
+        let weth_usdc_bal =  await wethUsdcContract.connect(walletSigner).balanceOf(wallet_addr);
+        console.log(`\nThe bal of the weth_usdc token is ${weth_usdc_bal}`);
+
+        let weth_dai_bal = await wethDaiContract.connect(walletSigner).balanceOf(wallet_addr);
+        console.log(`The balace of weth_dai tokens is ${weth_dai_bal}`);
+
+        const BN = ethers.BigNumber.from(txnAmt)._hex.toString();
+
+        expect(weth_usdc_bal).to.equal("0x0"); 
+        expect(weth_dai_bal).to.gt(BN);
+
     })
 
 })
