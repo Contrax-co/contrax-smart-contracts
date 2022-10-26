@@ -53,6 +53,15 @@ interface UniswapRouterV2 {
         uint deadline
     ) external returns (uint amountA, uint amountB);
 
+    function removeLiquidityETH(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountToken, uint amountETH); 
+
      function quote(
         uint256 amountA,
         uint256 reserveA,
@@ -83,10 +92,10 @@ interface UniswapRouterV2 {
     ) external payable returns (uint256[] memory amounts);
 
     function swapExactETHForTokens(
-        uint256 amountOutMin,
+        uint amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint deadline
     ) external payable returns (uint256[] memory amounts);
 }
 
