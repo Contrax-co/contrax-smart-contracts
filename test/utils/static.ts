@@ -2,7 +2,7 @@ const hre = "hardhat";
 const { ethers, network } = require("hardhat");
 import { Signer, BigNumber } from "ethers";
 
-export const reward_addr: string = "0x6C2C06790b3E3E3c38e12Ee22F8183b37a13EE55";
+export const reward_addr: string = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 export const treasury_addr: string = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 /***
  * NOTE: Single Staking expects the timelock signer to have the address of the strategist.
