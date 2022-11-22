@@ -139,3 +139,9 @@ export async function fastForwardAWeek() {
         i++;
     } while (i < 8);
 }
+
+export async function getBalancesETH(walletSigner: Signer) {
+    const user = Number(ethers.utils.formatEther(await walletSigner.getBalance()));
+
+    return user; 
+}

@@ -19,6 +19,8 @@ interface WETH {
 
     function withdraw(uint256 wad) external;
 
+    function withdrawTo(address account, uint256 amount) external; 
+
     function decimals() external view returns (uint8);
 
     function balanceOf(address) external view returns (uint256);
