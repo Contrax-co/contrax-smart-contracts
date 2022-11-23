@@ -46,21 +46,21 @@ contract SushiExchange {
             path = new address[](2);
             path[0] = weth;
             path[1] = _to;
+
+            IERC20(weth).safeApprove(sushiRouter, 0);
+            IERC20(weth).safeApprove(sushiRouter, _amount);
+
+            UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
+                _amount,
+                0,
+                path,
+                address(this),
+                block.timestamp.add(60)
+            );
+
+            uint256 _toBal = IERC20(_to).balanceOf(address(this));
+            IERC20(_to).safeTransfer(msg.sender, _toBal);
         }
-
-        IERC20(weth).safeApprove(sushiRouter, 0);
-        IERC20(weth).safeApprove(sushiRouter, _amount);
-
-        UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
-            _amount,
-            0,
-            path,
-            address(this),
-            block.timestamp.add(60)
-        );
-
-        uint256 _toBal = IERC20(_to).balanceOf(address(this));
-        IERC20(_to).safeTransfer(msg.sender, _toBal);
     }
 
 
@@ -72,11 +72,15 @@ contract SushiExchange {
 
         IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
 
-        swapFromTokenToWethInternal(_from, _amount);
-
-        uint256 _weth = IERC20(weth).balanceOf(address(this)); 
-
-        WETH(weth).withdrawTo(msg.sender, _weth);
+        if (_from == weth){
+            uint256 _weth = IERC20(weth).balanceOf(address(this)); 
+            WETH(weth).withdrawTo(msg.sender, _weth);
+        }
+        else {
+            swapFromTokenToWethInternal(_from, _amount);
+            uint256 _weth = IERC20(weth).balanceOf(address(this)); 
+            WETH(weth).withdrawTo(msg.sender, _weth);
+        }
     }
 
     function swapFromTokenToWethInternal(

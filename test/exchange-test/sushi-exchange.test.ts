@@ -80,18 +80,18 @@ describe( "Tests for Sushi Swap Exchange", async () => {
         const amt = ethers.utils.parseEther(txnAmt);
 
         let ethBal = await getBalancesETH(walletSigner);
-        let usdcBal = await usdcContract.connect(walletSigner).balanceOf(wallet_addr);
-        console.log(`\nThe user balance of eth before transferring is ${ethBal}`);
+        let wethBal = await wethContract.connect(walletSigner).balanceOf(wallet_addr);
+        console.log(`\nThe user balance of eth before transferring is ${wethBal}`);
 
-        await Exchange.connect(walletSigner).swapFromEthToToken(usdc_addr, {value:amt.div(10000000)}); 
-        let usdcBal2 = await usdcContract.connect(walletSigner).balanceOf(wallet_addr);
+        await Exchange.connect(walletSigner).swapFromEthToToken(weth_addr, {value:amt.div(10000000)}); 
+        let wethBal2 = await wethContract.connect(walletSigner).balanceOf(wallet_addr);
         let ethBal2 = await getBalancesETH(walletSigner);
 
         console.log(`The balance of eth after swapping is ${ethBal2}`);
         const BN = Number(ethers.utils.formatEther(amt.div(10000000)));
 
         expect((ethBal - ethBal2)/BN).to.be.gt(0.98);
-        expect(usdcBal2 - usdcBal).to.be.gt(0);
+        expect(wethBal2 - wethBal).to.be.gt(0);
 
     })
 
