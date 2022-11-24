@@ -6,6 +6,7 @@ import "../../lib/safe-math.sol";
 
 import "../../interfaces/uniswapv2.sol";
 import "../../interfaces/controller.sol";
+import "../../interfaces/weth.sol";
 
 contract SushiExchange {
     using SafeERC20 for IERC20;
@@ -13,6 +14,7 @@ contract SushiExchange {
     using SafeMath for uint256;
 
     address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    uint256 public constant minimumAmount = 1000;
 
     // Dex 
     address public sushiRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
@@ -27,12 +29,90 @@ contract SushiExchange {
         controller = _controller;
     }
 
+    function swapFromEthToToken(
+        address _to
+    ) external payable {
+        require(msg.value >= minimumAmount, "Insignificant input amount");
+
+        WETH(weth).deposit{value: msg.value}();
+
+        uint256 _amount = IERC20(weth).balanceOf(address(this));
+        address[] memory path;
+
+        if(_to == weth){
+            IERC20(weth).safeTransfer(msg.sender, _amount);
+
+        }else{
+            path = new address[](2);
+            path[0] = weth;
+            path[1] = _to;
+
+            IERC20(weth).safeApprove(sushiRouter, 0);
+            IERC20(weth).safeApprove(sushiRouter, _amount);
+
+            UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
+                _amount,
+                0,
+                path,
+                address(this),
+                block.timestamp.add(60)
+            );
+
+            uint256 _toBal = IERC20(_to).balanceOf(address(this));
+            IERC20(_to).safeTransfer(msg.sender, _toBal);
+        }
+    }
+
+
+    function swapFromTokenToEth(
+        address _from, 
+        uint256 _amount
+    ) public {
+        require(_from != address(0));
+
+        IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
+
+        if (_from == weth){
+            uint256 _weth = IERC20(weth).balanceOf(address(this)); 
+            WETH(weth).withdrawTo(msg.sender, _weth);
+        }
+        else {
+            swapFromTokenToWethInternal(_from, _amount);
+            uint256 _weth = IERC20(weth).balanceOf(address(this)); 
+            WETH(weth).withdrawTo(msg.sender, _weth);
+        }
+    }
+
+    function swapFromTokenToWethInternal(
+        address _from, 
+        uint256 _amount
+    ) internal {
+        address[] memory path;
+        
+        path = new address[](2);
+        path[0] = _from;
+        path[1] = weth;
+
+        IERC20(_from).safeApprove(sushiRouter, 0);
+        IERC20(_from).safeApprove(sushiRouter, _amount);
+   
+        UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
+            _amount,
+            0,
+            path,
+            address(this),
+            block.timestamp.add(60)
+        );
+    }
+
+
     function swapFromTokenToToken(
         address _from, 
         address _to, 
         uint256 _amount
     ) public {
         require(_to != address(0));
+        require(_amount >= minimumAmount, "Insignificant input amount");
 
         address[] memory path;
 
@@ -100,6 +180,69 @@ contract SushiExchange {
 
     }
 
+    function swapEthForPair(address _to) external payable {
+        require(msg.value >= minimumAmount, "Insignificant input amount");
+
+        WETH(weth).deposit{value: msg.value}();
+
+        uint256 _amount = IERC20(weth).balanceOf(address(this));
+
+        swapEthForPairInternal(weth, _to, _amount); 
+
+    }
+
+    function swapEthForPairInternal(
+        address _from, 
+        address _to, 
+        uint256 _amount
+    ) internal {
+        address token0 = IUniswapV2Pair(_to).token0();
+        address token1 = IUniswapV2Pair(_to).token1();
+
+        if(_from == token0){
+            swapFromTokenToTokenInternal(_from, token1, _amount.div(2));
+        }else if (_from == token1){
+            swapFromTokenToTokenInternal(_from, token0, _amount.div(2));
+        }else{
+            swapFromTokenToTokenInternal(_from, token1, _amount.div(2));
+            swapFromTokenToTokenInternal(_from, token0, _amount.div(2));
+        }
+        
+        // Adds in liquidity for token0/token1
+        uint256 _token0 = IERC20(token0).balanceOf(address(this));
+        uint256 _token1 = IERC20(token1).balanceOf(address(this));
+        if (_token0 > 0 && _token1 > 0) {
+            IERC20(token0).safeApprove(sushiRouter, 0);
+            IERC20(token0).safeApprove(sushiRouter, _token0);
+            IERC20(token1).safeApprove(sushiRouter, 0);
+            IERC20(token1).safeApprove(sushiRouter, _token1);
+
+            UniswapRouterV2(sushiRouter).addLiquidity(
+                token0,
+                token1,
+                _token0,
+                _token1,
+                0,
+                0,
+                address(this),
+                block.timestamp.add(60)
+            );
+
+            // Donates DUST
+            IERC20(token0).transfer(
+                IController(controller).treasury(),
+                IERC20(token0).balanceOf(address(this))
+            );
+            IERC20(token1).safeTransfer(
+                IController(controller).treasury(),
+                IERC20(token1).balanceOf(address(this))
+            );
+        }
+
+        uint256 _toBal = IERC20(_to).balanceOf(address(this));
+        IERC20(_to).safeTransfer(msg.sender, _toBal);
+    }
+
 
     function swapTokenForPair(
         address _from, 
@@ -107,6 +250,7 @@ contract SushiExchange {
         uint256 _amount
     ) public {
         require(_to != address(0));
+        require(_amount >= minimumAmount, "Insignificant input amount");
 
         IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -155,6 +299,48 @@ contract SushiExchange {
 
         uint256 _toBal = IERC20(_to).balanceOf(address(this));
         IERC20(_to).safeTransfer(msg.sender, _toBal);
+    }
+
+    function swapPairForEth(address _from, uint256 _amount) public {
+        swapPairForWeth(_from, _amount);
+
+        uint256 _weth = IERC20(weth).balanceOf(address(this)); 
+
+        WETH(weth).withdrawTo(msg.sender, _weth);
+    }
+
+    function swapPairForWeth(address _from, uint256 _amount) internal {
+
+        IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 _liquidity = IERC20(_from).balanceOf(address(this));
+
+        address token0 = IUniswapV2Pair(_from).token0();
+        address token1 = IUniswapV2Pair(_from).token1();
+
+        IERC20(_from).safeApprove(sushiRouter, 0); 
+        IERC20(_from).safeApprove(sushiRouter, _liquidity); 
+
+        UniswapRouterV2(sushiRouter).removeLiquidity(
+            token0, 
+            token1, 
+            _liquidity, 
+            0, 
+            0, 
+            address(this), 
+            block.timestamp.add(60)
+        );
+
+        uint256 _token0 = IERC20(token0).balanceOf(address(this));
+        uint256 _token1 = IERC20(token1).balanceOf(address(this)); 
+
+        if(token0 == weth){
+            swapFromTokenToTokenInternal(token1, weth, _token1); 
+        }else if(token1 == weth) {
+            swapFromTokenToTokenInternal(token0, weth, _token0);
+        }else {
+            swapFromTokenToTokenInternal(token1, weth, _token1); 
+            swapFromTokenToTokenInternal(token0, weth, _token0);
+        }
     }
 
 
@@ -296,6 +482,5 @@ contract SushiExchange {
         IERC20(_to).safeTransfer(msg.sender, _toBal);
 
     }
-    
 
 }
