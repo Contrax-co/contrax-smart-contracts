@@ -20,8 +20,8 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     address rewardToken;
 
     // How much tokens to keep?
-    uint256 public keep = 2000;
-    uint256 public keepReward = 2000;
+    uint256 public keep = 1000;
+    uint256 public keepReward = 1000;
     uint256 public constant keepMax = 10000;
 
     uint256 public poolId;

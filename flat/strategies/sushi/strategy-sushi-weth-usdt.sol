@@ -838,12 +838,21 @@ interface UniswapRouterV2 {
     function removeLiquidity(
         address tokenA,
         address tokenB,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
+        uint liquidity,
+        uint amountAMin,
+        uint amountBMin,
         address to,
-        uint256 deadline
-    ) external returns (uint256 amountA, uint256 amountB);
+        uint deadline
+    ) external returns (uint amountA, uint amountB);
+
+    function removeLiquidityETH(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountToken, uint amountETH); 
 
      function quote(
         uint256 amountA,
@@ -875,10 +884,10 @@ interface UniswapRouterV2 {
     ) external payable returns (uint256[] memory amounts);
 
     function swapExactETHForTokens(
-        uint256 amountOutMin,
+        uint amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint deadline
     ) external payable returns (uint256[] memory amounts);
 }
 
@@ -1199,8 +1208,8 @@ abstract contract StrategyBase {
     address public univ2Router2 = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106;
     address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
 
-    // Perfomance fees - start with 20%
-    uint256 public performanceTreasuryFee = 2000;
+    // Perfomance fees - start with 10%
+    uint256 public performanceTreasuryFee = 1000;
     uint256 public constant performanceTreasuryMax = 10000;
 
     uint256 public performanceDevFee = 0;
@@ -1615,7 +1624,7 @@ interface IMiniChefV2{
 }
 
 
-// File contracts/strategies/strategy-sushi-farm-base.sol
+// File contracts/strategies/sushi-farm-bases/strategy-sushi-farm-base.sol
 
 
 pragma solidity 0.8.4;
@@ -1637,8 +1646,8 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     address rewardToken;
 
     // How much tokens to keep?
-    uint256 public keep = 2000;
-    uint256 public keepReward = 2000;
+    uint256 public keep = 1000;
+    uint256 public keepReward = 1000;
     uint256 public constant keepMax = 10000;
 
     uint256 public poolId;
