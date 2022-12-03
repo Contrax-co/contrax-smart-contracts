@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../strategy-base.sol";
-import "../../interfaces/gmx-reward-router.sol";
-import "../../interfaces/IRewarder.sol";
+import "../../strategy-base.sol";
+import "../../../interfaces/gmx-reward-router.sol";
+import "../../../interfaces/IRewarder.sol";
 
 abstract contract StrategyGMXFarmBase is StrategyBase {
     using SafeERC20 for IERC20;
@@ -21,8 +21,8 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
     address rewardToken;
 
     // How much tokens to keep?
-    uint256 public keep = 2000;
-    uint256 public keepReward = 2000;
+    uint256 public keep = 1000;
+    uint256 public keepReward = 1000;
     uint256 public constant keepMax = 10000;
 
     constructor(

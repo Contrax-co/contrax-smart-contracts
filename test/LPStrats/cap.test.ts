@@ -3,19 +3,18 @@ import { TestableStrategy, LPTestDefault } from "../strategy-test-case";
 
 const tests = [
     {
-        name: "Gmx",
-        controller: "gmx",
-        slot: 5
+        name: "CapUsdc",
+        controller: "sushi",
+        slot: 51
     },
 
 ];
 
-describe("GMX LP test", function() {
+describe("Cap LP test", function() {
     for (const test of tests) {
         let Test: TestableStrategy = {
             ...LPTestDefault,
-            ...test,
-        
+            ...test
         };
         doStrategyTest(Test);
     }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../gmx-farm-bases/strategy-gmx-single-sided-farm-base.sol";
+import "./gmx-farm-bases/strategy-gmx-single-sided-farm-base.sol";
 
 contract StrategyGmx is StrategyGMXFarmBase {
     constructor(
