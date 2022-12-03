@@ -4,8 +4,7 @@ import { TestableStrategy, LPTestDefault } from "../strategy-test-case";
 const tests = [
     {
         name: "Gmx",
-        controller: "gmx", 
-        vaultAddress: "0xbD632F10205E96bc859d10355E682822C94fF754",
+        controller: "gmx",
         slot: 5
     },
 
