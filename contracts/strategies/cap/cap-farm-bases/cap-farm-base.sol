@@ -34,7 +34,7 @@ abstract contract StrategyCapBase is StrategyBase {
     }
 
     function balanceOfPool() public view override returns (uint256) {
-        uint256 amount = IPool(pool).getBalance(address(this)); 
+        uint256 amount = IPool(pool).getCurrencyBalance(address(this));
         return amount;
     }
 
@@ -44,7 +44,7 @@ abstract contract StrategyCapBase is StrategyBase {
     }
 
     // **** Setters ****
-    function deposit() public override{
+    function deposit() public override {
         uint256 _want = IERC20(want).balanceOf(address(this));
         console.log("The amount of the want token to be deposited is", _want);
     
