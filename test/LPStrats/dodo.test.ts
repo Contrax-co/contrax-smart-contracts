@@ -5,14 +5,13 @@ const tests = [
     {
         name: "DodoUsdt",
         controller: "dodo",
-        slot: 5
+        slot: 51
     },
     {
       name: "DodoUsdc",
       controller: "dodo",
-      slot: 5
+      slot: 51
     },
-
 ];
 
 describe("Dodo LP test", function() {

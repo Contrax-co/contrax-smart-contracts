@@ -23,4 +23,7 @@ interface IDodoMining {
 
 interface IDodo {
   function withdrawBase(uint256 amount) external returns (uint256); 
+  function withdrawQuote(uint256 amount) external returns (uint256);
+  function getLpBaseBalance(address lp) external view returns (uint256 lpBalance);
+  function getLpQuoteBalance(address lp) external view returns (uint256 lpBalance);
 }
