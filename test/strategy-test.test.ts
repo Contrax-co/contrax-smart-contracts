@@ -50,7 +50,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
     let timelock_addr: string;
     let snapshotId: string;
 
-    let txnAmt: string = "25000000000000000000000";
+    let txnAmt: string = "25000000000";
    
     describe( "Tests for: " + name, async () => {
         

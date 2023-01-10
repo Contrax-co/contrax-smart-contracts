@@ -13,7 +13,8 @@ abstract contract StrategyCapBase is StrategyBase {
 
     // Token addresses
     address public constant pool = 0x958cc92297e6F087f41A86125BA8E121F0FbEcF2;
-    address public constant rewards = 0x10f2f3B550d98b6E51461a83AD3FE27123391029; 
+    address public constant rewards = 0x10f2f3B550d98b6E51461a83AD3FE27123391029;
+    address public constant capRewards = 0xCEFFAc2522b837012B576770b6F5DD75a3F75C38;
 
     address rewardToken;
 
@@ -21,6 +22,9 @@ abstract contract StrategyCapBase is StrategyBase {
     uint256 public keep = 1000;
     uint256 public keepReward = 1000;
     uint256 public constant keepMax = 10000;
+
+    uint256 public constant UNIT = 10**18;
+    uint public constant decimals = 6; 
 
     constructor(
         address _lp,
@@ -34,28 +38,35 @@ abstract contract StrategyCapBase is StrategyBase {
     }
 
     function balanceOfPool() public view override returns (uint256) {
-        uint256 amount = IPool(pool).getBalance(address(this)); 
-        return amount;
+        uint256 amount = IPool(pool).getCurrencyBalance(address(this));
+        uint256 amount1 = IPool(pool).getBalance(address(this));
+        console.log("The balance of first call is", amount);
+        console.log("The balance of the second call is", amount1);
+
+        uint256 _returnAmt = (amount * 10**decimals)/UNIT; 
+        return _returnAmt ;
     }
 
-    function getHarvestable() external view returns (uint256) {
+    function getHarvestable() external view returns (uint256) {   
         uint256 _pending = IRewards(rewards).getClaimableReward();
+        uint256 _pending1 = ICapRewards(capRewards).getClaimableReward();
+        console.log("The claimable reward is", _pending);
+        console.log("The claimable reward 2 is", _pending1); 
+
+        console.log("the msg sender is", msg.sender); 
         return (_pending);
     }
 
     // **** Setters ****
     function deposit() public override{
         uint256 _want = IERC20(want).balanceOf(address(this));
-        console.log("The amount of the want token to be deposited is", _want);
-    
         if (_want > 0) {
             IERC20(want).safeApprove(pool, 0);
-            IERC20(want).safeApprove(pool, _want);
-            IPool(pool).deposit(_want);
+            IERC20(want).safeApprove(pool, (_want * UNIT)/10**decimals);
+            IPool(pool).deposit((_want * UNIT)/10**decimals);
         }
 
         _want = IERC20(want).balanceOf(address(this));
-        console.log("The amount of the want token after deposit is", _want);
     }
 
     function _withdrawSome(uint256 _amount)
@@ -63,7 +74,7 @@ abstract contract StrategyCapBase is StrategyBase {
         override
         returns (uint256)
     {
-        IPool(pool).withdraw(_amount);
+        IPool(pool).withdraw((_amount * UNIT)/10**decimals);
         return _amount;
     }
 
