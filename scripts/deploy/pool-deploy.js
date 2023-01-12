@@ -30,6 +30,7 @@ async function main() {
             case "sushi": controller_addr="0xd7bc9a6Ee68e125169E96024Ef983Fee76520569"; break;
             case "dpx": controller_addr="0x19390136f374A1Ef3CD15C97d8a430eDa26596cC"; break;
             case "gmx": controller_addr="0x6322bf7c9ed6563DBe9f73bbE2085d6cd19371e7"; break;
+            case "dodo": controller_addr="0x8Ff4Bf80b46cEd83e0d5dD99DDe79458fF55F3b0"; break;
         }
 
         // if there is no targets or data array, create one

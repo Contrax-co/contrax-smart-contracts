@@ -4,6 +4,8 @@ pragma solidity 0.8.4;
 import "../../strategy-base.sol";
 import "../../../interfaces/plutus.sol";
 
+import "hardhat/console.sol";
+
 abstract contract StrategyPlutusFarmBase is StrategyBase {
   using SafeERC20 for IERC20;
   using Address for address;
@@ -53,6 +55,11 @@ abstract contract StrategyPlutusFarmBase is StrategyBase {
 
   function deposit() public override {
     uint256 _want = IERC20(want).balanceOf(address(this));
+
+    console.log("The amount that we want to deposit is", _want);
+    console.log("the msg.sender is", msg.sender);
+    console.log("The tx origin is", tx.origin);
+
     if (_want > 0) {
         IERC20(want).safeApprove(plsDpxChef, 0);
         IERC20(want).safeApprove(plsDpxChef, _want);

@@ -58,7 +58,7 @@ abstract contract StrategyCapBase is StrategyBase {
     }
 
     // **** Setters ****
-    function deposit() public override{
+    function deposit() public override {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
             IERC20(want).safeApprove(pool, 0);

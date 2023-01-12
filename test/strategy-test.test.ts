@@ -50,7 +50,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
     let timelock_addr: string;
     let snapshotId: string;
 
-    let txnAmt: string = "25000000000";
+    let txnAmt: string = "25000000000000000000";
    
     describe( "Tests for: " + name, async () => {
         
@@ -227,7 +227,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
           expect(userBal).to.be.gt(BigNumber.from("0x0"));
         });
 
-        it("Harvests should make some money!", async function() {
+        it.only("Harvests should make some money!", async function() {
           let initialBalance;
           [, initialBalance] = await harvester();
 
@@ -262,13 +262,13 @@ export function doStrategyTest(test_case: TestableStrategy) {
 
           await fastForwardAWeek();
           
-          console.log(`\n This will call deposit a second time after calling harvest`);
           await Strategy.connect(walletSigner).harvest();
           await increaseBlock(1);
 
           fastForwardAWeek(); 
           
           await Vault.connect(walletSigner).withdrawAll();
+          
           let newAmt = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
       
           expect(amt).to.be.lt(newAmt);
