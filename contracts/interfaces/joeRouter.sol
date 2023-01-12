@@ -32,4 +32,8 @@ interface LBRouter {
     external
     payable
     returns (uint256[] memory depositIds, uint256[] memory liquidityMinted);
+
+    function addLiquidity(LiquidityParameters calldata _liquidityParameters)
+      external
+      returns (uint256[] memory depositIds, uint256[] memory liquidityMinted);
 }
