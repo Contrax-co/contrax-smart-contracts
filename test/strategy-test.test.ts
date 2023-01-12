@@ -262,13 +262,13 @@ export function doStrategyTest(test_case: TestableStrategy) {
 
           await fastForwardAWeek();
           
-          console.log(`\n This will call deposit a second time after calling harvest`);
           await Strategy.connect(walletSigner).harvest();
           await increaseBlock(1);
 
           fastForwardAWeek(); 
           
           await Vault.connect(walletSigner).withdrawAll();
+          
           let newAmt = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
       
           expect(amt).to.be.lt(newAmt);
