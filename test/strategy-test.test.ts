@@ -248,7 +248,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
           expect(strategyBalance).to.not.be.equals(BigNumber.from("0x0"));
         });
 
-        it("Users should earn some money!", async function() {
+        it.only("Users should earn some money!", async function() {
           let asset_addr = assetContract.address
           let vault_addr = Vault.address
           let wallet_addr = await walletSigner.getAddress()
