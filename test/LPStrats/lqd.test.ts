@@ -3,22 +3,18 @@ import { TestableStrategy, LPTestDefault } from "../strategy-test-case";
 
 const tests = [
     {
-        name: "DpxWethDpx",
-        controller: "dpx"
+        name: "LiquidLqdEthEth",
+        controller: "sushi",
+        slot: 1
     },
-    // {
-    //     name: "DpxWethRdpx",
-    //     controller: "dpx"
-    // },
 
 ];
 
-describe("DPX LP test", function() {
+describe("Liquid LP test", function() {
     for (const test of tests) {
         let Test: TestableStrategy = {
             ...LPTestDefault,
-            ...test,
-            slot: 1
+            ...test
         };
         doStrategyTest(Test);
     }
