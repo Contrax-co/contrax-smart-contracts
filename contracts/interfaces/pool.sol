@@ -11,4 +11,11 @@ interface IPool {
 interface IRewards {
   function getClaimableReward() external view returns(uint256);
   function collectReward() external;
+  function updateRewards(address account) external;
+}
+
+interface ICapRewards {
+  function getClaimableReward() external view returns(uint256);
+  function collectReward() external;
+  function updateRewards(address account) external;
 }

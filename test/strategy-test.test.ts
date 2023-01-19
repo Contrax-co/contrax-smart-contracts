@@ -50,7 +50,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
     let timelock_addr: string;
     let snapshotId: string;
 
-    let txnAmt: string = "25000000000000000000000";
+    let txnAmt: string = "25000000000";
    
     describe( "Tests for: " + name, async () => {
         
@@ -306,6 +306,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
           const vaultAfter = await Vault.balance();
           const treasuryAfter = await assetContract.connect(walletSigner).balanceOf(treasury_addr);
           const rewardAfter = await rewardContract.balanceOf(treasury_addr);
+
           const earnt = vaultAfter.sub(vaultBefore);
           const earntTreasury = treasuryAfter.sub(treasuryBefore);
           const rewardAccrued = rewardAfter.sub(rewardBefore);

@@ -3,6 +3,8 @@ pragma solidity 0.8.4;
 
 import "./cap-farm-bases/cap-farm-base.sol";
 
+import "hardhat/console.sol";
+
 contract StrategyCapUsdc is StrategyCapBase {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -30,8 +32,10 @@ contract StrategyCapUsdc is StrategyCapBase {
   function harvest() public override onlyBenevolent {
       //  Collects rewards 
       IRewards(rewards).collectReward();
+      ICapRewards(capRewards).collectReward();
 
       uint256 _usdc = IERC20(usdc).balanceOf(address(this));
+      console.log("The usdc value after calling harvest is", _usdc);
       if (_usdc > 0) {
           // 10% is locked up for future gov
           uint256 _keepUSDC = _usdc.mul(keep).div(keepMax);
