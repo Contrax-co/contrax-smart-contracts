@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "./plutus-farm-bases/strategy-plutus-farm-base.sol";
+import "./plutus-farm-bases/strategy-plutus-lp-farm-base2.sol";
 
-contract StrategyPlutusPlsDpx is StrategyPlutusPlsDpxFarmBase {
+contract StrategyPlutusPlsWeth is StrategyPlutusFarmBase {
+    address public pls_weth = 0x6CC0D643C7b8709F468f58F363d73Af6e4971515;
+    uint256 pls_weth_poolId = 0; 
 
     constructor(
         address _governance,
@@ -11,8 +13,9 @@ contract StrategyPlutusPlsDpx is StrategyPlutusPlsDpxFarmBase {
         address _controller,
         address _timelock
     )
-        StrategyPlutusPlsDpxFarmBase(
-            plsDPX,
+        StrategyPlutusFarmBase(
+            pls_weth_poolId,
+            pls_weth,
             _governance,
             _strategist,
             _controller,
@@ -23,6 +26,6 @@ contract StrategyPlutusPlsDpx is StrategyPlutusPlsDpxFarmBase {
     // **** Views ****
 
     function getName() external override pure returns (string memory) {
-        return "StrategyPlutusPlsDpx";
+        return "StrategyPlutusPlsWeth";
     }
 }
