@@ -32,6 +32,7 @@ async function main() {
             case "gmx": controller_addr="0x6322bf7c9ed6563DBe9f73bbE2085d6cd19371e7"; break;
             case "dodo": controller_addr="0x8Ff4Bf80b46cEd83e0d5dD99DDe79458fF55F3b0"; break;
             case "plutus": controller_addr="0xD80cbc596607fFA9C60aBCe4BD2e333427aD89f4"; break;
+            case "jones": controller_addr="0xF6e1d062DEfe3AEBF8674B930f621Adc36Ad870c"; break;
         }
 
         // if there is no targets or data array, create one
