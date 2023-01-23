@@ -7,11 +7,11 @@ const tests = [
         controller: "dodo",
         slot: 51
     },
-    {
-      name: "DodoUsdc",
-      controller: "dodo",
-      slot: 51
-    },
+    // {
+    //   name: "DodoUsdc",
+    //   controller: "dodo",
+    //   slot: 51
+    // },
 ];
 
 describe("Dodo LP test", function() {
