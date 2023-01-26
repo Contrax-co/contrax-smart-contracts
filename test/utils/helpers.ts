@@ -128,6 +128,7 @@ export function returnController(controller: string): string {
         case "dodo": address= "0x8Ff4Bf80b46cEd83e0d5dD99DDe79458fF55F3b0"; break;
         case "plutus": address = "0xD80cbc596607fFA9C60aBCe4BD2e333427aD89f4"; break;
         case "jones": address = "0xF6e1d062DEfe3AEBF8674B930f621Adc36Ad870c"; break;
+        case "stargate": address = "0x8B82E63D4494bE23a479201ADb75F7E43247E859"; break;
         default: address = ""; break;
     }
     return address;
