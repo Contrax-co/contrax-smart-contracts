@@ -12,16 +12,16 @@ const tests = [
     //     controller: "stargate",
     //     slot: 5
     // },
-    {
-        name: "StargateFrax",
-        controller: "stargate",
-        slot: 5
-    },
     // {
-    //     name: "StargateWeth",
+    //     name: "StargateFrax",
     //     controller: "stargate",
     //     slot: 5
     // },
+    {
+        name: "StargateWeth",
+        controller: "stargate",
+        slot: 5
+    },
 ];
 
 describe("Stargate LP test", function() {

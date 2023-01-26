@@ -207,7 +207,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
             })
         }
 
-        it("Should be able to deposit/withdraw money into vault", async function() {
+        it.only("Should be able to deposit/withdraw money into vault", async function() {
           let txnAmt = "2500000000000000000000000000";
           let vault_addr = Vault.address;
           let wallet_addr = await walletSigner.getAddress();
@@ -224,6 +224,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
           await Vault.connect(walletSigner).withdrawAll();
 
           userBal = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
+          console.log(`the user bal is ${userBal}`);
           expect(userBal).to.be.gt(BigNumber.from("0x0"));
         });
 

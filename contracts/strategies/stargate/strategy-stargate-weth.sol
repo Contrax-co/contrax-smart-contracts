@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "./stargate-farm-bases/strategy-stargate-farm-base.sol";
+import "./stargate-farm-bases/strategy-stargate-eth-farm-base.sol";
 
-contract StrategyStargateWeth is StrategyStargateFarmBase {
+contract StrategyStargateWeth is StrategyEthStargateFarmBase {
     uint256 public wethId = 13; 
 
     address public weth_lp = 0x915A55e36A01285A14f05dE6e81ED9cE89772f8e;
@@ -15,7 +15,7 @@ contract StrategyStargateWeth is StrategyStargateFarmBase {
         address _controller,
         address _timelock
     )
-        StrategyStargateFarmBase(
+        StrategyEthStargateFarmBase(
           wethlp_Id,
           wethId, 
           weth,
@@ -30,6 +30,6 @@ contract StrategyStargateWeth is StrategyStargateFarmBase {
     // **** Views ****
 
     function getName() external override pure returns (string memory) {
-        return "StrategyStargateUsdt";
+        return "StrategyStargateWeth";
     }
 }

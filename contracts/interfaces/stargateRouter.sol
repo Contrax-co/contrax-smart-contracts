@@ -22,3 +22,13 @@ interface ILPStaking{
   function withdraw(uint256 _pid, uint256 _amount) external;
 
 }
+
+interface IEthRouter {
+  function addLiquidityETH() external payable;
+}
+
+interface ILPERC20 {
+  function balanceOf(address) external view returns (uint256);
+
+  function approve(address spender, uint256 value) external returns (bool);
+}
