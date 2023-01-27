@@ -207,7 +207,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
             })
         }
 
-        it.only("Should be able to deposit/withdraw money into vault", async function() {
+        it("Should be able to deposit/withdraw money into vault", async function() {
           let txnAmt = "2500000000000000000000000000";
           let vault_addr = Vault.address;
           let wallet_addr = await walletSigner.getAddress();

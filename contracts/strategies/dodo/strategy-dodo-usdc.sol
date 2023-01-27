@@ -14,8 +14,8 @@ contract StrategyDodoUsdc is StrategyDodoBase {
         address _timelock
     )
         StrategyDodoBase(
-            usdc_dodo,
             usdc,
+            usdc_dodo,
             _governance,
             _strategist,
             _controller,
