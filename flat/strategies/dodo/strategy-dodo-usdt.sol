@@ -1572,6 +1572,7 @@ interface IDodoMining {
   function getUserLpBalance(address _lpToken, address _user) external view returns (uint256); 
   function withdraw(address _lpToken, uint256 _amount) external; 
   function claim(address _lpToken) external;
+  function userInfo(uint256, address) external view returns (uint256 amount, uint256 rewardDebt); 
 }
 
 interface IDodo {
@@ -1607,12 +1608,15 @@ abstract contract StrategyDodoBase is StrategyBase {
     address rewardToken;
     address wantBase;
 
+    uint256 public poolId; 
+
     // How much tokens to keep?
     uint256 public keep = 1000;
     uint256 public keepReward = 1000;
     uint256 public constant keepMax = 10000;
 
     constructor(
+        uint256 _poolId,
         address _wantBase,
         address _want,
         address _governance,
@@ -1623,38 +1627,28 @@ abstract contract StrategyDodoBase is StrategyBase {
         StrategyBase(_want, _governance, _strategist, _controller, _timelock)
     {
         wantBase = _wantBase; 
+        poolId = _poolId;
     }
 
     function balanceOfPool() public view override returns (uint256) {
-        uint256 amount = IDodoMining(dodo_mine).getUserLpBalance(wantBase, address(this)); 
+        (uint256 amount, ) = IDodoMining(dodo_mine).userInfo(poolId, address(this)); 
         return amount;
     }
 
     function getHarvestable() external view returns (uint256) {
-        uint256 _pending = IDodoMining(dodo_mine).getPendingReward(wantBase, address(this));
+        uint256 _pending = IDodoMining(dodo_mine).getPendingReward(want, address(this));
         return (_pending);
     }
 
     // **** Setters ****
     function deposit() public override{
         uint256 _want = IERC20(want).balanceOf(address(this));
-
-        IERC20(want).safeApprove(dodo_approve, 0);
-        IERC20(want).safeApprove(dodo_approve, _want);
-
-        if(want == usdt) {
-            IDodoProxy(dodo_proxy).addLiquidityToV1(usdc_usdt, _want, 0, 0, 0, 0, block.timestamp.add(60));
-        }else if (want == usdc) {
-            IDodoProxy(dodo_proxy).addLiquidityToV1(usdc_usdt, 0, _want, 0, 0, 0, block.timestamp.add(60));
-        }
-
-        uint256 _wantBase = IERC20(wantBase).balanceOf(address(this));
     
-        if (_wantBase > 0) {
-            IERC20(wantBase).safeApprove(dodo_mine, 0); 
-            IERC20(wantBase).safeApprove(dodo_mine, _wantBase); 
+        if (_want > 0) {
+            IERC20(want).safeApprove(dodo_mine, 0); 
+            IERC20(want).safeApprove(dodo_mine, _want); 
 
-            IDodoMining(dodo_mine).deposit(wantBase, _wantBase); 
+            IDodoMining(dodo_mine).deposit(want, _want); 
         }
     }
 
@@ -1663,19 +1657,9 @@ abstract contract StrategyDodoBase is StrategyBase {
         override
         returns (uint256)
     {
-        IDodoMining(dodo_mine).withdraw(wantBase, _amount);
-       
-        uint256 _withdraw;
-
-        if(want == usdt){
-            _withdraw = IDodo(usdc_usdt).getLpBaseBalance(address(this));
-            IDodo(usdc_usdt).withdrawBase(_withdraw);
-        }else if (want == usdc){
-            _withdraw = IDodo(usdc_usdt).getLpQuoteBalance(address(this));
-            IDodo(usdc_usdt).withdrawQuote(_withdraw);
-        }
+        IDodoMining(dodo_mine).withdraw(want, _amount);
     
-        return _withdraw;
+        return _amount;
     }
 
     // **** Setters ****
@@ -1703,7 +1687,7 @@ abstract contract StrategyDodoBase is StrategyBase {
 
     function harvest() public override onlyBenevolent {
         // Collects Reward tokens
-        IDodoMining(dodo_mine).claim(wantBase);
+        IDodoMining(dodo_mine).claim(want);
         uint256 _dodo = IERC20(dodo).balanceOf(address(this));
         if (_dodo > 0) {
             // 10% is locked up for future gov
@@ -1715,7 +1699,18 @@ abstract contract StrategyDodoBase is StrategyBase {
             _dodo = IERC20(dodo).balanceOf(address(this));
 
             // swap dodo for base token
-            _swapSushiswap(dodo, want, _dodo);
+            _swapSushiswap(dodo, wantBase, _dodo);
+        }
+
+        uint256 _wantBase = IERC20(wantBase).balanceOf(address(this));
+
+        IERC20(wantBase).safeApprove(dodo_approve, 0);
+        IERC20(wantBase).safeApprove(dodo_approve, _wantBase);
+
+        if(wantBase == usdt) {
+            IDodoProxy(dodo_proxy).addLiquidityToV1(usdc_usdt, _wantBase, 0, 0, 0, 0, block.timestamp.add(60));
+        }else if (wantBase == usdc) {
+            IDodoProxy(dodo_proxy).addLiquidityToV1(usdc_usdt, 0, _wantBase, 0, 0, 0, block.timestamp.add(60));
         }
             
         _distributePerformanceFeesAndDeposit();
@@ -1728,9 +1723,10 @@ abstract contract StrategyDodoBase is StrategyBase {
 
 pragma solidity 0.8.4;
 
-contract StrategyDodoUsdt is StrategyDodoBase {
+contract StrategyDodoUsdtLp is StrategyDodoBase {
 
     address public usdt_dodo = 0x82B423848CDd98740fB57f961Fa692739F991633;
+    uint256 public usdt_poolId = 4; 
 
     constructor(
         address _governance,
@@ -1739,8 +1735,9 @@ contract StrategyDodoUsdt is StrategyDodoBase {
         address _timelock
     )
         StrategyDodoBase(
-            usdt_dodo,
+            usdt_poolId, 
             usdt,
+            usdt_dodo,
             _governance,
             _strategist,
             _controller,
