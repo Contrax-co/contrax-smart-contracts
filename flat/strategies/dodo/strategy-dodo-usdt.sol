@@ -1572,6 +1572,7 @@ interface IDodoMining {
   function getUserLpBalance(address _lpToken, address _user) external view returns (uint256); 
   function withdraw(address _lpToken, uint256 _amount) external; 
   function claim(address _lpToken) external;
+  function userInfo(uint256, address) external view returns (uint256 amount, uint256 rewardDebt); 
 }
 
 interface IDodo {
@@ -1607,12 +1608,15 @@ abstract contract StrategyDodoBase is StrategyBase {
     address rewardToken;
     address wantBase;
 
+    uint256 public poolId; 
+
     // How much tokens to keep?
     uint256 public keep = 1000;
     uint256 public keepReward = 1000;
     uint256 public constant keepMax = 10000;
 
     constructor(
+        uint256 _poolId,
         address _wantBase,
         address _want,
         address _governance,
@@ -1623,10 +1627,11 @@ abstract contract StrategyDodoBase is StrategyBase {
         StrategyBase(_want, _governance, _strategist, _controller, _timelock)
     {
         wantBase = _wantBase; 
+        poolId = _poolId;
     }
 
     function balanceOfPool() public view override returns (uint256) {
-        uint256 amount = IDodoMining(dodo_mine).getUserLpBalance(want, address(this)); 
+        (uint256 amount, ) = IDodoMining(dodo_mine).userInfo(poolId, address(this)); 
         return amount;
     }
 
@@ -1718,9 +1723,10 @@ abstract contract StrategyDodoBase is StrategyBase {
 
 pragma solidity 0.8.4;
 
-contract StrategyDodoUsdt is StrategyDodoBase {
+contract StrategyDodoUsdtLp is StrategyDodoBase {
 
     address public usdt_dodo = 0x82B423848CDd98740fB57f961Fa692739F991633;
+    uint256 public usdt_poolId = 4; 
 
     constructor(
         address _governance,
@@ -1729,6 +1735,7 @@ contract StrategyDodoUsdt is StrategyDodoBase {
         address _timelock
     )
         StrategyDodoBase(
+            usdt_poolId, 
             usdt,
             usdt_dodo,
             _governance,

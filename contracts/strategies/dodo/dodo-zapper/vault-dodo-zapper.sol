@@ -102,8 +102,8 @@ contract DodoVaultZapper {
       _approveTokenIfNeeded(vault_token, usdc_usdt, withdrawAmount);
       if(desiredToken == usdt) {
         IDodo(usdc_usdt).withdrawBase(withdrawAmount);
-      }else if (desiredToken == usdc) {
-        IDodo(usdc_usdt).withdrawQuote(withdrawAmount);
+      }else if(desiredToken == usdc) {
+        IDodo(usdc_usdt).withdrawQuoteTo(msg.sender, withdrawAmount);
       }
 
       address[] memory path = new address[](1);

@@ -833,7 +833,7 @@ library SafeERC20 {
 pragma solidity 0.8.4;
 
 
-contract VaultDodoUsdt is ERC20 {
+contract VaultDodoUsdtLp is ERC20 {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;

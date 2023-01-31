@@ -3,14 +3,14 @@ import { TestableStrategy, LPTestDefault } from "../strategy-test-case";
 
 const tests = [
     {
-        name: "DodoUsdt",
+        name: "DodoUsdtLp",
         controller: "dodo",
-        slot: 5
+        slot: 5,
     },
     {
-      name: "DodoUsdc",
+      name: "DodoUsdcLp",
       controller: "dodo",
-      slot: 5
+      slot: 5,
     },
 ];
 

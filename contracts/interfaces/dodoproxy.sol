@@ -19,6 +19,7 @@ interface IDodoMining {
   function getUserLpBalance(address _lpToken, address _user) external view returns (uint256); 
   function withdraw(address _lpToken, uint256 _amount) external; 
   function claim(address _lpToken) external;
+  function userInfo(uint256, address) external view returns (uint256 amount, uint256 rewardDebt); 
 }
 
 interface IDodo {
@@ -26,4 +27,8 @@ interface IDodo {
   function withdrawQuote(uint256 amount) external returns (uint256);
   function getLpBaseBalance(address lp) external view returns (uint256 lpBalance);
   function getLpQuoteBalance(address lp) external view returns (uint256 lpBalance);
+
+  function withdrawQuoteTo(address to, uint256 amount)
+      external
+      returns (uint256); 
 }

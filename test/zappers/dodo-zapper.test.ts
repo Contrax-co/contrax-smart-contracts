@@ -13,18 +13,18 @@ import {
   returnSigner
 } from "../utils/helpers";
 
-let txnAmt: string = "2500000000000000000";
+let txnAmt: string = "250000000000000";
 
 const wallet_addr = process.env.WALLET_ADDR === undefined ? '' : process.env['WALLET_ADDR'];
-let name = "DodoUsdc";
-let vault_addr = "0x5A06beea8573C59AFe9a15A3f01D6B4505b89339";
+let name = "DodoUsdcLp";
+let vault_addr = "0x6c0415b9F728BE851FcB1c4d5443C168Fdf20092";
 // let strategy_addr = test_case.strategyAddress;
 // let slot = test_case.slot;
 let timelockIsStrategist = false;
 
 let snapshotId: string;
 
-let controller_addr= "0x8Ff4Bf80b46cEd83e0d5dD99DDe79458fF55F3b0";
+let controller_addr= "0xaC58Ff6C1f02779869beB4Db5dF9d25A6213ae95";
 
 let DodoZapper: Contract; 
 let zapper_addr: string;
@@ -123,27 +123,28 @@ describe( "Tests for Dodo Zapper", async () => {
 
     });
 
-    // it("Should withdraw from the vault and zap to the native tokens", async function() {
-    //   await assetContract.connect(walletSigner).approve(zapper_addr, txnAmt);
-    //   await StargateZapper.connect(walletSigner).zapIn(vault_addr, asset_addr, txnAmt, 7);
+    it("Should withdraw from the vault and zap to the native tokens", async function() {
+      await assetContract.connect(walletSigner).approve(zapper_addr, txnAmt);
+      await DodoZapper.connect(walletSigner).zapIn(vault_addr, asset_addr, txnAmt);
 
-    //   let userBal = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
-    //   expect(userBal).to.be.equals(BigNumber.from("0x0"));
+      let userBal = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
+      expect(userBal).to.be.equals(BigNumber.from("0x0"));
 
-    //   let _amounttoWithdraw = await Vault.connect(walletSigner).totalSupply(); 
+      let _amounttoWithdraw = await Vault.connect(walletSigner).balanceOf(wallet_addr); 
 
-    //   let _balBefore = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
-    //   let _vaultBal = await wantContract.connect(walletSigner).balanceOf(vault_addr);
+      let _balBefore = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
+      let _vaultBal = await wantContract.connect(walletSigner).balanceOf(vault_addr);
 
-    //   expect(_vaultBal).to.be.equals(_amounttoWithdraw);
+      expect(_vaultBal).to.be.equals(_amounttoWithdraw);
 
-    //   await Vault.connect(walletSigner).approve(zapper_addr, _amounttoWithdraw);
-    //   await StargateZapper.connect(walletSigner).zapOut(vault_addr, _amounttoWithdraw, asset_addr, 7);
+      await Vault.connect(walletSigner).approve(zapper_addr, _amounttoWithdraw);
+      await DodoZapper.connect(walletSigner).zapOut(vault_addr, _amounttoWithdraw, asset_addr);
 
-    //   let _balAfter = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
+      let _balAfter = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
+      console.log(`the balance after is ${_balAfter}`);
 
-    //   expect(_balAfter).to.be.gt(_balBefore);
-    // })
+      expect(_balAfter).to.be.gt(_balBefore);
+    })
 
 
 })

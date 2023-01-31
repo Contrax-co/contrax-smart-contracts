@@ -23,12 +23,15 @@ abstract contract StrategyDodoBase is StrategyBase {
     address rewardToken;
     address wantBase;
 
+    uint256 public poolId; 
+
     // How much tokens to keep?
     uint256 public keep = 1000;
     uint256 public keepReward = 1000;
     uint256 public constant keepMax = 10000;
 
     constructor(
+        uint256 _poolId,
         address _wantBase,
         address _want,
         address _governance,
@@ -39,10 +42,11 @@ abstract contract StrategyDodoBase is StrategyBase {
         StrategyBase(_want, _governance, _strategist, _controller, _timelock)
     {
         wantBase = _wantBase; 
+        poolId = _poolId;
     }
 
     function balanceOfPool() public view override returns (uint256) {
-        uint256 amount = IDodoMining(dodo_mine).getUserLpBalance(want, address(this)); 
+        (uint256 amount, ) = IDodoMining(dodo_mine).userInfo(poolId, address(this)); 
         return amount;
     }
 

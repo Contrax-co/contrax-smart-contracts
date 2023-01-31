@@ -1025,95 +1025,6 @@ interface IUniswapV2Factory {
 }
 
 
-// File contracts/interfaces/staking-rewards.sol
-
-
-pragma solidity 0.8.4;
-
-interface IStakingRewards {
-    function balanceOf(address account) external view returns (uint256);
-
-    function balances(address account) external view returns (uint256);
-
-    function earned(address account) external view returns (uint256);
-
-    function exit() external;
-
-    function getReward() external;
-
-    function getRewardForDuration() external view returns (uint256);
-
-    function lastTimeRewardApplicable() external view returns (uint256);
-
-    function lastUpdateTime() external view returns (uint256);
-
-    function notifyRewardAmount(uint256 reward) external;
-
-    function periodFinish() external view returns (uint256);
-
-    function rewardPerToken() external view returns (uint256);
-
-    function rewardPerTokenStored() external view returns (uint256);
-
-    function rewardRate() external view returns (uint256);
-
-    function rewards(address) external view returns (uint256);
-
-    function rewardsDistribution() external view returns (address);
-
-    function rewardsDuration() external view returns (uint256);
-
-    function rewardsToken() external view returns (address);
-
-    function stake(uint256 amount) external;
-
-    function deposit(uint256 amount) external;
-
-    function stakeWithPermit(
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
-
-    function stakingToken() external view returns (address);
-
-    function totalSupply() external view returns (uint256);
-
-    function userRewardPerTokenPaid(address) external view returns (uint256);
-
-    function withdraw(uint256 amount) external;
-}
-
-interface IStakingRewardsFactory {
-    function deploy(address stakingToken, uint256 rewardAmount) external;
-
-    function isOwner() external view returns (bool);
-
-    function notifyRewardAmount(address stakingToken) external;
-
-    function notifyRewardAmounts() external;
-
-    function owner() external view returns (address);
-
-    function renounceOwnership() external;
-
-    function rewardsToken() external view returns (address);
-
-    function stakingRewardsGenesis() external view returns (uint256);
-
-    function stakingRewardsInfoByStakingToken(address)
-        external
-        view
-        returns (address stakingRewards, uint256 rewardAmount);
-
-    function stakingTokens(uint256) external view returns (address);
-
-    function transferOwnership(address newOwner) external;
-}
-
-
 // File contracts/interfaces/vault.sol
 
 
@@ -1182,370 +1093,40 @@ interface IController {
 }
 
 
-// File contracts/strategies/strategy-base.sol
+// File contracts/interfaces/weth.sol
 
-	
+
+
 pragma solidity 0.8.4;
 
+interface WETH {
+    function name() external view returns (string memory);
 
+    function approve(address guy, uint256 wad) external returns (bool);
 
+    function totalSupply() external view returns (uint256);
 
+    function transferFrom(
+        address src,
+        address dst,
+        uint256 wad
+    ) external returns (bool);
 
-/**
- * The is the Strategy Base that most LPs will inherit 
- */
-abstract contract StrategyBase {
-    using SafeERC20 for IERC20;
-    using Address for address;
-    using SafeMath for uint256;
+    function withdraw(uint256 wad) external;
 
-    // Tokens
-    address public want;
-    address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
-    address public constant uni = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
+    function withdrawTo(address account, uint256 amount) external; 
 
-    // Dex
-    address public univ2Router2 = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106;
-    address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
+    function decimals() external view returns (uint8);
 
-    // Perfomance fees - start with 10%
-    uint256 public performanceTreasuryFee = 1000;
-    uint256 public constant performanceTreasuryMax = 10000;
+    function balanceOf(address) external view returns (uint256);
 
-    uint256 public performanceDevFee = 0;
-    uint256 public constant performanceDevMax = 10000;
+    function symbol() external view returns (string memory);
 
-    // Withdrawal fee 0%
-    // - 0% to treasury
-    // - 0% to dev fund
-    uint256 public withdrawalTreasuryFee = 0;
-    uint256 public constant withdrawalTreasuryMax = 100000;
+    function transfer(address dst, uint256 wad) external returns (bool);
 
-    uint256 public withdrawalDevFundFee = 0;
-    uint256 public constant withdrawalDevFundMax = 100000;
+    function deposit() external payable;
 
-    // User accounts
-    address public governance;
-    address public controller;
-    address public strategist;
-    address public timelock;
-
-    // Dex 
-    address public sushiRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
-
-    mapping(address => bool) public harvesters;
-
-    constructor(
-        address _want,
-        address _governance,
-        address _strategist,
-        address _controller,
-        address _timelock
-    ) {
-        require(_want != address(0));
-        require(_governance != address(0));
-        require(_strategist != address(0));
-        require(_controller != address(0));
-        require(_timelock != address(0));
-
-        want = _want;
-        governance = _governance;
-        strategist = _strategist;
-        controller = _controller;
-        timelock = _timelock;
-    }
-
-    // **** Modifiers **** //
-
-    modifier onlyBenevolent {
-        require(
-            harvesters[msg.sender] ||
-                msg.sender == governance ||
-                msg.sender == strategist
-        );
-        _;
-    }
-
-    // **** Views **** //
-
-    function balanceOfWant() public view returns (uint256) {
-        return IERC20(want).balanceOf(address(this));
-    }
-
-    function balanceOfPool() public virtual view returns (uint256);
-
-    function balanceOf() public view returns (uint256) {
-        return balanceOfWant().add(balanceOfPool());
-    }
-
-    function getName() external virtual pure returns (string memory);
-
-    // **** Setters **** //
-
-    function whitelistHarvester(address _harvester) external {
-        require(msg.sender == governance ||
-             msg.sender == strategist || harvesters[msg.sender], "not authorized");
-        harvesters[_harvester] = true;
-    }
-
-    function revokeHarvester(address _harvester) external {
-        require(msg.sender == governance ||
-             msg.sender == strategist, "not authorized");
-        harvesters[_harvester] = false;
-    }
-
-    function setFeeDistributor(address _feeDistributor) external {
-        require(msg.sender == governance, "not authorized");
-        feeDistributor = _feeDistributor;
-    }
-
-    function setWithdrawalDevFundFee(uint256 _withdrawalDevFundFee) external {
-        require(msg.sender == timelock, "!timelock");
-        withdrawalDevFundFee = _withdrawalDevFundFee;
-    }
-
-    function setWithdrawalTreasuryFee(uint256 _withdrawalTreasuryFee) external {
-        require(msg.sender == timelock, "!timelock");
-        withdrawalTreasuryFee = _withdrawalTreasuryFee;
-    }
-
-    function setPerformanceDevFee(uint256 _performanceDevFee) external {
-        require(msg.sender == timelock, "!timelock");
-        performanceDevFee = _performanceDevFee;
-    }
-
-    function setPerformanceTreasuryFee(uint256 _performanceTreasuryFee)
-        external
-    {
-        require(msg.sender == timelock, "!timelock");
-        performanceTreasuryFee = _performanceTreasuryFee;
-    }
-
-    function setStrategist(address _strategist) external {
-        require(msg.sender == governance, "!governance");
-        strategist = _strategist;
-    }
-
-    function setGovernance(address _governance) external {
-        require(msg.sender == governance, "!governance");
-        governance = _governance;
-    }
-
-    function setTimelock(address _timelock) external {
-        require(msg.sender == timelock, "!timelock");
-        timelock = _timelock;
-    }
-
-    function setController(address _controller) external {
-        require(msg.sender == timelock, "!timelock");
-        controller = _controller;
-    }
-
-    // **** State mutations **** //
-    function deposit() public virtual;
-
-    // Controller only function for creating additional rewards from dust
-    function withdraw(IERC20 _asset) external returns (uint256 balance) {
-        require(msg.sender == controller, "!controller");
-        require(want != address(_asset), "want");
-        balance = _asset.balanceOf(address(this));
-        _asset.safeTransfer(controller, balance);
-    }
-
-    // Withdraw partial funds, normally used with a vault withdrawal
-    function withdraw(uint256 _amount) external {
-        require(msg.sender == controller, "!controller");
-        uint256 _balance = IERC20(want).balanceOf(address(this));
-        if (_balance < _amount) {
-            _amount = _withdrawSome(_amount.sub(_balance));
-            _amount = _amount.add(_balance);
-        }
-
-        uint256 _feeDev = _amount.mul(withdrawalDevFundFee).div(
-            withdrawalDevFundMax
-        );
-        IERC20(want).safeTransfer(IController(controller).devfund(), _feeDev);
-
-        uint256 _feeTreasury = _amount.mul(withdrawalTreasuryFee).div(
-            withdrawalTreasuryMax
-        );
-        IERC20(want).safeTransfer(
-            IController(controller).treasury(),
-            _feeTreasury
-        );
-
-        address _vault = IController(controller).vaults(address(want));
-        require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-
-        IERC20(want).safeTransfer(_vault, _amount.sub(_feeDev).sub(_feeTreasury));
-    }
-
-    // Withdraw funds, used to swap between strategies
-    function withdrawForSwap(uint256 _amount)
-        external
-        returns (uint256 balance)
-    {
-        require(msg.sender == controller, "!controller");
-        _withdrawSome(_amount);
-
-        balance = IERC20(want).balanceOf(address(this));
-
-        address _vault = IController(controller).vaults(address(want));
-        require(_vault != address(0), "!vault");
-        IERC20(want).safeTransfer(_vault, balance);
-    }
-
-    // Withdraw all funds, normally used when migrating strategies
-    function withdrawAll() external returns (uint256 balance) {
-        require(msg.sender == controller, "!controller");
-        _withdrawAll();
-
-        balance = IERC20(want).balanceOf(address(this));
-
-        address _vault = IController(controller).vaults(address(want));
-        require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-        IERC20(want).safeTransfer(_vault, balance);
-    }
-
-    function _withdrawAll() internal {
-        _withdrawSome(balanceOfPool());
-    }
-
-    function _withdrawSome(uint256 _amount) internal virtual returns (uint256);
-
-    function harvest() public virtual;
-
-    // **** Emergency functions ****
-
-    function execute(address _target, bytes memory _data)
-        public
-        payable
-        returns (bytes memory response)
-    {
-        require(msg.sender == timelock, "!timelock");
-        require(_target != address(0), "!target");
-
-        // call contract in current context
-        assembly {
-            let succeeded := delegatecall(
-                sub(gas(), 5000),
-                _target,
-                add(_data, 0x20),
-                mload(_data),
-                0,
-                0
-            )
-            let size := returndatasize()
-
-            response := mload(0x40)
-            mstore(
-                0x40,
-                add(response, and(add(add(size, 0x20), 0x1f), not(0x1f)))
-            )
-            mstore(response, size)
-            returndatacopy(add(response, 0x20), 0, size)
-
-            switch iszero(succeeded)
-                case 1 {
-                    // throw if delegatecall failed
-                    revert(add(response, 0x20), size)
-                }
-        }
-    }
-
-    // **** Internal functions ****
-    function _swapSushiswap(
-        address _from,
-        address _to,
-        uint256 _amount
-    ) internal {
-        require(_to != address(0));
-
-        address[] memory path;
-
-        if (_from == weth || _to == weth) {
-            path = new address[](2);
-            path[0] = _from;
-            path[1] = _to;
-        } else {
-            path = new address[](3);
-            path[0] = _from;
-            path[1] = weth;
-            path[2] = _to;
-        }
-        
-        IERC20(_from).safeApprove(sushiRouter, 0);
-        IERC20(_from).safeApprove(sushiRouter, _amount);
-        UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
-            _amount,
-            0,
-            path,
-            address(this),
-            block.timestamp.add(60)
-        );
-    }
-
-    function _swapSushiswapWithPath(
-        address[] memory path,
-        uint256 _amount
-    ) internal {
-        require(path[1] != address(0));
-
-        IERC20(path[0]).safeApprove(sushiRouter, 0);
-        IERC20(path[0]).safeApprove(sushiRouter, _amount);
-        UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
-            _amount,
-            0,
-            path,
-            address(this),
-            block.timestamp.add(60)
-        );
-    }
-
-    function _distributePerformanceFeesAndDeposit() internal {
-        uint256 _want = IERC20(want).balanceOf(address(this));
-
-        if (_want > 0) {
-            // Treasury fees
-            IERC20(want).safeTransfer(
-                IController(controller).treasury(),
-                _want.mul(performanceTreasuryFee).div(performanceTreasuryMax)
-            );
-
-            // Performance fee
-            IERC20(want).safeTransfer(
-                IController(controller).devfund(),
-                _want.mul(performanceDevFee).div(performanceDevMax)
-            );
-
-            deposit();
-        }
-    }
-
-    function _distributePerformanceFeesBasedAmountAndDeposit(uint256 _amount) internal {
-        uint256 _want = IERC20(want).balanceOf(address(this));
-
-        if (_amount > _want) {
-            _amount = _want;
-        }
-
-        if (_amount > 0) {
-            // Treasury fees
-            IERC20(want).safeTransfer(
-                IController(controller).treasury(),
-                _amount.mul(performanceTreasuryFee).div(performanceTreasuryMax)
-            );
-
-            // Performance fee
-            IERC20(want).safeTransfer(
-                IController(controller).devfund(),
-                _amount.mul(performanceDevFee).div(performanceDevMax)
-            );
-
-            deposit();
-        }
-    }
-
+    function allowance(address, address) external view returns (uint256);
 }
 
 
@@ -1580,174 +1161,142 @@ interface IDodo {
   function withdrawQuote(uint256 amount) external returns (uint256);
   function getLpBaseBalance(address lp) external view returns (uint256 lpBalance);
   function getLpQuoteBalance(address lp) external view returns (uint256 lpBalance);
+
+  function withdrawQuoteTo(address to, uint256 amount)
+      external
+      returns (uint256); 
 }
 
 
-// File contracts/strategies/dodo/dodo-farm-bases/dodo-farm-base.sol
+// File contracts/strategies/dodo/dodo-zapper/vault-dodo-zapper.sol
 
-
+	
 pragma solidity 0.8.4;
 
 
-abstract contract StrategyDodoBase is StrategyBase {
+
+
+
+
+/**
+ * The is the Zapper for which users will be aable to enter 
+ */
+contract DodoVaultZapper {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
+    using SafeERC20 for IVault;
 
-    address public dodo_approve = 0xA867241cDC8d3b0C07C85cC06F25a0cD3b5474d8; 
-    address public dodo_proxy = 0x88CBf433471A0CD8240D2a12354362988b4593E5;
-    address dodo_mine = 0xE3C10989dDc5Df5B1b9c0E6229c2E4e0862fDe3e;
+    // Token addresses
+    address public constant usdc = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+    address public constant usdt = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9; 
+    address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
-    // Token addresses 
-    address public usdc_usdt = 0xe4B2Dfc82977dd2DCE7E8d37895a6A8F50CbB4fB; 
-    address public dodo = 0x69Eb4FA4a2fbd498C257C57Ea8b7655a2559A581;
+    address public constant dodo_approve = 0xA867241cDC8d3b0C07C85cC06F25a0cD3b5474d8; 
+    address public constant usdc_usdt = 0xe4B2Dfc82977dd2DCE7E8d37895a6A8F50CbB4fB; 
+    address public constant dodo_proxy = 0x88CBf433471A0CD8240D2a12354362988b4593E5;
 
-    address public usdc = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
-    address public usdt = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9; 
 
-    address rewardToken;
-    address wantBase;
-
-    uint256 public poolId; 
-
-    // How much tokens to keep?
-    uint256 public keep = 1000;
-    uint256 public keepReward = 1000;
-    uint256 public constant keepMax = 10000;
-
-    constructor(
-        uint256 _poolId,
-        address _wantBase,
-        address _want,
-        address _governance,
-        address _strategist,
-        address _controller,
-        address _timelock
-    )
-        StrategyBase(_want, _governance, _strategist, _controller, _timelock)
-    {
-        wantBase = _wantBase; 
-        poolId = _poolId;
+    uint256 public constant minimumAmount = 1000;
+  
+    constructor() {
+        // Safety checks to ensure WETH token address
+        WETH(weth).deposit{value: 0}();
+        WETH(weth).withdraw(0);
     }
 
-    function balanceOfPool() public view override returns (uint256) {
-        (uint256 amount, ) = IDodoMining(dodo_mine).userInfo(poolId, address(this)); 
-        return amount;
+    receive() external payable {
+        assert(msg.sender == weth);
     }
 
-    function getHarvestable() external view returns (uint256) {
-        uint256 _pending = IDodoMining(dodo_mine).getPendingReward(want, address(this));
-        return (_pending);
+    // transfers tokens from msg.sender to this contract 
+    function zapIn(address vault, address tokenIn, uint256 tokenInAmount) external {
+      require(tokenInAmount >= minimumAmount, "Insignificant input amount");
+      require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
+
+      // transfer token 
+      IERC20(tokenIn).safeTransferFrom(
+          msg.sender,
+          address(this),
+          tokenInAmount
+      );
+
+      _swapAndStake(vault, tokenIn, tokenInAmount);
+
     }
 
-    // **** Setters ****
-    function deposit() public override{
-        uint256 _want = IERC20(want).balanceOf(address(this));
-    
-        if (_want > 0) {
-            IERC20(want).safeApprove(dodo_mine, 0); 
-            IERC20(want).safeApprove(dodo_mine, _want); 
+    function _swapAndStake(address vault_addr, address tokenIn, uint256 _tokenInAmount) public {
+      (IVault vault, address vault_token) = _getVaultToken(vault_addr);
 
-            IDodoMining(dodo_mine).deposit(want, _want); 
-        }
+      _approveTokenIfNeeded(tokenIn, dodo_approve, _tokenInAmount);
+      if(tokenIn == usdt) {
+          IDodoProxy(dodo_proxy).addLiquidityToV1(usdc_usdt, _tokenInAmount, 0, 0, 0, 0, block.timestamp.add(60));
+      }else if (tokenIn == usdc) {
+          IDodoProxy(dodo_proxy).addLiquidityToV1(usdc_usdt, 0, _tokenInAmount, 0, 0, 0, block.timestamp.add(60));
+      }
+
+      uint256 amountLiquidity = IERC20(vault_token).balanceOf(address(this));
+
+      _approveTokenIfNeeded(vault_token, vault_addr, amountLiquidity);
+      vault.deposit(amountLiquidity);
+
+      // add to guage if possible instead of returning to user, and so no receipt token
+      vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
+
+      // taking receipt token and sending back to user
+      vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
+
     }
 
-    function _withdrawSome(uint256 _amount)
-        internal
-        override
-        returns (uint256)
-    {
-        IDodoMining(dodo_mine).withdraw(want, _amount);
-    
-        return _amount;
+    function _getVaultToken(address vault_addr) internal view returns (IVault vault,address vault_token){
+      vault = IVault(vault_addr);
+      vault_token = IVault(vault_addr).token();
     }
 
-    // **** Setters ****
-
-    function setKeep(uint256 _keepSUSHI) external {
-        require(msg.sender == timelock, "!timelock");
-        keep = _keepSUSHI;
-    }
-
-    function setKeepReward(uint256 _keepReward) external {
-        require(msg.sender == timelock, "!timelock");
-        keepReward = _keepReward;
-    }
-
-    function setRewardToken(address _rewardToken) external {
-        require(
-            msg.sender == timelock || msg.sender == strategist,
-            "!timelock"
-        );
-        rewardToken = _rewardToken;
+    function _approveTokenIfNeeded(address token, address spender, uint256 _amountToApprove) internal {
+      if (IERC20(token).allowance(address(this), spender) == 0) {
+          IERC20(token).safeApprove(spender, uint256(0));
+          IERC20(token).safeApprove(spender, _amountToApprove);
+      }
     }
 
 
-    // **** State Mutations ****
+    function zapOut(address vault_addr, uint256 withdrawAmount, address desiredToken) public {
+      (IVault vault, address vault_token) = _getVaultToken(vault_addr);
 
-    function harvest() public override onlyBenevolent {
-        // Collects Reward tokens
-        IDodoMining(dodo_mine).claim(want);
-        uint256 _dodo = IERC20(dodo).balanceOf(address(this));
-        if (_dodo > 0) {
-            // 10% is locked up for future gov
-            uint256 _keepDODO = _dodo.mul(keep).div(keepMax);
-            IERC20(dodo).safeTransfer(
-                IController(controller).treasury(),
-                _keepDODO
-            );
-            _dodo = IERC20(dodo).balanceOf(address(this));
+      vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
+      vault.withdraw(withdrawAmount);
 
-            // swap dodo for base token
-            _swapSushiswap(dodo, wantBase, _dodo);
-        }
+      _approveTokenIfNeeded(vault_token, usdc_usdt, withdrawAmount);
+      if(desiredToken == usdt) {
+        IDodo(usdc_usdt).withdrawBase(withdrawAmount);
+      }else if(desiredToken == usdc) {
+        IDodo(usdc_usdt).withdrawQuoteTo(msg.sender, withdrawAmount);
+      }
 
-        uint256 _wantBase = IERC20(wantBase).balanceOf(address(this));
+      address[] memory path = new address[](1);
+      path[0] = desiredToken;
 
-        IERC20(wantBase).safeApprove(dodo_approve, 0);
-        IERC20(wantBase).safeApprove(dodo_approve, _wantBase);
+      _returnAssets(path);
 
-        if(wantBase == usdt) {
-            IDodoProxy(dodo_proxy).addLiquidityToV1(usdc_usdt, _wantBase, 0, 0, 0, 0, block.timestamp.add(60));
-        }else if (wantBase == usdc) {
-            IDodoProxy(dodo_proxy).addLiquidityToV1(usdc_usdt, 0, _wantBase, 0, 0, 0, block.timestamp.add(60));
-        }
-            
-        _distributePerformanceFeesAndDeposit();
     }
-}
 
-
-// File contracts/strategies/dodo/strategy-dodo-usdc.sol
-
-
-pragma solidity 0.8.4;
-
-contract StrategyDodoUsdcLp is StrategyDodoBase {
-
-    address public usdc_dodo = 0x7eBd8a1803cE082d4dE609C0aA0813DD842BD4DB;
-    uint256 public usdc_poolId = 5; 
-
-    constructor(
-        address _governance,
-        address _strategist,
-        address _controller,
-        address _timelock
-    )
-        StrategyDodoBase(
-            usdc_poolId,
-            usdc,
-            usdc_dodo,
-            _governance,
-            _strategist,
-            _controller,
-            _timelock
-        )
-    {}
-
-    // **** Views ****
-
-    function getName() external override pure returns (string memory) {
-        return "StrategyDodoUsdc";
+    function _returnAssets(address[] memory token) internal {
+      uint256 balance;
+      for (uint256 i; i < token.length; i++) {
+          balance = IERC20(token[i]).balanceOf(address(this));
+          if (balance > 0) {
+              if (token[i] == weth) {
+                  WETH(weth).withdraw(balance);
+                  (bool success, ) = msg.sender.call{value: balance}(
+                      new bytes(0)
+                  );
+                  require(success, "ETH transfer failed");
+              } else {
+                  IERC20(token[i]).safeTransfer(msg.sender, balance);
+              }
+          }
+      }
     }
+
 }
