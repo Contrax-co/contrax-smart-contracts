@@ -81,9 +81,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keepSUSHI) external {
+    function setKeep(uint256 _keep) external {
         require(msg.sender == timelock, "!timelock");
-        keep = _keepSUSHI;
+        keep = _keep;
     }
 
     function setKeepReward(uint256 _keepReward) external {
@@ -112,7 +112,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
                 IController(controller).treasury(),
                 _keepSUSHI
             );
-            _swapSushiswap(sushi, weth, _sushi.sub(_keepSUSHI));
+
+            _sushi = IERC20(sushi).balanceOf(address(this));
+            _swapSushiswap(sushi, weth, _sushi);
         }
 
         // Collect reward tokens
@@ -124,7 +126,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
                     IController(controller).treasury(),
                     _keepReward
                 );
-                _swapSushiswap(rewardToken, weth, _reward.sub(_keepReward));
+
+                 _reward = IERC20(rewardToken).balanceOf(address(this));
+                _swapSushiswap(rewardToken, weth, _reward);
             }
         }
 

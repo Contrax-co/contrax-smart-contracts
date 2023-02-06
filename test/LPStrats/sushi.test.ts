@@ -2,11 +2,11 @@ import { doStrategyTest } from "../strategy-test.test";
 import { TestableStrategy, LPTestDefault } from "../strategy-test-case";
 
 const tests = [
-    {
-        name: "SushiWethDai",
-        controller: "plutus",
-        // vaultAddress: "0xF73e52e7185dDE30eC58336bc186f392354bF784"
-    },
+    // {
+    //     name: "SushiWethDai",
+    //     controller: "plutus",
+    //     vaultAddress: "0xF73e52e7185dDE30eC58336bc186f392354bF784"
+    // },
     // {
     //     name: "SushiWethUsdc",
     //     controller: "sushi",
@@ -22,6 +22,10 @@ const tests = [
     //     controller: "sushi",
     //     vaultAddress: "0x3043e7675c956EAfcDF006458b296F1fe8B0CA7C"
     // },
+    {
+        name: "SushiWethMagic",
+        controller: "sushi"
+    }
 
 ];
 
