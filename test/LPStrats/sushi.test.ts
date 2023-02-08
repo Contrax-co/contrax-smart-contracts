@@ -22,9 +22,14 @@ const tests = [
     //     controller: "sushi",
     //     vaultAddress: "0x3043e7675c956EAfcDF006458b296F1fe8B0CA7C"
     // },
+    // {
+    //     name: "SushiWethMagic",
+    //     controller: "sushi"
+    // },
     {
-        name: "SushiWethMagic",
-        controller: "sushi"
+        name: "SushiAxlUsdcUsdc",
+        controller: "sushi",
+        slot: 3
     }
 
 ];
