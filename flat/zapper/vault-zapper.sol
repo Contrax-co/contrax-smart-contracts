@@ -165,7 +165,7 @@ library SafeMath {
 
 // File contracts/lib/context.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -195,7 +195,7 @@ abstract contract Context {
 
 // File: contracts/GSN/Context.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -790,7 +790,7 @@ library SafeERC20 {
 
 // File contracts/interfaces/uniswapv2.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface UniswapRouterV2 {
@@ -1028,7 +1028,7 @@ interface IUniswapV2Factory {
 // File contracts/lib/square-root.sol
 
 // File: @uniswap/lib/contracts/libraries/Babylonian.sol
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 // computes square roots using the babylonian method
@@ -1084,7 +1084,7 @@ library Babylonian {
 
 // File contracts/interfaces/weth.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -1121,7 +1121,7 @@ interface WETH {
 
 // File contracts/interfaces/vault.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface IVault is IERC20 {
@@ -1151,7 +1151,7 @@ interface IVault is IERC20 {
 
 // File contracts/zapper/zapper-base.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 
@@ -1308,7 +1308,7 @@ abstract contract ZapperBase {
 
 // File contracts/zapper/vault-zapper.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 contract VaultZapEthFish is ZapperBase {
