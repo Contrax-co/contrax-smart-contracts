@@ -3,7 +3,7 @@ require("@nomiclabs/hardhat-waffle");
 require('dotenv').config();
 
 async function main() {
-    const platform = "Sushi";
+    const platform = "Fish";
     const zapper_name = "VaultZapEth"+platform;
 
     const [deployer] = await ethers.getSigners();
@@ -14,7 +14,7 @@ async function main() {
     const zapperFactory = await ethers.getContractFactory(zapper_name);
     const Zapper = await zapperFactory.deploy(); 
 
-    console.log(`deployed ${zapper_name} at : ${zapper.address}`);
+    console.log(`deployed ${zapper_name} at : ${Zapper.address}`);
 
 
     // const Controller = new ethers.Contract(controller_addr, controller_ABI, deployer);

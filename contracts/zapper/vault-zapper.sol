@@ -3,14 +3,14 @@ pragma solidity 0.8.4;
 
 import "./zapper-base.sol";
 
-contract VaultZapEthSushi is ZapperBase {
+contract VaultZapEthFish is ZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
     using SafeERC20 for IVault;
 
     constructor()
-        ZapperBase(0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506){}
+        ZapperBase(0xcDAeC65495Fa5c0545c5a405224214e3594f30d8){}
 
     function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override {
         (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
@@ -35,6 +35,47 @@ contract VaultZapEthSushi is ZapperBase {
             address(this),
             block.timestamp
         );
+
+        _returnAssets(path);
+    }
+
+       function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override {
+        (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
+        address token0 = pair.token0();
+        address token1 = pair.token1();
+        
+        address desiredToken = token0;
+
+        vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
+        vault.withdraw(withdrawAmount);
+        _removeLiquidity(address(pair), address(this));
+
+        address swapToken = token1 == desiredToken ? token0 : token1;
+        address[] memory path = new address[](2);
+        path[0] = swapToken;
+        path[1] = desiredToken;
+
+        _approveTokenIfNeeded(path[0], address(router));
+        UniswapRouterV2(router).swapExactTokensForTokens(
+            IERC20(swapToken).balanceOf(address(this)),
+            desiredTokenOutMin,
+            path,
+            address(this),
+            block.timestamp
+        );
+
+        address[] memory secondPath = new address[](2);
+        secondPath[0] = desiredToken;
+        secondPath[1] = weth;
+
+        IERC20(desiredToken).safeApprove(address(router), IERC20(desiredToken).balanceOf(address(this)));
+        UniswapRouterV2(router).swapExactTokensForTokens(
+            IERC20(desiredToken).balanceOf(address(this)),
+            desiredTokenOutMin,
+            secondPath,
+            address(this),
+            block.timestamp
+            );
 
         _returnAssets(path);
     }
