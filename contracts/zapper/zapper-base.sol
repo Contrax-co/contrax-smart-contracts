@@ -109,6 +109,8 @@ abstract contract ZapperBase {
 
     function zapOutAndSwap(address vault, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public virtual;
 
+    function zapOutAndSwapEth(address vault, uint256 withdrawAmount, uint256 desiredTokenOutMin) public virtual;
+
     function _removeLiquidity(address pair, address to) internal {
         IERC20(pair).safeTransfer(pair, IERC20(pair).balanceOf(address(this)));
         (uint256 amount0, uint256 amount1) = IUniswapV2Pair(pair).burn(to);
@@ -127,7 +129,7 @@ abstract contract ZapperBase {
 
     function _approveTokenIfNeeded(address token, address spender) internal {
         if (IERC20(token).allowance(address(this), spender) == 0) {
-            IERC20(token).safeApprove(spender, uint256(0));
+            IERC20(token).safeApprove(spender, IERC20(token).balanceOf(address(this)));
         }
     }
 

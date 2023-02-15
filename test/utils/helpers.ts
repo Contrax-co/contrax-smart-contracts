@@ -129,6 +129,7 @@ export function returnController(controller: string): string {
         case "plutus": address = "0xD80cbc596607fFA9C60aBCe4BD2e333427aD89f4"; break;
         case "jones": address = "0xF6e1d062DEfe3AEBF8674B930f621Adc36Ad870c"; break;
         case "stargate": address = "0x8B82E63D4494bE23a479201ADb75F7E43247E859"; break;
+        case "fish": address="0xF36059454bE1e87E88506DdcF2aa65a1CEF8C1bF"; break; 
         default: address = ""; break;
     }
     return address;
