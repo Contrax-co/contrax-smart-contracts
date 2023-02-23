@@ -16,17 +16,17 @@ import {
 let txnAmt: string = "250000000000000";
 
 const wallet_addr = process.env.WALLET_ADDR === undefined ? '' : process.env['WALLET_ADDR'];
-let name = "DodoUsdcLp";
-let vault_addr = "0x6c0415b9F728BE851FcB1c4d5443C168Fdf20092";
+let name = "FishWstEthWeth";
+let vault_addr = "0x33BD22e9D83C7A74199405aF2D8dfA21309F719F";
 // let strategy_addr = test_case.strategyAddress;
 // let slot = test_case.slot;
 let timelockIsStrategist = false;
 
 let snapshotId: string;
 
-let controller_addr= "0xaC58Ff6C1f02779869beB4Db5dF9d25A6213ae95";
+let controller_addr= "0xF36059454bE1e87E88506DdcF2aa65a1CEF8C1bF";
 
-let DodoZapper: Contract; 
+let Zapper: Contract; 
 let zapper_addr: string;
 
 let assetContract: Contract;
@@ -41,10 +41,10 @@ let controllerSigner: Signer;
 let timelockSigner: Signer;
 
 
-let asset_addr = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8";
-let want_addr = "0x7eBd8a1803cE082d4dE609C0aA0813DD842BD4DB"
+let asset_addr = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+let want_addr = "0xe263353986a4638144c41E44cEBAc9d0A76ECab3"
 
-describe( "Tests for Dodo Zapper", async () => {
+describe( "Tests for Zapper", async () => {
 
     // These reset the state after each test is executed 
     beforeEach(async () => {
@@ -63,6 +63,15 @@ describe( "Tests for Dodo Zapper", async () => {
         // Impersonate the wallet signer and add credit
         await network.provider.send('hardhat_impersonateAccount', [wallet_addr]);
         console.log(`Impersonating account: ${wallet_addr}`);
+
+        // Getting some eth
+        await ethers.provider.send("hardhat_setBalance", [
+          wallet_addr,
+          "0x1158e460913d00000", // 20 ETH
+        ]);
+        let ethBal = await ethers.provider.getBalance(wallet_addr); 
+        console.log(`User's balance of ether is ${ethBal}`);
+        
         walletSigner = await returnSigner(wallet_addr);
         [timelockSigner, strategistSigner, governanceSigner] = await setupSigners(timelockIsStrategist); 
 
@@ -71,20 +80,20 @@ describe( "Tests for Dodo Zapper", async () => {
         console.log(`Using controller: ${controller_addr}\n`);
 
 
-        // load user wallet with initial amount
-        await hre.network.provider.send("hardhat_setBalance", [
-            await walletSigner.getAddress(), 
-            "0x10000000000000000000000",]
-        );
+        // // load user wallet with initial amount
+        // await hre.network.provider.send("hardhat_setBalance", [
+        //     await walletSigner.getAddress(), 
+        //     "0x10000000000000000000000",]
+        // );
 
-        const dodoFactory = await ethers.getContractFactory('DodoVaultZapper');
-        DodoZapper = await dodoFactory.connect(walletSigner).deploy();
+        const zapperFactory = await ethers.getContractFactory('VaultZapEthFish');
+        Zapper = await zapperFactory.connect(walletSigner).deploy();
 
         Vault = await ethers.getContractAt(vaultName, vault_addr, walletSigner);
 
   
-        zapper_addr = DodoZapper.address;
-        console.log(`Deployed DodoZapper at ${zapper_addr}`);
+        zapper_addr = Zapper.address;
+        console.log(`Deployed Zapper at ${zapper_addr}`);
 
         assetContract = await ethers.getContractAt("ERC20", asset_addr, walletSigner);
         await overwriteTokenAmount(asset_addr, wallet_addr, txnAmt, 51);
@@ -113,8 +122,7 @@ describe( "Tests for Dodo Zapper", async () => {
       let _vaultBefore = await Vault.connect(walletSigner).balanceOf(await walletSigner.getAddress()); 
       console.log(`The balance the user has in the vault before depositing is ${_vaultBefore}`); 
 
-      await assetContract.connect(walletSigner).approve(zapper_addr, txnAmt);
-      await DodoZapper.connect(walletSigner).zapIn(vault_addr, asset_addr, txnAmt);
+      await Zapper.connect(walletSigner).zapInETH(vault_addr, 0, asset_addr, {value: "10000000000000000000"});
 
       let _vaultAfter = await Vault.connect(walletSigner).balanceOf(await walletSigner.getAddress()); 
       console.log(`The balance the user has in the vault after depositing is ${_vaultAfter}`); 
@@ -124,27 +132,21 @@ describe( "Tests for Dodo Zapper", async () => {
     });
 
     it("Should withdraw from the vault and zap to the native tokens", async function() {
-      await assetContract.connect(walletSigner).approve(zapper_addr, txnAmt);
-      await DodoZapper.connect(walletSigner).zapIn(vault_addr, asset_addr, txnAmt);
-
-      let userBal = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
-      expect(userBal).to.be.equals(BigNumber.from("0x0"));
+      await Zapper.connect(walletSigner).zapInETH(vault_addr, 0, asset_addr, {value: "10000000000000000000"});
 
       let _amounttoWithdraw = await Vault.connect(walletSigner).balanceOf(wallet_addr); 
 
-      let _balBefore = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
-      let _vaultBal = await wantContract.connect(walletSigner).balanceOf(vault_addr);
-
-      expect(_vaultBal).to.be.equals(_amounttoWithdraw);
+      let _balBefore = await ethers.provider.getBalance(wallet_addr); 
+      console.log(`The balance the user has before zapping Out is ${_balBefore}`); 
 
       await Vault.connect(walletSigner).approve(zapper_addr, _amounttoWithdraw);
-      await DodoZapper.connect(walletSigner).zapOut(vault_addr, _amounttoWithdraw, asset_addr);
+      await Zapper.connect(walletSigner).zapOutAndSwapEth(vault_addr, _amounttoWithdraw, 0);
 
-      let _balAfter = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
+      let _balAfter = await ethers.provider.getBalance(wallet_addr); 
       console.log(`the balance after is ${_balAfter}`);
 
       expect(_balAfter).to.be.gt(_balBefore);
-    })
+    }); 
 
 
 })

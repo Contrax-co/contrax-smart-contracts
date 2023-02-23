@@ -1280,7 +1280,7 @@ abstract contract ZapperBase {
 
     function _approveTokenIfNeeded(address token, address spender) internal {
         if (IERC20(token).allowance(address(this), spender) == 0) {
-            IERC20(token).safeApprove(spender, IERC20(token).balanceOf(address(this)));
+            IERC20(token).safeApprove(spender, type(uint256).max);
         }
     }
 
@@ -1372,19 +1372,21 @@ contract VaultZapEthFish is ZapperBase {
             block.timestamp
         );
 
-        address[] memory secondPath = new address[](2);
-        secondPath[0] = desiredToken;
-        secondPath[1] = weth;
+        if(desiredToken != weth){
+            address[] memory secondPath = new address[](2);
+            secondPath[0] = desiredToken;
+            secondPath[1] = weth;
 
-        IERC20(desiredToken).safeApprove(address(router), IERC20(desiredToken).balanceOf(address(this)));
-        UniswapRouterV2(router).swapExactTokensForTokens(
-            IERC20(desiredToken).balanceOf(address(this)),
-            desiredTokenOutMin,
-            secondPath,
-            address(this),
-            block.timestamp
+            _approveTokenIfNeeded(desiredToken, address(router));
+            UniswapRouterV2(router).swapExactTokensForTokens(
+                IERC20(desiredToken).balanceOf(address(this)),
+                desiredTokenOutMin,
+                secondPath,
+                address(this),
+                block.timestamp
             );
-
+        }
+      
         _returnAssets(path);
     }
 
