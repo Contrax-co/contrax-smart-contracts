@@ -3,7 +3,6 @@ pragma solidity 0.8.4;
 
 import "../../../lib/erc20.sol";
 import "../../../lib/safe-math.sol";
-
 import "../../../interfaces/uniswapv2.sol";
 import "../../../interfaces/vault.sol";
 import "../../../interfaces/controller.sol";
@@ -28,6 +27,8 @@ contract DodoVaultZapper {
     address public constant usdc_usdt = 0xe4B2Dfc82977dd2DCE7E8d37895a6A8F50CbB4fB; 
     address public constant dodo_proxy = 0x88CBf433471A0CD8240D2a12354362988b4593E5;
 
+    address public router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
+
 
     uint256 public constant minimumAmount = 1000;
   
@@ -39,6 +40,28 @@ contract DodoVaultZapper {
 
     receive() external payable {
         assert(msg.sender == weth);
+    }
+
+    function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable{
+        require(msg.value >= minimumAmount, "Insignificant input amount");
+
+        WETH(weth).deposit{value: msg.value}();
+        uint256 _amount = IERC20(weth).balanceOf(address(this));
+
+        address[] memory path = new address[](2);
+        path[0] = weth;
+        path[1] = tokenIn;
+
+        _approveTokenIfNeeded(path[0], address(router), _amount);
+        UniswapRouterV2(router).swapExactTokensForTokens(
+            _amount,
+            tokenAmountOutMin,
+            path,
+            address(this),
+            block.timestamp
+        );
+
+        _swapAndStake(vault, tokenIn, IERC20(tokenIn).balanceOf(address(this))); 
     }
 
     // transfers tokens from msg.sender to this contract 
@@ -90,6 +113,36 @@ contract DodoVaultZapper {
           IERC20(token).safeApprove(spender, uint256(0));
           IERC20(token).safeApprove(spender, _amountToApprove);
       }
+    }
+
+    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, address desiredToken) public {
+      (IVault vault, address vault_token) = _getVaultToken(vault_addr);
+
+      vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
+      vault.withdraw(withdrawAmount);
+
+      _approveTokenIfNeeded(vault_token, usdc_usdt, withdrawAmount);
+      if(desiredToken == usdt) {
+        IDodo(usdc_usdt).withdrawBase(withdrawAmount);
+      }else if(desiredToken == usdc) {
+        IDodo(usdc_usdt).withdrawQuoteTo(msg.sender, withdrawAmount);
+      }
+
+      address[] memory path = new address[](2);
+      path[0] = desiredToken;
+      path[1] = weth;
+
+      _approveTokenIfNeeded(path[0], address(router), IERC20(desiredToken).balanceOf(address(this)));
+      UniswapRouterV2(router).swapExactTokensForTokens(
+          IERC20(desiredToken).balanceOf(address(this)),
+          0,
+          path,
+          address(this),
+          block.timestamp
+      );
+
+      _returnAssets(path);
+
     }
 
 

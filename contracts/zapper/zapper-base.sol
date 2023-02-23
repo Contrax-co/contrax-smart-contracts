@@ -129,7 +129,7 @@ abstract contract ZapperBase {
 
     function _approveTokenIfNeeded(address token, address spender) internal {
         if (IERC20(token).allowance(address(this), spender) == 0) {
-            IERC20(token).safeApprove(spender, IERC20(token).balanceOf(address(this)));
+            IERC20(token).safeApprove(spender, type(uint256).max);
         }
     }
 
