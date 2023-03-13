@@ -2,10 +2,10 @@ import { doStrategyTest } from "../strategy-test.test";
 import { TestableStrategy, LPTestDefault } from "../strategy-test-case";
 
 const tests = [
-    {
-        name: "SushiWethDai",
-        controller: "sushi"
-    },
+    // {
+    //     name: "SushiWethDai",
+    //     controller: "sushi"
+    // },
     // {
     //     name: "SushiWethUsdc",
     //     controller: "sushi"
@@ -18,10 +18,10 @@ const tests = [
     //     name: "SushiWethWbtc",
     //     controller: "sushi"
     // },
-    // {
-    //     name: "SushiWethMagic",
-    //     controller: "sushi"
-    // },
+    {
+        name: "SushiWethMagic",
+        controller: "sushi"
+    },
 
 ];
 

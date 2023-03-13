@@ -78,6 +78,11 @@ abstract contract StrategyPlutusFarmBase is StrategyBase {
       rewardToken = _rewardToken;
   }
 
+
+
+  // Declare a Harvest Event
+  event Harvest(uint _timestamp, uint _value);
+
   function harvest() public override onlyBenevolent {
     IPlutusMasterChef(plutusMasterChef).deposit(poolId, 0);
 
@@ -134,6 +139,9 @@ abstract contract StrategyPlutusFarmBase is StrategyBase {
           );
         }
     }
+
+    uint256 _want = IERC20(want).balanceOf(address(this));
+    emit Harvest(block.timestamp, _want);
 
     _distributePerformanceFeesAndDeposit();
 

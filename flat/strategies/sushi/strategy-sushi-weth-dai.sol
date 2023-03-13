@@ -4,7 +4,6 @@
 
 // SPDX-License-Identifier: MIT
 
-
 pragma solidity 0.8.4;
 
 /**
@@ -1687,7 +1686,6 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     }
 
     // **** Setters ****
-
     function deposit() public override {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
@@ -1708,9 +1706,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keepSUSHI) external {
+    function setKeep(uint256 _keep) external {
         require(msg.sender == timelock, "!timelock");
-        keep = _keepSUSHI;
+        keep = _keep;
     }
 
     function setKeepReward(uint256 _keepReward) external {
@@ -1728,6 +1726,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
 
     // **** State Mutations ****
 
+    // Declare a Harvest Event
+    event Harvest(uint _timestamp, uint _value); 
+
     function harvest() public override onlyBenevolent {
         // Collects SUSHI tokens
         IMiniChefV2(miniChef).harvest(poolId, address(this));
@@ -1739,7 +1740,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
                 IController(controller).treasury(),
                 _keepSUSHI
             );
-            _swapSushiswap(sushi, weth, _sushi.sub(_keepSUSHI));
+
+            _sushi = IERC20(sushi).balanceOf(address(this));
+            _swapSushiswap(sushi, weth, _sushi);
         }
 
         // Collect reward tokens
@@ -1751,7 +1754,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
                     IController(controller).treasury(),
                     _keepReward
                 );
-                _swapSushiswap(rewardToken, weth, _reward.sub(_keepReward));
+
+                 _reward = IERC20(rewardToken).balanceOf(address(this));
+                _swapSushiswap(rewardToken, weth, _reward);
             }
         }
 
@@ -1796,6 +1801,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
                 IERC20(token1).balanceOf(address(this))
             );
         }
+
+        uint256 _want = IERC20(want).balanceOf(address(this));
+        emit Harvest(block.timestamp, _want);
 
         // We want to get back SUSHI LP tokens
         _distributePerformanceFeesAndDeposit();
