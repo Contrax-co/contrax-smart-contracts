@@ -3,7 +3,7 @@ require("@nomiclabs/hardhat-waffle");
 require('dotenv').config();
 
 async function main() {
-    const platform = "Fish";
+    const platform = "Plutus";
     const controller_name = platform+"Controller";
 
     const [deployer] = await ethers.getSigners();

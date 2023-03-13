@@ -1551,7 +1551,6 @@ abstract contract StrategyBase {
 
 // File contracts/lib/BoringERC20.sol
 
-
 pragma solidity 0.8.4;
 
 library BoringERC20 {
@@ -1687,7 +1686,6 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     }
 
     // **** Setters ****
-
     function deposit() public override {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
@@ -1727,6 +1725,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     }
 
     // **** State Mutations ****
+
+    // Declare a Harvest Event
+    event Harvest(uint _timestamp, uint _value); 
 
     function harvest() public override onlyBenevolent {
         // Collects SUSHI tokens
@@ -1800,6 +1801,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
                 IERC20(token1).balanceOf(address(this))
             );
         }
+
+        uint256 _want = IERC20(want).balanceOf(address(this));
+        emit Harvest(block.timestamp, _want);
 
         // We want to get back SUSHI LP tokens
         _distributePerformanceFeesAndDeposit();
