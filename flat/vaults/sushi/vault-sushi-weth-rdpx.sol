@@ -40,7 +40,7 @@ interface IController {
 
 // File contracts/lib/safe-math.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -203,7 +203,7 @@ library SafeMath {
 
 // File contracts/lib/context.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -233,7 +233,7 @@ abstract contract Context {
 
 // File: contracts/GSN/Context.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -826,14 +826,14 @@ library SafeERC20 {
 }
 
 
-// File contracts/vaults/plutus/vault-plutus-pls-weth.sol
+// File contracts/vaults/sushi/vault-sushi-weth-rdpx.sol
 
 // https://github.com/iearn-finance/vaults/blob/master/contracts/vaults/yVault.sol
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 
-contract VaultPlutusPlsWeth is ERC20 {
+contract VaultSushiWethRdpx is ERC20 {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;

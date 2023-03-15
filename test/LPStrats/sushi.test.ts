@@ -18,8 +18,20 @@ const tests = [
     //     name: "SushiWethWbtc",
     //     controller: "sushi"
     // },
+    // {
+    //     name: "SushiWethMagic",
+    //     controller: "sushi"
+    // },
+    // {
+    //     name: "SushiWethDpx",
+    //     controller: "sushi"
+    // },
+    // {
+    //     name: "SushiWethRdpx",
+    //     controller: "sushi"
+    // },
     {
-        name: "SushiWethMagic",
+        name: "SushiWethSushi",
         controller: "sushi"
     },
 

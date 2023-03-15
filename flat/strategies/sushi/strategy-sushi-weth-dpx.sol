@@ -165,7 +165,7 @@ library SafeMath {
 
 // File contracts/lib/context.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -195,7 +195,7 @@ abstract contract Context {
 
 // File: contracts/GSN/Context.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -790,7 +790,7 @@ library SafeERC20 {
 
 // File contracts/interfaces/uniswapv2.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface UniswapRouterV2 {
@@ -1027,7 +1027,7 @@ interface IUniswapV2Factory {
 
 // File contracts/interfaces/staking-rewards.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface IStakingRewards {
@@ -1116,7 +1116,7 @@ interface IStakingRewardsFactory {
 
 // File contracts/interfaces/vault.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface IVault is IERC20 {
@@ -1146,7 +1146,7 @@ interface IVault is IERC20 {
 
 // File contracts/interfaces/controller.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface IController {
@@ -1184,7 +1184,7 @@ interface IController {
 
 // File contracts/strategies/strategy-base.sol
 
-	
+// SPDX-License-Identifier: MIT	
 pragma solidity 0.8.4;
 
 
@@ -1549,234 +1549,280 @@ abstract contract StrategyBase {
 }
 
 
-// File contracts/interfaces/plutus.sol
+// File contracts/lib/BoringERC20.sol
 
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.4;
+
+library BoringERC20 {
+    function safeSymbol(IERC20 token) internal view returns(string memory) {
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x95d89b41));
+        return success && data.length > 0 ? abi.decode(data, (string)) : "???";
+    }
+
+    function safeName(IERC20 token) internal view returns(string memory) {
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x06fdde03));
+        return success && data.length > 0 ? abi.decode(data, (string)) : "???";
+    }
+
+    function safeDecimals(IERC20 token) internal view returns (uint8) {
+        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567));
+        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
+    }
+
+    function safeTransfer(IERC20 token, address to, uint256 amount) internal {
+        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, to, amount));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: Transfer failed");
+    }
+
+    function safeTransferFrom(IERC20 token, address from, address to, uint256 amount) internal {
+        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0x23b872dd, from, to, amount));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: TransferFrom failed");
+    }
+}
+
+
+// File contracts/interfaces/IRewarder.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
-interface IDpxDepositor {
-  function deposit(uint256 _amount) external;
+interface IRewarder {
+    function onSushiReward(uint256 pid, address user, address recipient, uint256 sushiAmount, uint256 newLpAmount) external;
+    function pendingTokens(uint256 pid, address user, uint256 sushiAmount) external view returns (IERC20[] memory, uint256[] memory);
 }
 
 
-interface IPlsDpxChef {
-  function userInfo(address) external view returns (
-    uint96 amount,
-    int128 plsRewardDebt,
-    int128 plsDpxRewardDebt,
-    int128 plsJonesRewardDebt,
-    int128 dpxRewardDebt
-  );
+// File contracts/interfaces/minichefv2.sol
 
-  function deposit(uint96 _amount) external;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.4;
+pragma experimental ABIEncoderV2;
 
-  function withdraw(uint96 _amount) external;
+interface IMiniChefV2{
+    struct UserInfo {
+        uint256 amount;
+        uint256 rewardDebt;
+    }
 
-  function harvest() external;
+    struct PoolInfo {
+        uint128 accSushiPerShare;
+        uint64 lastRewardTime;
+        uint64 allocPoint;
+    }
 
-  function pendingRewards(address _user)
-    external
-    view
-    returns (
-      uint256 _pendingPls,
-      uint256 _pendingPlsDpx,
-      uint256 _pendingPlsJones,
-      uint256 _pendingDpx
-    );
-
-  
-}
-
-interface IPlutusChef {
-  function userInfo(address) external view returns (
-    uint96 amount,
-    int128 plsRewardDebt
-  );
-
-  function pendingRewards(address _user) external view returns (uint256 _pendingPls);
-
-  function deposit(uint96 _amount) external;
-
-  function harvest() external;
-
-  function withdraw(uint96 _amount) external;
-}
-
-interface IPlutusMasterChef {
-  function deposit(uint256 _pid, uint256 _amount) external;
-
-  function userInfo(uint256, address) external view returns (
-    uint256 amount, 
-    uint256 rewardDebt
-  );
-
-  function pendingPls(uint256 _pid, address _user) external view returns (uint256);
-
-  function withdraw(uint256 _pid, uint256 _amount) external; 
-
+    function rewarder(uint256 _pid) external view returns (IRewarder);
+    function poolLength() external view returns (uint256);
+    function updatePool(uint256 pid) external returns (IMiniChefV2.PoolInfo memory);
+    function userInfo(uint256 _pid, address _user) external view returns (uint256, uint256);
+    function deposit(uint256 pid, uint256 amount, address to) external;
+    function withdraw(uint256 pid, uint256 amount, address to) external;
+    function harvest(uint256 pid, address to) external;
+    function withdrawAndHarvest(uint256 pid, uint256 amount, address to) external;
+    function emergencyWithdraw(uint256 pid, address to) external;
+    function pendingSushi(uint256 _pid, address _user) external view returns (uint256 pending);
 }
 
 
-// File contracts/strategies/plutus/plutus-farm-bases/strategy-plutus-lp-farm-base2.sol
+// File contracts/strategies/sushi-farm-bases/strategy-sushi-farm-base.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 
-abstract contract StrategyPlutusFarmBase is StrategyBase {
-  using SafeERC20 for IERC20;
-  using Address for address;
-  using SafeMath for uint256;
-  
-  address public constant pls = 0x51318B7D00db7ACc4026C88c3952B66278B6A67F;
 
-  address public constant plutusMasterChef = 0x5593473e318F0314Eb2518239c474e183c4cBED5;
+abstract contract StrategySushiFarmBase is StrategyBase {
+    using SafeERC20 for IERC20;
+    using Address for address;
+    using SafeMath for uint256;
 
-  // How much tokens to keep?
-  uint256 public keep = 1000;
-  uint256 public keepReward = 1000;
-  uint256 public constant keepMax = 10000;
+    // Token addresses
+    address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
+    address public constant miniChef = 0xF4d73326C13a4Fc5FD7A064217e12780e9Bd62c3;
 
-  address rewardToken;
-  uint256 public poolId;
+    // WETH/<token1> pair
+    address public token0;
+    address public token1;
+    address rewardToken;
 
-  constructor(
+    // How much tokens to keep?
+    uint256 public keep = 1000;
+    uint256 public keepReward = 1000;
+    uint256 public constant keepMax = 10000;
+
+    uint256 public poolId;
+
+    constructor(
+        address _token0,
+        address _token1,
         uint256 _poolId,
-        address _want,
+        address _lp,
         address _governance,
         address _strategist,
         address _controller,
         address _timelock
-  )
-    StrategyBase(_want, _governance, _strategist, _controller, _timelock)
-  {
-    poolId = _poolId;
-  }
-
-  function balanceOfPool() public view override returns (uint256) {
-    (uint256 amount, ) = IPlutusMasterChef(plutusMasterChef).userInfo(poolId, address(this)); 
-    return amount;
-  }
-
-  function getHarvestable() external view returns (uint256) {
-    uint256 _pendingPls = IPlutusMasterChef(plutusMasterChef).pendingPls(poolId, address(this));
-
-    return (_pendingPls);
-  }
-
-  function deposit() public override {
-    uint256 _want = IERC20(want).balanceOf(address(this));
-    if (_want > 0) {
-        IERC20(want).safeApprove(plutusMasterChef, 0);
-        IERC20(want).safeApprove(plutusMasterChef, _want);
-        IPlutusMasterChef(plutusMasterChef).deposit(poolId, _want);
+    )
+        StrategyBase(_lp, _governance, _strategist, _controller, _timelock)
+    {
+        poolId = _poolId;
+        token0 = _token0;
+        token1 = _token1;
     }
-  }
 
-  function _withdrawSome(uint256 _amount) internal override returns (uint256) {
-    IPlutusMasterChef(plutusMasterChef).withdraw(poolId, _amount);
-    return _amount;
-  }
-
-  // **** Setters ****
-  function setKeep(uint256 _keep) external {
-      require(msg.sender == timelock, "!timelock");
-      keep = _keep;
-  }
-
-  function setKeepReward(uint256 _keepReward) external {
-      require(msg.sender == timelock, "!timelock");
-      keepReward = _keepReward;
-  }
-
-  function setRewardToken(address _rewardToken) external {
-      require(
-          msg.sender == timelock || msg.sender == strategist,
-          "!timelock"
-      );
-      rewardToken = _rewardToken;
-  }
-
-
-
-  // Declare a Harvest Event
-  event Harvest(uint _timestamp, uint _value);
-
-  function harvest() public override onlyBenevolent {
-    IPlutusMasterChef(plutusMasterChef).deposit(poolId, 0);
-
-    uint256 _pls = IERC20(pls).balanceOf(address(this));
-    if(_pls > 0) {
-        // 10% is locked up for future gov
-        uint256 _keepPls = _pls.mul(keep).div(keepMax);
-        IERC20(pls).safeTransfer(
-            IController(controller).treasury(),
-            _keepPls
+    function balanceOfPool() public view override returns (uint256) {
+        (uint256 amount, ) = IMiniChefV2(miniChef).userInfo(
+            poolId,
+            address(this)
         );
-        
-        _pls = IERC20(pls).balanceOf(address(this));
-        _swapSushiswap(pls, weth, _pls.div(2));
-    
+        return amount;
     }
-    
-    uint256 _weth = IERC20(weth).balanceOf(address(this));
-    _pls = IERC20(pls).balanceOf(address(this));
-    
-    // Adds in liquidity for token0/token1
-    if (_pls > 0 && _weth > 0) {
-        IERC20(pls).safeApprove(sushiRouter, 0);
-        IERC20(pls).safeApprove(sushiRouter, _pls);
-        IERC20(weth).safeApprove(sushiRouter, 0);
-        IERC20(weth).safeApprove(sushiRouter, _weth);
 
-        UniswapRouterV2(sushiRouter).addLiquidity(
-            pls,
-            weth,
-            _pls,
-            _weth,
-            0,
-            0,
-            address(this),
-            block.timestamp.add(60)
+    function getHarvestable() external view returns (uint256) {
+        uint256 _pendingSushi = IMiniChefV2(miniChef).pendingSushi(
+            poolId,
+            address(this)
         );
+        return (_pendingSushi);
+    }
 
-        _pls = IERC20(pls).balanceOf(address(this));
-        _weth = IERC20(weth).balanceOf(address(this));
-
-        // Donates DUST
-        if(_pls > 0) {
-          IERC20(pls).transfer(
-            IController(controller).treasury(),
-            _pls
-          );
-        }
-        
-        if(_weth > 0) {
-          IERC20(weth).safeTransfer(
-              IController(controller).treasury(),
-              _weth
-          );
+    // **** Setters ****
+    function deposit() public override {
+        uint256 _want = IERC20(want).balanceOf(address(this));
+        if (_want > 0) {
+            IERC20(want).safeApprove(miniChef, 0);
+            IERC20(want).safeApprove(miniChef, _want);
+            IMiniChefV2(miniChef).deposit(poolId, _want, address(this));
         }
     }
 
-    uint256 _want = IERC20(want).balanceOf(address(this));
-    emit Harvest(block.timestamp, _want);
+    function _withdrawSome(uint256 _amount)
+        internal
+        override
+        returns (uint256)
+    {
+        IMiniChefV2(miniChef).withdraw(poolId, _amount, address(this));
+        return _amount;
+    }
 
-    _distributePerformanceFeesAndDeposit();
+    // **** Setters ****
 
-  }
+    function setKeep(uint256 _keep) external {
+        require(msg.sender == timelock, "!timelock");
+        keep = _keep;
+    }
 
+    function setKeepReward(uint256 _keepReward) external {
+        require(msg.sender == timelock, "!timelock");
+        keepReward = _keepReward;
+    }
+
+    function setRewardToken(address _rewardToken) external {
+        require(
+            msg.sender == timelock || msg.sender == strategist,
+            "!timelock"
+        );
+        rewardToken = _rewardToken;
+    }
+
+    // **** State Mutations ****
+
+    // Declare a Harvest Event
+    event Harvest(uint _timestamp, uint _value); 
+
+    function harvest() public override onlyBenevolent {
+        // Collects SUSHI tokens
+        IMiniChefV2(miniChef).harvest(poolId, address(this));
+        uint256 _sushi = IERC20(sushi).balanceOf(address(this));
+        if (_sushi > 0) {
+            // 10% is locked up for future gov
+            uint256 _keepSUSHI = _sushi.mul(keep).div(keepMax);
+            IERC20(sushi).safeTransfer(
+                IController(controller).treasury(),
+                _keepSUSHI
+            );
+
+            _sushi = IERC20(sushi).balanceOf(address(this));
+            _swapSushiswap(sushi, weth, _sushi);
+        }
+
+        // Collect reward tokens
+        if (rewardToken != address(0)) {
+            uint256 _reward = IERC20(rewardToken).balanceOf(address(this));
+            if (_reward > 0) {
+                uint256 _keepReward = _reward.mul(keepReward).div(keepMax);
+                IERC20(rewardToken).safeTransfer(
+                    IController(controller).treasury(),
+                    _keepReward
+                );
+
+                 _reward = IERC20(rewardToken).balanceOf(address(this));
+                _swapSushiswap(rewardToken, weth, _reward);
+            }
+        }
+
+        // Swap half WETH for token0
+        uint256 _weth = IERC20(weth).balanceOf(address(this));
+        if (_weth > 0 && token0 != weth) {
+            _swapSushiswap(weth, token0, _weth.div(2));
+        }
+
+        // Swap half WETH for token1
+        if (_weth > 0 && token1 != weth) {
+            _swapSushiswap(weth, token1, _weth.div(2));
+        }
+
+        // Adds in liquidity for token0/token1
+        uint256 _token0 = IERC20(token0).balanceOf(address(this));
+        uint256 _token1 = IERC20(token1).balanceOf(address(this));
+        if (_token0 > 0 && _token1 > 0) {
+            IERC20(token0).safeApprove(sushiRouter, 0);
+            IERC20(token0).safeApprove(sushiRouter, _token0);
+            IERC20(token1).safeApprove(sushiRouter, 0);
+            IERC20(token1).safeApprove(sushiRouter, _token1);
+
+            UniswapRouterV2(sushiRouter).addLiquidity(
+                token0,
+                token1,
+                _token0,
+                _token1,
+                0,
+                0,
+                address(this),
+                block.timestamp.add(60)
+            );
+
+            // Donates DUST
+            IERC20(token0).transfer(
+                IController(controller).treasury(),
+                IERC20(token0).balanceOf(address(this))
+            );
+            IERC20(token1).safeTransfer(
+                IController(controller).treasury(),
+                IERC20(token1).balanceOf(address(this))
+            );
+        }
+
+        uint256 _want = IERC20(want).balanceOf(address(this));
+        emit Harvest(block.timestamp, _want);
+
+        // We want to get back SUSHI LP tokens
+        _distributePerformanceFeesAndDeposit();
+    }
 }
 
 
-// File contracts/strategies/plutus/strategy-plutus-pls-weth.sol
+// File contracts/strategies/sushi/strategy-sushi-weth-dpx.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-contract StrategyPlutusPlsWeth is StrategyPlutusFarmBase {
-    address public pls_weth = 0x6CC0D643C7b8709F468f58F363d73Af6e4971515;
-    uint256 pls_weth_poolId = 0; 
+contract StrategySushiWethDpx is StrategySushiFarmBase {
+    // Token/ETH pool id in MasterChef contract
+    uint256 public sushi_weth_dpx_poolId = 17;
+    // Token addresses
+    address public sushi_weth_dpx_lp = 0x0C1Cf6883efA1B496B01f654E247B9b419873054;
+    address public dpx = 0x6C2C06790b3E3E3c38e12Ee22F8183b37a13EE55;
 
     constructor(
         address _governance,
@@ -1784,9 +1830,11 @@ contract StrategyPlutusPlsWeth is StrategyPlutusFarmBase {
         address _controller,
         address _timelock
     )
-        StrategyPlutusFarmBase(
-            pls_weth_poolId,
-            pls_weth,
+        StrategySushiFarmBase(
+            weth,
+            dpx,
+            sushi_weth_dpx_poolId,
+            sushi_weth_dpx_lp,
             _governance,
             _strategist,
             _controller,
@@ -1797,6 +1845,6 @@ contract StrategyPlutusPlsWeth is StrategyPlutusFarmBase {
     // **** Views ****
 
     function getName() external override pure returns (string memory) {
-        return "StrategyPlutusPlsWeth";
+        return "StrategySushiWethDpx";
     }
 }
