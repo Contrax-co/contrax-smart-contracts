@@ -165,7 +165,7 @@ library SafeMath {
 
 // File contracts/lib/context.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -195,7 +195,7 @@ abstract contract Context {
 
 // File: contracts/GSN/Context.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -790,7 +790,7 @@ library SafeERC20 {
 
 // File contracts/interfaces/uniswapv2.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface UniswapRouterV2 {
@@ -1027,7 +1027,7 @@ interface IUniswapV2Factory {
 
 // File contracts/interfaces/staking-rewards.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface IStakingRewards {
@@ -1116,7 +1116,7 @@ interface IStakingRewardsFactory {
 
 // File contracts/interfaces/vault.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface IVault is IERC20 {
@@ -1146,7 +1146,7 @@ interface IVault is IERC20 {
 
 // File contracts/interfaces/controller.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 interface IController {
@@ -1184,7 +1184,7 @@ interface IController {
 
 // File contracts/strategies/strategy-base.sol
 
-	
+// SPDX-License-Identifier: MIT	
 pragma solidity 0.8.4;
 
 
@@ -1551,6 +1551,7 @@ abstract contract StrategyBase {
 
 // File contracts/lib/BoringERC20.sol
 
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.4;
 
 library BoringERC20 {
@@ -1583,7 +1584,7 @@ library BoringERC20 {
 
 // File contracts/interfaces/IRewarder.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -1595,7 +1596,7 @@ interface IRewarder {
 
 // File contracts/interfaces/minichefv2.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 pragma experimental ABIEncoderV2;
 
@@ -1626,7 +1627,7 @@ interface IMiniChefV2{
 
 // File contracts/strategies/sushi-farm-bases/strategy-sushi-farm-base.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 
@@ -1811,17 +1812,17 @@ abstract contract StrategySushiFarmBase is StrategyBase {
 }
 
 
-// File contracts/strategies/sushi/strategy-sushi-weth-dai.sol
+// File contracts/strategies/sushi/strategy-sushi-weth-dpx.sol
 
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-contract StrategySushiWethDai is StrategySushiFarmBase {
+contract StrategySushiWethDpx is StrategySushiFarmBase {
     // Token/ETH pool id in MasterChef contract
-    uint256 public sushi_dai_poolId = 14;
+    uint256 public sushi_weth_dpx_poolId = 17;
     // Token addresses
-    address public sushi_weth_dai_lp = 0x692a0B300366D1042679397e40f3d2cb4b8F7D30;
-    address public dai = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+    address public sushi_weth_dpx_lp = 0x0C1Cf6883efA1B496B01f654E247B9b419873054;
+    address public dpx = 0x6C2C06790b3E3E3c38e12Ee22F8183b37a13EE55;
 
     constructor(
         address _governance,
@@ -1831,9 +1832,9 @@ contract StrategySushiWethDai is StrategySushiFarmBase {
     )
         StrategySushiFarmBase(
             weth,
-            dai,
-            sushi_dai_poolId,
-            sushi_weth_dai_lp,
+            dpx,
+            sushi_weth_dpx_poolId,
+            sushi_weth_dpx_lp,
             _governance,
             _strategist,
             _controller,
@@ -1844,6 +1845,6 @@ contract StrategySushiWethDai is StrategySushiFarmBase {
     // **** Views ****
 
     function getName() external override pure returns (string memory) {
-        return "StrategySushiWethDai";
+        return "StrategySushiWethDpx";
     }
 }

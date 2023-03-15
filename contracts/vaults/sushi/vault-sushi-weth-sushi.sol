@@ -7,7 +7,7 @@ import "../../interfaces/controller.sol";
 import "../../lib/erc20.sol";
 import "../../lib/safe-math.sol";
 
-contract VaultPlutusDpxPlsDpx is ERC20 {
+contract VaultSushiWethSushi is ERC20 {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -83,6 +83,9 @@ contract VaultPlutusDpxPlsDpx is ERC20 {
         deposit(token.balanceOf(msg.sender));
     }
 
+    // Declare a Deposit Event
+    event Deposit(address indexed _from, uint _timestamp, uint _value, uint _shares); 
+
     function deposit(uint256 _amount) public {
         uint256 _pool = balance();
         uint256 _before = token.balanceOf(address(this));
@@ -96,6 +99,8 @@ contract VaultPlutusDpxPlsDpx is ERC20 {
             shares = (_amount.mul(totalSupply())).div(_pool);
         }
         _mint(msg.sender, shares);
+
+        emit Deposit(tx.origin, block.timestamp,_amount, shares); 
     }
 
     function withdrawAll() external {
@@ -108,6 +113,9 @@ contract VaultPlutusDpxPlsDpx is ERC20 {
         require(reserve != address(token), "token");
         IERC20(reserve).safeTransfer(controller, amount);
     }
+
+    // Declare a Withdraw Event
+    event Withdraw(address indexed _from, uint _timestamp, uint _value, uint _shares); 
 
     // No rebalance implementation for lower fees and faster swaps
     function withdraw(uint256 _shares) public {
@@ -127,6 +135,7 @@ contract VaultPlutusDpxPlsDpx is ERC20 {
         }
 
         token.safeTransfer(msg.sender, r);
+        emit Withdraw(tx.origin, block.timestamp, r, _shares); 
     }
 
     function getRatio() public view returns (uint256) {

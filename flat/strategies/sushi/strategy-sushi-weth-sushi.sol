@@ -1811,17 +1811,16 @@ abstract contract StrategySushiFarmBase is StrategyBase {
 }
 
 
-// File contracts/strategies/sushi/strategy-sushi-weth-dai.sol
+// File contracts/strategies/sushi/strategy-sushi-weth-sushi.sol
 
 
 pragma solidity 0.8.4;
 
-contract StrategySushiWethDai is StrategySushiFarmBase {
+contract StrategySushiWethSushi is StrategySushiFarmBase {
     // Token/ETH pool id in MasterChef contract
-    uint256 public sushi_dai_poolId = 14;
+    uint256 public sushi_weth_sushi_poolId = 2;
     // Token addresses
-    address public sushi_weth_dai_lp = 0x692a0B300366D1042679397e40f3d2cb4b8F7D30;
-    address public dai = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+    address public sushi_weth_sushi_lp = 0x3221022e37029923aCe4235D812273C5A42C322d;
 
     constructor(
         address _governance,
@@ -1831,9 +1830,9 @@ contract StrategySushiWethDai is StrategySushiFarmBase {
     )
         StrategySushiFarmBase(
             weth,
-            dai,
-            sushi_dai_poolId,
-            sushi_weth_dai_lp,
+            sushi,
+            sushi_weth_sushi_poolId,
+            sushi_weth_sushi_lp,
             _governance,
             _strategist,
             _controller,
@@ -1844,6 +1843,6 @@ contract StrategySushiWethDai is StrategySushiFarmBase {
     // **** Views ****
 
     function getName() external override pure returns (string memory) {
-        return "StrategySushiWethDai";
+        return "StrategySushiWethSushi";
     }
 }

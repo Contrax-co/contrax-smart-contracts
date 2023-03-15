@@ -1605,7 +1605,7 @@ interface IPlutusChef {
 interface IPlutusMasterChef {
   function deposit(uint256 _pid, uint256 _amount) external;
 
-   function userInfo(uint256, address) external view returns (
+  function userInfo(uint256, address) external view returns (
     uint256 amount, 
     uint256 rewardDebt
   );
@@ -1697,6 +1697,11 @@ abstract contract StrategyPlutusFarmBase is StrategyBase {
       rewardToken = _rewardToken;
   }
 
+
+
+  // Declare a Harvest Event
+  event Harvest(uint _timestamp, uint _value);
+
   function harvest() public override onlyBenevolent {
     IPlutusMasterChef(plutusMasterChef).deposit(poolId, 0);
 
@@ -1753,6 +1758,9 @@ abstract contract StrategyPlutusFarmBase is StrategyBase {
           );
         }
     }
+
+    uint256 _want = IERC20(want).balanceOf(address(this));
+    emit Harvest(block.timestamp, _want);
 
     _distributePerformanceFeesAndDeposit();
 
