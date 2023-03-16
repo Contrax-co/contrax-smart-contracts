@@ -165,7 +165,7 @@ library SafeMath {
 
 // File contracts/lib/context.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -195,7 +195,7 @@ abstract contract Context {
 
 // File: contracts/GSN/Context.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -790,7 +790,7 @@ library SafeERC20 {
 
 // File contracts/interfaces/uniswapv2.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface UniswapRouterV2 {
@@ -1027,7 +1027,7 @@ interface IUniswapV2Factory {
 
 // File contracts/interfaces/staking-rewards.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface IStakingRewards {
@@ -1116,7 +1116,7 @@ interface IStakingRewardsFactory {
 
 // File contracts/interfaces/vault.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface IVault is IERC20 {
@@ -1146,7 +1146,7 @@ interface IVault is IERC20 {
 
 // File contracts/interfaces/controller.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface IController {
@@ -1184,7 +1184,7 @@ interface IController {
 
 // File contracts/strategies/strategy-base.sol
 
-// SPDX-License-Identifier: MIT	
+	
 pragma solidity 0.8.4;
 
 
@@ -1551,7 +1551,6 @@ abstract contract StrategyBase {
 
 // File contracts/lib/BoringERC20.sol
 
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.4;
 
 library BoringERC20 {
@@ -1584,7 +1583,7 @@ library BoringERC20 {
 
 // File contracts/interfaces/IRewarder.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -1596,7 +1595,7 @@ interface IRewarder {
 
 // File contracts/interfaces/minichefv2.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 pragma experimental ABIEncoderV2;
 
@@ -1627,7 +1626,7 @@ interface IMiniChefV2{
 
 // File contracts/strategies/sushi-farm-bases/strategy-sushi-farm-base.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 
@@ -1814,7 +1813,7 @@ abstract contract StrategySushiFarmBase is StrategyBase {
 
 // File contracts/strategies/sushi/strategy-sushi-weth-dpx.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 contract StrategySushiWethDpx is StrategySushiFarmBase {
