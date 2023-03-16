@@ -5,8 +5,6 @@ import "../../strategy-base.sol";
 import "../../../interfaces/hop.sol";
 
 import "../../../interfaces/uniswapv3.sol";
-import "hardhat/console.sol";
-
 
 abstract contract StrategyHopFarmBase is StrategyBase {
     using SafeERC20 for IERC20;
@@ -17,7 +15,7 @@ abstract contract StrategyHopFarmBase is StrategyBase {
     address public hop = 0xc5102fE9359FD9a28f877a67E36B0F050d81a3CC;
 
     address public stakingRewards = 0x755569159598f3702bdD7DFF6233A317C156d3Dd;
-    address public wethSwap = 0x652d27c0F72771Ce5C76fd400edD61B406Ac6D97;
+    address public hopSwap = 0x652d27c0F72771Ce5C76fd400edD61B406Ac6D97;
  
     // WETH/<token1> pair
     address public token0;
@@ -104,9 +102,7 @@ abstract contract StrategyHopFarmBase is StrategyBase {
         rewardToken = _rewardToken;
     }
 
-    function _swapHopToWeth(
-        uint256 _amount
-    ) internal {
+    function _swapHopToWeth(uint256 _amount) internal {
 
         IERC20(hop).safeApprove(swapRouter, 0);
         IERC20(hop).safeApprove(swapRouter, _amount);
@@ -138,7 +134,6 @@ abstract contract StrategyHopFarmBase is StrategyBase {
         IHopStakingRewards(stakingRewards).getReward();
 
         uint256 _hop = IERC20(hop).balanceOf(address(this));
-        console.log("The amount of hop tokens is", _hop);
         if (_hop > 0) {
             // 10% is locked up for future gov
             uint256 _keepHOP = _hop.mul(keep).div(keepMax);
@@ -150,11 +145,6 @@ abstract contract StrategyHopFarmBase is StrategyBase {
             _hop = IERC20(hop).balanceOf(address(this));
             _swapHopToWeth(_hop);
         }
-
-        _hop = IERC20(hop).balanceOf(address(this));
-        console.log("The amount of hop after swapping for weth", _hop);
-
-
 
         // Collect reward tokens
         if (rewardToken != address(0)) {
@@ -171,15 +161,26 @@ abstract contract StrategyHopFarmBase is StrategyBase {
             }
         }
 
-        // Swap half WETH for token0
-        uint256 _weth = IERC20(weth).balanceOf(address(this));
-        console.log("The amount of weth is", _weth);
-
-        IHopSwap(wethSwap).swap(0, 1, _weth.div(2), 0, block.timestamp);
-        
-
-        // Adds in liquidity for token0/token1
+        // Check WETH and swap 
         uint256 _token0 = IERC20(token0).balanceOf(address(this));
+
+        uint256 _tokenBalance0 = IHopSwap(hopSwap).getTokenBalance(0);
+        uint256 _tokenBalance1 = IHopSwap(hopSwap).getTokenBalance(1);
+
+        if(_tokenBalance0 >= _tokenBalance1){
+            IERC20(token0).safeApprove(hopSwap, 0);
+            IERC20(token0).safeApprove(hopSwap, _token0);
+            IHopSwap(hopSwap).swap(
+                0, 
+                1, 
+                _token0, 
+                0, 
+                block.timestamp
+            ); 
+        }
+        
+        // Adds in liquidity for token0/token1
+        _token0 = IERC20(token0).balanceOf(address(this));
         uint256 _token1 = IERC20(token1).balanceOf(address(this));
 
         uint256[] memory amounts;
@@ -187,13 +188,13 @@ abstract contract StrategyHopFarmBase is StrategyBase {
         amounts[0] = _token0;
         amounts[1] = _token1;
 
-        if (_token0 > 0 && _token1 > 0) {
-            IERC20(token0).safeApprove(wethSwap, 0);
-            IERC20(token0).safeApprove(wethSwap, _token0);
-            IERC20(token1).safeApprove(wethSwap, 0);
-            IERC20(token1).safeApprove(wethSwap, _token1);
+        if (_token0 > 0 || _token1 > 0) {
+            IERC20(token0).safeApprove(hopSwap, 0);
+            IERC20(token0).safeApprove(hopSwap, _token0);
+            IERC20(token1).safeApprove(hopSwap, 0);
+            IERC20(token1).safeApprove(hopSwap, _token1);
 
-            IHopSwap(wethSwap).addLiquidity(
+            IHopSwap(hopSwap).addLiquidity(
                 amounts, 
                 0, 
                 block.timestamp
@@ -211,6 +212,7 @@ abstract contract StrategyHopFarmBase is StrategyBase {
         }
 
         uint256 _want = IERC20(want).balanceOf(address(this));
+    
         emit Harvest(block.timestamp, _want);
 
         // We want to get back SUSHI LP tokens

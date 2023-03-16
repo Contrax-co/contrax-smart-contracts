@@ -228,7 +228,7 @@ export function doStrategyTest(test_case: TestableStrategy) {
           expect(userBal).to.be.gt(BigNumber.from("0x0"));
         });
 
-        it.only("Harvests should make some money!", async function() {
+        it("Harvests should make some money!", async function() {
           let initialBalance;
           [, initialBalance] = await harvester();
 
