@@ -165,7 +165,7 @@ library SafeMath {
 
 // File contracts/lib/context.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -195,7 +195,7 @@ abstract contract Context {
 
 // File: contracts/GSN/Context.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -790,7 +790,7 @@ library SafeERC20 {
 
 // File contracts/interfaces/staking-rewards.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface IStakingRewards {
@@ -879,7 +879,7 @@ interface IStakingRewardsFactory {
 
 // File contracts/interfaces/vault.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface IVault is IERC20 {
@@ -909,7 +909,7 @@ interface IVault is IERC20 {
 
 // File contracts/interfaces/controller.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface IController {
@@ -947,7 +947,7 @@ interface IController {
 
 // File contracts/interfaces/uniswapv2.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 interface UniswapRouterV2 {
@@ -1184,9 +1184,7 @@ interface IUniswapV2Factory {
 
 // File contracts/interfaces/uniswapv3.sol
 
-// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity 0.8.4;
-pragma abicoder v2;
 
 interface ISwapRouter{
    struct ExactInputSingleParams {
@@ -1252,7 +1250,7 @@ interface ISwapRouter{
 
 // File contracts/strategies/strategy-base-v3.sol
 
-// SPDX-License-Identifier: MIT	
+	
 pragma solidity 0.8.4;
 pragma abicoder v2;
 
@@ -1671,7 +1669,7 @@ abstract contract StrategyBaseV3 {
 
 // File contracts/interfaces/hop.sol
 
-// SPDX-License-Identifier: MIT
+
 
 pragma solidity 0.8.4;
 
@@ -1699,7 +1697,7 @@ interface IHopSwap {
 
 // File contracts/strategies/hop/hop-farm-bases/strategy-hop-farm-base.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 
@@ -1899,7 +1897,7 @@ abstract contract StrategyHopFarmBase is StrategyBaseV3 {
 
 // File contracts/strategies/hop/strategy-hop-usdc.sol
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.4;
 
 contract StrategyHopUsdc is StrategyHopFarmBase {

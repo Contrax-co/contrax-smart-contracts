@@ -3,9 +3,7 @@ const {exec} = require('child_process');
 async function main() {
   const platform = "hop";
   const names = [
-    "weth",
-    "usdc",
-    "usdt"
+    "dai"
   ];
 
   const flatten = name => {

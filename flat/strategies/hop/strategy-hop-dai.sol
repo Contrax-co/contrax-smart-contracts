@@ -1895,19 +1895,20 @@ abstract contract StrategyHopFarmBase is StrategyBaseV3 {
 }
 
 
-// File contracts/strategies/hop/strategy-hop-weth.sol
+// File contracts/strategies/hop/strategy-hop-dai.sol
 
 
 pragma solidity 0.8.4;
 
-contract StrategyHopWeth is StrategyHopFarmBase {
+contract StrategyHopDai is StrategyHopFarmBase {
     // Token addresses
-    address public hop_weth_lp = 0x59745774Ed5EfF903e615F5A2282Cae03484985a;
-    address public heth = 0xDa7c0de432a9346bB6e96aC74e3B61A36d8a77eB;
+    address public hop_dai_lp = 0x68f5d998F00bB2460511021741D098c05721d8fF;
+    address public dai = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+    address public hdai = 0x46ae9BaB8CEA96610807a275EBD36f8e916b5C61;
 
     // Pool and staking addresses
-    address public weth_pool = 0x652d27c0F72771Ce5C76fd400edD61B406Ac6D97;
-    address public wethRewards = 0x755569159598f3702bdD7DFF6233A317C156d3Dd;
+    address public dai_pool = 0xa5A33aB9063395A90CCbEa2D86a62EcCf27B5742;
+    address public dai_rewards = 0xd4D28588ac1D9EF272aa29d4424e3E2A03789D1E;
 
     constructor(
         address _governance,
@@ -1916,11 +1917,11 @@ contract StrategyHopWeth is StrategyHopFarmBase {
         address _timelock
     )
         StrategyHopFarmBase(
-            wethRewards,
-            weth_pool,
-            weth,
-            heth,
-            hop_weth_lp,
+            dai_rewards,
+            dai_pool,
+            dai,
+            hdai,
+            hop_dai_lp,
             _governance,
             _strategist,
             _controller,
@@ -1931,6 +1932,6 @@ contract StrategyHopWeth is StrategyHopFarmBase {
     // **** Views ****
 
     function getName() external override pure returns (string memory) {
-        return "StrategyHopWeth";
+        return "StrategyHopDai";
     }
 }
