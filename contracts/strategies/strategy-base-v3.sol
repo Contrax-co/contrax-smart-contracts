@@ -9,9 +9,7 @@ import "../interfaces/staking-rewards.sol";
 import "../interfaces/vault.sol";
 import "../interfaces/controller.sol";
 import "../interfaces/uniswapv2.sol";
-
-import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
-import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
+import "../interfaces/uniswapv3.sol";
 
 
 /**
@@ -327,7 +325,7 @@ abstract contract StrategyBaseV3 {
     /// @notice swapExactInputSingle swaps a fixed amount of one token for a maximum possible amount of another
     /// using the _from/_to 0.3% pool by calling `exactInputSingle` in the swap router.
     /// @dev The calling address must approve this contract to spend at least `amountIn` worth of its _from token for this function to succeed.
-    /// @param amountIn The exact amount of _from that will be swapped for _to.
+    /// @param _amount The exact amount of _from that will be swapped for _to.
     /// @return amountOut The amount of _to received.
     function _swapUniswap(
         address _from,
@@ -359,8 +357,8 @@ abstract contract StrategyBaseV3 {
         uint256 _amount
     ) internal returns (uint256 amountOut){
 
-        IERC20(_from).safeApprove(uniswapRouterV3, 0);
-        IERC20(_from).safeApprove(uniswapRouterV3, _amount);
+        IERC20(path[0]).safeApprove(uniswapRouterV3, 0);
+        IERC20(path[0]).safeApprove(uniswapRouterV3, _amount);
 
         ISwapRouter.ExactInputParams memory params =
             ISwapRouter.ExactInputParams({

@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../../strategy-base.sol";
+import "../../strategy-base-v3.sol";
 import "../../../interfaces/hop.sol";
 
-import "../../../interfaces/uniswapv3.sol";
-
-abstract contract StrategyHopFarmBase is StrategyBase {
+abstract contract StrategyHopFarmBase is StrategyBaseV3 {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -14,10 +12,11 @@ abstract contract StrategyHopFarmBase is StrategyBase {
     // Token addresses
     address public hop = 0xc5102fE9359FD9a28f877a67E36B0F050d81a3CC;
 
-    address public stakingRewards = 0x755569159598f3702bdD7DFF6233A317C156d3Dd;
-    address public hopSwap = 0x652d27c0F72771Ce5C76fd400edD61B406Ac6D97;
+    // Staking addresses and pools
+    address public stakingRewards;
+    address public liquidityPool;
  
-    // WETH/<token1> pair
+    // <token0>/<token1> pair
     address public token0;
     address public token1;
     address rewardToken;
@@ -27,28 +26,23 @@ abstract contract StrategyHopFarmBase is StrategyBase {
     uint256 public keepReward = 1000;
     uint256 public constant keepMax = 10000;
 
-    uint256 public poolId;
-
-    uint24 public constant poolFee = 3000;
-
-    // DEX 
-    address public swapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564; 
-
     constructor(
+        address _stakingRewards,
+        address _liquidityPool,
         address _token0,
         address _token1,
-        uint256 _poolId,
         address _lp,
         address _governance,
         address _strategist,
         address _controller,
         address _timelock
     )
-        StrategyBase(_lp, _governance, _strategist, _controller, _timelock)
+        StrategyBaseV3(_lp, _governance, _strategist, _controller, _timelock)
     {
-        poolId = _poolId;
         token0 = _token0;
         token1 = _token1;
+        liquidityPool = _liquidityPool; 
+        stakingRewards = _stakingRewards;
     }
 
     function balanceOfPool() public view override returns (uint256) {
@@ -102,27 +96,6 @@ abstract contract StrategyHopFarmBase is StrategyBase {
         rewardToken = _rewardToken;
     }
 
-    function _swapHopToWeth(uint256 _amount) internal {
-
-        IERC20(hop).safeApprove(swapRouter, 0);
-        IERC20(hop).safeApprove(swapRouter, _amount);
-
-        ISwapRouter.ExactInputSingleParams memory params =
-            ISwapRouter.ExactInputSingleParams({
-                tokenIn: hop,
-                tokenOut: weth,
-                fee: poolFee,
-                recipient: address(this),
-                deadline: block.timestamp,
-                amountIn: _amount,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
-
-        // The call to `exactInputSingle` executes the swap.
-        ISwapRouter(swapRouter).exactInputSingle(params);
-
-    }
 
     // **** State Mutations ****
 
@@ -143,7 +116,7 @@ abstract contract StrategyHopFarmBase is StrategyBase {
             );
 
             _hop = IERC20(hop).balanceOf(address(this));
-            _swapHopToWeth(_hop);
+            _swapUniswap(hop, weth, _hop);
         }
 
         // Collect reward tokens
@@ -157,20 +130,24 @@ abstract contract StrategyHopFarmBase is StrategyBase {
                 );
 
                  _reward = IERC20(rewardToken).balanceOf(address(this));
-                _swapSushiswap(rewardToken, weth, _reward);
+                _swapUniswap(rewardToken, weth, _reward);
             }
         }
 
-        // Check WETH and swap 
+        // Checks token0 vs token1 and swap if necessary
+        if(token0 != weth){
+            uint256 _weth = IERC20(weth).balanceOf(address(this));
+            _swapUniswap(weth, token0, _weth);
+        }
+
         uint256 _token0 = IERC20(token0).balanceOf(address(this));
 
-        uint256 _tokenBalance0 = IHopSwap(hopSwap).getTokenBalance(0);
-        uint256 _tokenBalance1 = IHopSwap(hopSwap).getTokenBalance(1);
-
+        uint256 _tokenBalance0 = IHopSwap(liquidityPool).getTokenBalance(0);
+        uint256 _tokenBalance1 = IHopSwap(liquidityPool).getTokenBalance(1);
         if(_tokenBalance0 >= _tokenBalance1){
-            IERC20(token0).safeApprove(hopSwap, 0);
-            IERC20(token0).safeApprove(hopSwap, _token0);
-            IHopSwap(hopSwap).swap(
+            IERC20(token0).safeApprove(liquidityPool, 0);
+            IERC20(token0).safeApprove(liquidityPool, _token0);
+            IHopSwap(liquidityPool).swap(
                 0, 
                 1, 
                 _token0, 
@@ -189,12 +166,12 @@ abstract contract StrategyHopFarmBase is StrategyBase {
         amounts[1] = _token1;
 
         if (_token0 > 0 || _token1 > 0) {
-            IERC20(token0).safeApprove(hopSwap, 0);
-            IERC20(token0).safeApprove(hopSwap, _token0);
-            IERC20(token1).safeApprove(hopSwap, 0);
-            IERC20(token1).safeApprove(hopSwap, _token1);
+            IERC20(token0).safeApprove(liquidityPool, 0);
+            IERC20(token0).safeApprove(liquidityPool, _token0);
+            IERC20(token1).safeApprove(liquidityPool, 0);
+            IERC20(token1).safeApprove(liquidityPool, _token1);
 
-            IHopSwap(hopSwap).addLiquidity(
+            IHopSwap(liquidityPool).addLiquidity(
                 amounts, 
                 0, 
                 block.timestamp

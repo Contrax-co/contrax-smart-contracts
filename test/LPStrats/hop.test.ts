@@ -4,7 +4,15 @@ import { TestableStrategy, LPTestDefault } from "../strategy-test-case";
 const tests = [
     {
         name: "HopWeth",
-        controller: "sushi",
+        controller: "hop",
+    },
+    {
+        name: "HopUsdc",
+        controller: "hop",
+    },
+    {
+        name: "HopUsdt",
+        controller: "hop",
     },
 
 ];
