@@ -788,6 +788,163 @@ library SafeERC20 {
 }
 
 
+// File contracts/interfaces/staking-rewards.sol
+
+
+pragma solidity 0.8.4;
+
+interface IStakingRewards {
+    function balanceOf(address account) external view returns (uint256);
+
+    function balances(address account) external view returns (uint256);
+
+    function earned(address account) external view returns (uint256);
+
+    function exit() external;
+
+    function getReward() external;
+
+    function getRewardForDuration() external view returns (uint256);
+
+    function lastTimeRewardApplicable() external view returns (uint256);
+
+    function lastUpdateTime() external view returns (uint256);
+
+    function notifyRewardAmount(uint256 reward) external;
+
+    function periodFinish() external view returns (uint256);
+
+    function rewardPerToken() external view returns (uint256);
+
+    function rewardPerTokenStored() external view returns (uint256);
+
+    function rewardRate() external view returns (uint256);
+
+    function rewards(address) external view returns (uint256);
+
+    function rewardsDistribution() external view returns (address);
+
+    function rewardsDuration() external view returns (uint256);
+
+    function rewardsToken() external view returns (address);
+
+    function stake(uint256 amount) external;
+
+    function deposit(uint256 amount) external;
+
+    function stakeWithPermit(
+        uint256 amount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    function stakingToken() external view returns (address);
+
+    function totalSupply() external view returns (uint256);
+
+    function userRewardPerTokenPaid(address) external view returns (uint256);
+
+    function withdraw(uint256 amount) external;
+}
+
+interface IStakingRewardsFactory {
+    function deploy(address stakingToken, uint256 rewardAmount) external;
+
+    function isOwner() external view returns (bool);
+
+    function notifyRewardAmount(address stakingToken) external;
+
+    function notifyRewardAmounts() external;
+
+    function owner() external view returns (address);
+
+    function renounceOwnership() external;
+
+    function rewardsToken() external view returns (address);
+
+    function stakingRewardsGenesis() external view returns (uint256);
+
+    function stakingRewardsInfoByStakingToken(address)
+        external
+        view
+        returns (address stakingRewards, uint256 rewardAmount);
+
+    function stakingTokens(uint256) external view returns (address);
+
+    function transferOwnership(address newOwner) external;
+}
+
+
+// File contracts/interfaces/vault.sol
+
+
+pragma solidity 0.8.4;
+
+interface IVault is IERC20 {
+    function token() external view returns (address);
+    
+    function reward() external view returns (address);
+
+    function claimInsurance() external; // NOTE: Only yDelegatedVault implements this
+
+    function getRatio() external view returns (uint256);
+
+    function depositAll() external;
+    
+    function balance() external view returns (uint256);
+
+    function deposit(uint256) external;
+
+    function withdrawAll() external;
+
+    function withdraw(uint256) external;
+
+    function earn() external;
+
+    function decimals() external view returns (uint8);
+}
+
+
+// File contracts/interfaces/controller.sol
+
+
+pragma solidity 0.8.4;
+
+interface IController {
+    function vaults(address) external view returns (address);
+
+    function rewards() external view returns (address);
+
+    function devfund() external view returns (address);
+
+    function treasury() external view returns (address);
+
+    function balanceOf(address) external view returns (uint256);
+
+    function withdraw(address, uint256) external;
+
+    function earn(address, uint256) external;
+
+    // For Big Green Button:
+
+    function setVault(address _token, address _vault) external;
+
+    function approveStrategy(address _token, address _strategy) external;
+
+    function revokeStrategy(address _token, address _strategy) external;
+
+    function setStrategy(address _token, address _strategy) external;
+
+    function setStrategist(address _strategist) external;
+
+    function setGovernance(address _governance) external;
+
+    function setTimelock(address _timelock) external;
+}
+
+
 // File contracts/interfaces/uniswapv2.sol
 
 
@@ -1025,167 +1182,78 @@ interface IUniswapV2Factory {
 }
 
 
-// File contracts/interfaces/staking-rewards.sol
-
-
-pragma solidity 0.8.4;
-
-interface IStakingRewards {
-    function balanceOf(address account) external view returns (uint256);
-
-    function balances(address account) external view returns (uint256);
-
-    function earned(address account) external view returns (uint256);
-
-    function exit() external;
-
-    function getReward() external;
-
-    function getRewardForDuration() external view returns (uint256);
-
-    function lastTimeRewardApplicable() external view returns (uint256);
-
-    function lastUpdateTime() external view returns (uint256);
-
-    function notifyRewardAmount(uint256 reward) external;
-
-    function periodFinish() external view returns (uint256);
-
-    function rewardPerToken() external view returns (uint256);
-
-    function rewardPerTokenStored() external view returns (uint256);
-
-    function rewardRate() external view returns (uint256);
-
-    function rewards(address) external view returns (uint256);
-
-    function rewardsDistribution() external view returns (address);
-
-    function rewardsDuration() external view returns (uint256);
-
-    function rewardsToken() external view returns (address);
-
-    function stake(uint256 amount) external;
-
-    function deposit(uint256 amount) external;
-
-    function stakeWithPermit(
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
-
-    function stakingToken() external view returns (address);
-
-    function totalSupply() external view returns (uint256);
-
-    function userRewardPerTokenPaid(address) external view returns (uint256);
-
-    function withdraw(uint256 amount) external;
-}
-
-interface IStakingRewardsFactory {
-    function deploy(address stakingToken, uint256 rewardAmount) external;
-
-    function isOwner() external view returns (bool);
-
-    function notifyRewardAmount(address stakingToken) external;
-
-    function notifyRewardAmounts() external;
-
-    function owner() external view returns (address);
-
-    function renounceOwnership() external;
-
-    function rewardsToken() external view returns (address);
-
-    function stakingRewardsGenesis() external view returns (uint256);
-
-    function stakingRewardsInfoByStakingToken(address)
-        external
-        view
-        returns (address stakingRewards, uint256 rewardAmount);
-
-    function stakingTokens(uint256) external view returns (address);
-
-    function transferOwnership(address newOwner) external;
-}
-
-
-// File contracts/interfaces/vault.sol
-
+// File contracts/interfaces/uniswapv3.sol
 
 pragma solidity 0.8.4;
 
-interface IVault is IERC20 {
-    function token() external view returns (address);
-    
-    function reward() external view returns (address);
+interface ISwapRouter{
+   struct ExactInputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        uint160 sqrtPriceLimitX96;
+    }
 
-    function claimInsurance() external; // NOTE: Only yDelegatedVault implements this
+    /// @notice Swaps `amountIn` of one token for as much as possible of another token
+    /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
 
-    function getRatio() external view returns (uint256);
+    struct ExactInputParams {
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+    }
 
-    function depositAll() external;
-    
-    function balance() external view returns (uint256);
+    /// @notice Swaps `amountIn` of one token for as much as possible of another along the specified path
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut);
 
-    function deposit(uint256) external;
+    struct ExactOutputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+        uint160 sqrtPriceLimitX96;
+    }
 
-    function withdrawAll() external;
+    /// @notice Swaps as little as possible of one token for `amountOut` of another token
+    /// @param params The parameters necessary for the swap, encoded as `ExactOutputSingleParams` in calldata
+    /// @return amountIn The amount of the input token
+    function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn);
 
-    function withdraw(uint256) external;
+    struct ExactOutputParams {
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+    }
 
-    function earn() external;
+    /// @notice Swaps as little as possible of one token for `amountOut` of another along the specified path (reversed)
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata
+    /// @return amountIn The amount of the input token
+    function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);
 
-    function decimals() external view returns (uint8);
 }
 
 
-// File contracts/interfaces/controller.sol
-
-
-pragma solidity 0.8.4;
-
-interface IController {
-    function vaults(address) external view returns (address);
-
-    function rewards() external view returns (address);
-
-    function devfund() external view returns (address);
-
-    function treasury() external view returns (address);
-
-    function balanceOf(address) external view returns (uint256);
-
-    function withdraw(address, uint256) external;
-
-    function earn(address, uint256) external;
-
-    // For Big Green Button:
-
-    function setVault(address _token, address _vault) external;
-
-    function approveStrategy(address _token, address _strategy) external;
-
-    function revokeStrategy(address _token, address _strategy) external;
-
-    function setStrategy(address _token, address _strategy) external;
-
-    function setStrategist(address _strategist) external;
-
-    function setGovernance(address _governance) external;
-
-    function setTimelock(address _timelock) external;
-}
-
-
-// File contracts/strategies/strategy-base.sol
+// File contracts/strategies/strategy-base-v3.sol
 
 	
 pragma solidity 0.8.4;
+pragma abicoder v2;
+
 
 
 
@@ -1194,7 +1262,7 @@ pragma solidity 0.8.4;
 /**
  * The is the Strategy Base that most LPs will inherit 
  */
-abstract contract StrategyBase {
+abstract contract StrategyBaseV3 {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -1202,11 +1270,14 @@ abstract contract StrategyBase {
     // Tokens
     address public want;
     address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
-    address public constant uni = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
 
     // Dex
-    address public univ2Router2 = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106;
+    address public uniswapRouterV3 = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    address public sushiRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
     address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
+
+    // For this example, we will set the pool fee to 0.3%.
+    uint24 public constant poolFee = 3000;
 
     // Perfomance fees - start with 10%
     uint256 public performanceTreasuryFee = 1000;
@@ -1229,9 +1300,6 @@ abstract contract StrategyBase {
     address public controller;
     address public strategist;
     address public timelock;
-
-    // Dex 
-    address public sushiRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
 
     mapping(address => bool) public harvesters;
 
@@ -1452,7 +1520,6 @@ abstract contract StrategyBase {
                 }
         }
     }
-
     // **** Internal functions ****
     function _swapSushiswap(
         address _from,
@@ -1502,6 +1569,57 @@ abstract contract StrategyBase {
         );
     }
 
+    /// @notice swapExactInputSingle swaps a fixed amount of one token for a maximum possible amount of another
+    /// using the _from/_to 0.3% pool by calling `exactInputSingle` in the swap router.
+    /// @dev The calling address must approve this contract to spend at least `amountIn` worth of its _from token for this function to succeed.
+    /// @param _amount The exact amount of _from that will be swapped for _to.
+    /// @return amountOut The amount of _to received.
+    function _swapUniswap(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal returns (uint256 amountOut){
+
+        IERC20(_from).safeApprove(uniswapRouterV3, 0);
+        IERC20(_from).safeApprove(uniswapRouterV3, _amount);
+
+        ISwapRouter.ExactInputSingleParams memory params =
+        ISwapRouter.ExactInputSingleParams({
+            tokenIn: _from,
+            tokenOut: _to,
+            fee: poolFee,
+            recipient: address(this),
+            deadline: block.timestamp,
+            amountIn: _amount,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+        });
+
+        // The call to `exactInputSingle` executes the swap.
+        amountOut = ISwapRouter(uniswapRouterV3).exactInputSingle(params);
+    }
+
+    function _swapUniswapWithPath(
+        address[] memory path,
+        uint256 _amount
+    ) internal returns (uint256 amountOut){
+
+        IERC20(path[0]).safeApprove(uniswapRouterV3, 0);
+        IERC20(path[0]).safeApprove(uniswapRouterV3, _amount);
+
+        ISwapRouter.ExactInputParams memory params =
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(path[0], poolFee, path[1], poolFee, path[2]),
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: _amount,
+                amountOutMinimum: 0
+            });
+
+        // Executes the swap
+        amountOut = ISwapRouter(uniswapRouterV3).exactInput(params);
+    }
+
     function _distributePerformanceFeesAndDeposit() internal {
         uint256 _want = IERC20(want).balanceOf(address(this));
 
@@ -1549,98 +1667,53 @@ abstract contract StrategyBase {
 }
 
 
-// File contracts/lib/BoringERC20.sol
+// File contracts/interfaces/hop.sol
+
+
 
 pragma solidity 0.8.4;
 
-library BoringERC20 {
-    function safeSymbol(IERC20 token) internal view returns(string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x95d89b41));
-        return success && data.length > 0 ? abi.decode(data, (string)) : "???";
-    }
+interface IHopStakingRewards {
+  function balanceOf(address account) external view returns (uint256);
 
-    function safeName(IERC20 token) internal view returns(string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x06fdde03));
-        return success && data.length > 0 ? abi.decode(data, (string)) : "???";
-    }
+  function earned(address account) external view returns (uint256);
 
-    function safeDecimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567));
-        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
-    }
+  function stake(uint256 amount) external; 
 
-    function safeTransfer(IERC20 token, address to, uint256 amount) internal {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, to, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: Transfer failed");
-    }
+  function getReward() external;
 
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 amount) internal {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0x23b872dd, from, to, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: TransferFrom failed");
-    }
+  function withdraw(uint256 amount) external;
+
+}
+
+interface IHopSwap {
+  function swap(uint8 tokenIndexFrom, uint8 tokenIndexTo, uint256 dx, uint256 minDy, uint256 deadline) external returns (uint256);
+
+  function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline) external returns (uint256);
+
+  function getTokenBalance(uint8 index) external view returns (uint256);
 }
 
 
-// File contracts/interfaces/IRewarder.sol
-
-
-
-pragma solidity 0.8.4;
-
-interface IRewarder {
-    function onSushiReward(uint256 pid, address user, address recipient, uint256 sushiAmount, uint256 newLpAmount) external;
-    function pendingTokens(uint256 pid, address user, uint256 sushiAmount) external view returns (IERC20[] memory, uint256[] memory);
-}
-
-
-// File contracts/interfaces/minichefv2.sol
-
-
-pragma solidity 0.8.4;
-pragma experimental ABIEncoderV2;
-
-interface IMiniChefV2{
-    struct UserInfo {
-        uint256 amount;
-        uint256 rewardDebt;
-    }
-
-    struct PoolInfo {
-        uint128 accSushiPerShare;
-        uint64 lastRewardTime;
-        uint64 allocPoint;
-    }
-
-    function rewarder(uint256 _pid) external view returns (IRewarder);
-    function poolLength() external view returns (uint256);
-    function updatePool(uint256 pid) external returns (IMiniChefV2.PoolInfo memory);
-    function userInfo(uint256 _pid, address _user) external view returns (uint256, uint256);
-    function deposit(uint256 pid, uint256 amount, address to) external;
-    function withdraw(uint256 pid, uint256 amount, address to) external;
-    function harvest(uint256 pid, address to) external;
-    function withdrawAndHarvest(uint256 pid, uint256 amount, address to) external;
-    function emergencyWithdraw(uint256 pid, address to) external;
-    function pendingSushi(uint256 _pid, address _user) external view returns (uint256 pending);
-}
-
-
-// File contracts/strategies/sushi-farm-bases/strategy-sushi-farm-base.sol
+// File contracts/strategies/hop/hop-farm-bases/strategy-hop-farm-base.sol
 
 
 pragma solidity 0.8.4;
 
 
-
-abstract contract StrategySushiFarmBase is StrategyBase {
+abstract contract StrategyHopFarmBase is StrategyBaseV3 {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
 
     // Token addresses
-    address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
-    address public constant miniChef = 0xF4d73326C13a4Fc5FD7A064217e12780e9Bd62c3;
+    address public hop = 0xc5102fE9359FD9a28f877a67E36B0F050d81a3CC;
 
-    // WETH/<token1> pair
+    // Staking addresses and pools
+    address public stakingRewards;
+    address public liquidityPool;
+ 
+    // <token0>/<token1> pair
     address public token0;
     address public token1;
     address rewardToken;
@@ -1650,48 +1723,43 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     uint256 public keepReward = 1000;
     uint256 public constant keepMax = 10000;
 
-    uint256 public poolId;
-
     constructor(
+        address _stakingRewards,
+        address _liquidityPool,
         address _token0,
         address _token1,
-        uint256 _poolId,
         address _lp,
         address _governance,
         address _strategist,
         address _controller,
         address _timelock
     )
-        StrategyBase(_lp, _governance, _strategist, _controller, _timelock)
+        StrategyBaseV3(_lp, _governance, _strategist, _controller, _timelock)
     {
-        poolId = _poolId;
         token0 = _token0;
         token1 = _token1;
+        liquidityPool = _liquidityPool; 
+        stakingRewards = _stakingRewards;
     }
 
     function balanceOfPool() public view override returns (uint256) {
-        (uint256 amount, ) = IMiniChefV2(miniChef).userInfo(
-            poolId,
-            address(this)
-        );
+        uint256 amount = IHopStakingRewards(stakingRewards).balanceOf(address(this));
+    
         return amount;
     }
 
     function getHarvestable() external view returns (uint256) {
-        uint256 _pendingSushi = IMiniChefV2(miniChef).pendingSushi(
-            poolId,
-            address(this)
-        );
-        return (_pendingSushi);
+        uint256 _pendingHop = IHopStakingRewards(stakingRewards).earned(address(this));
+        return _pendingHop;
     }
 
     // **** Setters ****
     function deposit() public override {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
-            IERC20(want).safeApprove(miniChef, 0);
-            IERC20(want).safeApprove(miniChef, _want);
-            IMiniChefV2(miniChef).deposit(poolId, _want, address(this));
+            IERC20(want).safeApprove(stakingRewards, 0);
+            IERC20(want).safeApprove(stakingRewards, _want);
+            IHopStakingRewards(stakingRewards).stake(_want);
         }
     }
 
@@ -1700,7 +1768,8 @@ abstract contract StrategySushiFarmBase is StrategyBase {
         override
         returns (uint256)
     {
-        IMiniChefV2(miniChef).withdraw(poolId, _amount, address(this));
+        IHopStakingRewards(stakingRewards).withdraw(_amount);
+
         return _amount;
     }
 
@@ -1724,25 +1793,27 @@ abstract contract StrategySushiFarmBase is StrategyBase {
         rewardToken = _rewardToken;
     }
 
+
     // **** State Mutations ****
 
     // Declare a Harvest Event
     event Harvest(uint _timestamp, uint _value); 
 
     function harvest() public override onlyBenevolent {
-        // Collects SUSHI tokens
-        IMiniChefV2(miniChef).harvest(poolId, address(this));
-        uint256 _sushi = IERC20(sushi).balanceOf(address(this));
-        if (_sushi > 0) {
+        // Collects REWARD token(s)
+        IHopStakingRewards(stakingRewards).getReward();
+
+        uint256 _hop = IERC20(hop).balanceOf(address(this));
+        if (_hop > 0) {
             // 10% is locked up for future gov
-            uint256 _keepSUSHI = _sushi.mul(keep).div(keepMax);
-            IERC20(sushi).safeTransfer(
+            uint256 _keepHOP = _hop.mul(keep).div(keepMax);
+            IERC20(hop).safeTransfer(
                 IController(controller).treasury(),
-                _keepSUSHI
+                _keepHOP
             );
 
-            _sushi = IERC20(sushi).balanceOf(address(this));
-            _swapSushiswap(sushi, weth, _sushi);
+            _hop = IERC20(hop).balanceOf(address(this));
+            _swapUniswap(hop, weth, _hop);
         }
 
         // Collect reward tokens
@@ -1756,41 +1827,53 @@ abstract contract StrategySushiFarmBase is StrategyBase {
                 );
 
                  _reward = IERC20(rewardToken).balanceOf(address(this));
-                _swapSushiswap(rewardToken, weth, _reward);
+                _swapUniswap(rewardToken, weth, _reward);
             }
         }
 
-        // Swap half WETH for token0
-        uint256 _weth = IERC20(weth).balanceOf(address(this));
-        if (_weth > 0 && token0 != weth) {
-            _swapSushiswap(weth, token0, _weth.div(2));
+        // Checks token0 vs token1 and swap if necessary
+        if(token0 != weth){
+            uint256 _weth = IERC20(weth).balanceOf(address(this));
+            _swapUniswap(weth, token0, _weth);
         }
 
-        // Swap half WETH for token1
-        if (_weth > 0 && token1 != weth) {
-            _swapSushiswap(weth, token1, _weth.div(2));
-        }
-
-        // Adds in liquidity for token0/token1
         uint256 _token0 = IERC20(token0).balanceOf(address(this));
+
+        uint256 _tokenBalance0 = IHopSwap(liquidityPool).getTokenBalance(0);
+        uint256 _tokenBalance1 = IHopSwap(liquidityPool).getTokenBalance(1);
+        if(_tokenBalance0 >= _tokenBalance1){
+            IERC20(token0).safeApprove(liquidityPool, 0);
+            IERC20(token0).safeApprove(liquidityPool, _token0);
+            IHopSwap(liquidityPool).swap(
+                0, 
+                1, 
+                _token0, 
+                0, 
+                block.timestamp
+            ); 
+        }
+        
+        // Adds in liquidity for token0/token1
+        _token0 = IERC20(token0).balanceOf(address(this));
         uint256 _token1 = IERC20(token1).balanceOf(address(this));
-        if (_token0 > 0 && _token1 > 0) {
-            IERC20(token0).safeApprove(sushiRouter, 0);
-            IERC20(token0).safeApprove(sushiRouter, _token0);
-            IERC20(token1).safeApprove(sushiRouter, 0);
-            IERC20(token1).safeApprove(sushiRouter, _token1);
 
-            UniswapRouterV2(sushiRouter).addLiquidity(
-                token0,
-                token1,
-                _token0,
-                _token1,
-                0,
-                0,
-                address(this),
-                block.timestamp.add(60)
+        uint256[] memory amounts;
+        amounts = new uint256[](2);
+        amounts[0] = _token0;
+        amounts[1] = _token1;
+
+        if (_token0 > 0 || _token1 > 0) {
+            IERC20(token0).safeApprove(liquidityPool, 0);
+            IERC20(token0).safeApprove(liquidityPool, _token0);
+            IERC20(token1).safeApprove(liquidityPool, 0);
+            IERC20(token1).safeApprove(liquidityPool, _token1);
+
+            IHopSwap(liquidityPool).addLiquidity(
+                amounts, 
+                0, 
+                block.timestamp
             );
-
+ 
             // Donates DUST
             IERC20(token0).transfer(
                 IController(controller).treasury(),
@@ -1803,6 +1886,7 @@ abstract contract StrategySushiFarmBase is StrategyBase {
         }
 
         uint256 _want = IERC20(want).balanceOf(address(this));
+    
         emit Harvest(block.timestamp, _want);
 
         // We want to get back SUSHI LP tokens
@@ -1811,17 +1895,20 @@ abstract contract StrategySushiFarmBase is StrategyBase {
 }
 
 
-// File contracts/strategies/sushi/strategy-sushi-weth-rdpx.sol
+// File contracts/strategies/hop/strategy-hop-usdt.sol
 
 
 pragma solidity 0.8.4;
 
-contract StrategySushiWethRdpx is StrategySushiFarmBase {
-    // Token/ETH pool id in MasterChef contract
-    uint256 public sushi_weth_rdpx_poolId = 23;
+contract StrategyHopUsdt is StrategyHopFarmBase {
     // Token addresses
-    address public sushi_weth_rdpx_lp = 0x7418F5A2621E13c05d1EFBd71ec922070794b90a;
-    address public rdpx = 0x32Eb7902D4134bf98A28b963D26de779AF92A212;
+    address public hop_usdt_lp = 0xCe3B19D820CB8B9ae370E423B0a329c4314335fE;
+    address public usdt = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+    address public husdt = 0x12e59C59D282D2C00f3166915BED6DC2F5e2B5C7;
+
+    // Pool and staking addresses
+    address public usdt_pool = 0x18f7402B673Ba6Fb5EA4B95768aABb8aaD7ef18a;
+    address public usdt_rewards = 0x9Dd8685463285aD5a94D2c128bda3c5e8a6173c8;
 
     constructor(
         address _governance,
@@ -1829,11 +1916,12 @@ contract StrategySushiWethRdpx is StrategySushiFarmBase {
         address _controller,
         address _timelock
     )
-        StrategySushiFarmBase(
-            weth,
-            rdpx,
-            sushi_weth_rdpx_poolId,
-            sushi_weth_rdpx_lp,
+        StrategyHopFarmBase(
+            usdt_rewards,
+            usdt_pool,
+            usdt,
+            husdt,
+            hop_usdt_lp,
             _governance,
             _strategist,
             _controller,
@@ -1844,6 +1932,6 @@ contract StrategySushiWethRdpx is StrategySushiFarmBase {
     // **** Views ****
 
     function getName() external override pure returns (string memory) {
-        return "StrategySushiWethRdpx";
+        return "StrategyHopUsdt";
     }
 }

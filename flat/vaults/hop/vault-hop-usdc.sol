@@ -826,14 +826,14 @@ library SafeERC20 {
 }
 
 
-// File contracts/vaults/sushi/vault-sushi-weth-dpx.sol
+// File contracts/vaults/hop/vault-hop-usdc.sol
 
 // https://github.com/iearn-finance/vaults/blob/master/contracts/vaults/yVault.sol
 
 pragma solidity 0.8.4;
 
 
-contract VaultSushiWethDpx is ERC20 {
+contract VaultHopUsdc is ERC20 {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
