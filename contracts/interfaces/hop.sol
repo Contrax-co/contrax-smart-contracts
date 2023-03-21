@@ -21,4 +21,17 @@ interface IHopSwap {
   function addLiquidity(uint256[] calldata amounts, uint256 minToMint, uint256 deadline) external returns (uint256);
 
   function getTokenBalance(uint8 index) external view returns (uint256);
+
+  function getToken(uint8 index) external view returns (address);
+
+  function removeLiquidity(
+        uint256 amount,
+        uint256[] calldata minAmounts,
+        uint256 deadline
+  ) external returns (uint256[] memory) 
+}
+
+interface ILPToken {
+  function swap() external view returns (address);
+
 }
