@@ -104,7 +104,6 @@ describe( "Tests for Zapper", async () => {
         await overwriteTokenAmount(asset_addr2, wallet_addr, txnAmt, 51);
 
 
-
         wantContract = await ethers.getContractAt("ERC20", want_addr, walletSigner);
       
     })
@@ -138,17 +137,11 @@ describe( "Tests for Zapper", async () => {
 
     it.only("Should deposit usdc from the zapper into the vault", async function() {
       let _vaultBefore = await Vault.connect(walletSigner).balanceOf(await walletSigner.getAddress()); 
-      console.log("Vault balance before is", _vaultBefore);
 
       await assetContract2.connect(walletSigner).approve(zapper_addr, txnAmt);
-
-      console.log("Bal is", await assetContract2.balanceOf(await walletSigner.getAddress()));
       await Zapper.connect(walletSigner).zapIn(vault_addr, 0, asset_addr2, txnAmt);
 
-      console.log("part 4");
-
       let _vaultAfter = await Vault.connect(walletSigner).balanceOf(await walletSigner.getAddress());
-      console.log(`\tThe balance the user has in the vault after depositing is ${_vaultAfter}`); 
 
       let assetBalAfter2 = await assetContract2.connect(walletSigner).balanceOf(await walletSigner.getAddress());
 

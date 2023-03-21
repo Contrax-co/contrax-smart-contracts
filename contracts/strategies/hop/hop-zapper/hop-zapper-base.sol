@@ -100,21 +100,8 @@ abstract contract HopZapperBase {
         }
     }
 
-    // // transfers tokens from msg.sender to this contract 
-    // function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external {
-    //     require(tokenInAmount >= minimumAmount, "Insignificant input amount");
-    //     require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
 
-    //     // transfer token 
-    //     IERC20(tokenIn).safeTransferFrom(
-    //         msg.sender,
-    //         address(this),
-    //         tokenInAmount
-    //     );
-    //     _swapAndStake(vault, tokenAmountOutMin, tokenIn);
-    // }
-
-     // transfers tokens from msg.sender to this contract 
+    // transfers tokens from msg.sender to this contract 
     function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external {
         require(tokenInAmount >= minimumAmount, "Insignificant input amount");
         require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
@@ -126,37 +113,28 @@ abstract contract HopZapperBase {
             tokenInAmount
         );
 
-        console.log("Am i here");
-
         (, IHopSwap pair) = _getVaultPair(vault);
         (address desiredToken) = pair.getToken(0);
-
-        console.log("The amount of tokens in is", IERC20(tokenIn).balanceOf(address(this)));
 
         if(desiredToken != tokenIn){
             address[] memory path = new address[](2);
             path[0] = tokenIn;
             path[1] = desiredToken;
 
-            console.log("The token in is", tokenIn);
-            console.log("The desired Token is", desiredToken);
-
             _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputParams memory params =
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(path[0], poolFee, weth, poolFee, path[1]),
+            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+                tokenIn: path[0],
+                tokenOut: path[1],
+                fee: poolFee,
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: tokenInAmount,
-                amountOutMinimum: 0
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
             });
 
-            // Executes the swap
-            uint256 amountOut = ISwapRouter(router).exactInput(params);
-
-            console.log("The amount of tokens in after swap is", IERC20(tokenIn).balanceOf(address(this)));
-            console.log("The amount of desiredTokens after swap is", amountOut);
-
+            // The call to `exactInputSingle` executes the swap.
+            ISwapRouter(address(router)).exactInputSingle(params);
             _swapAndStake(vault, tokenAmountOutMin, desiredToken);
 
         }else {
