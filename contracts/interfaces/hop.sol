@@ -28,7 +28,7 @@ interface IHopSwap {
         uint256 amount,
         uint256[] calldata minAmounts,
         uint256 deadline
-  ) external returns (uint256[] memory) 
+  ) external returns (uint256[] memory);
 }
 
 interface ILPToken {

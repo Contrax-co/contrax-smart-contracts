@@ -16,20 +16,21 @@ import {
 let txnAmt: string = "250000000000000";
 
 const wallet_addr = process.env.WALLET_ADDR === undefined ? '' : process.env['WALLET_ADDR'];
-let name = "FishWstEthWeth";
-let vault_addr = "0x33BD22e9D83C7A74199405aF2D8dfA21309F719F";
+let name = "HopDai";
+let vault_addr = "0x8ca3f11485Bd85Dd0E952C6b21981DEe8CD1E901";
 // let strategy_addr = test_case.strategyAddress;
 // let slot = test_case.slot;
 let timelockIsStrategist = false;
 
 let snapshotId: string;
 
-let controller_addr= "0xF36059454bE1e87E88506DdcF2aa65a1CEF8C1bF";
+let controller_addr= "0x8121Fa4e27051DC3b86E4e7d6Fb2a02d62fe6F68";
 
 let Zapper: Contract; 
 let zapper_addr: string;
 
 let assetContract: Contract;
+let assetContract2: Contract;
 let wantContract: Contract;
 let Controller: Contract;
 let Vault: Contract;
@@ -41,8 +42,9 @@ let controllerSigner: Signer;
 let timelockSigner: Signer;
 
 
-let asset_addr = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
-let want_addr = "0xe263353986a4638144c41E44cEBAc9d0A76ECab3"
+let asset_addr = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
+let asset_addr2 = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8";
+let want_addr = "0x68f5d998F00bB2460511021741D098c05721d8fF"; 
 
 describe( "Tests for Zapper", async () => {
 
@@ -86,7 +88,7 @@ describe( "Tests for Zapper", async () => {
         //     "0x10000000000000000000000",]
         // );
 
-        const zapperFactory = await ethers.getContractFactory('VaultZapEthFish');
+        const zapperFactory = await ethers.getContractFactory('VaultZapHop');
         Zapper = await zapperFactory.connect(walletSigner).deploy();
 
         Vault = await ethers.getContractAt(vaultName, vault_addr, walletSigner);
@@ -96,7 +98,12 @@ describe( "Tests for Zapper", async () => {
         console.log(`Deployed Zapper at ${zapper_addr}`);
 
         assetContract = await ethers.getContractAt("ERC20", asset_addr, walletSigner);
-        await overwriteTokenAmount(asset_addr, wallet_addr, txnAmt, 51);
+        await overwriteTokenAmount(asset_addr, wallet_addr, txnAmt, 2);
+
+        assetContract2 = await ethers.getContractAt("ERC20", asset_addr2, walletSigner);
+        await overwriteTokenAmount(asset_addr2, wallet_addr, txnAmt, 51);
+
+
 
         wantContract = await ethers.getContractAt("ERC20", want_addr, walletSigner);
       
@@ -106,28 +113,48 @@ describe( "Tests for Zapper", async () => {
       let BNBal = await assetContract.balanceOf(await walletSigner.getAddress());
       console.log(`The balance of BNBal is ${BNBal}`);
 
+      let BNBal2 = await assetContract2.balanceOf(await walletSigner.getAddress());
+      console.log(`The balance of BNBal is ${BNBal2}`);
+
       const BN = ethers.BigNumber.from(txnAmt)._hex.toString();
       console.log(`The balance of BN is ${BN}`);
 
       expect(BNBal).to.be.equals(BN);
+      expect(BNBal2).to.be.equals(BN);
     });
-
-    it("Vault initialized with zero balance for user", async function() {
-      let BNBal = await Vault.balanceOf(await walletSigner.getAddress());
-      expect(BNBal).to.be.equals(BigNumber.from("0x0"));
-    });
-    
 
     it("Should deposit from the zapper to the vault", async function() {
       let _vaultBefore = await Vault.connect(walletSigner).balanceOf(await walletSigner.getAddress()); 
-      console.log(`The balance the user has in the vault before depositing is ${_vaultBefore}`); 
 
-      await Zapper.connect(walletSigner).zapInETH(vault_addr, 0, asset_addr, {value: "10000000000000000000"});
+      await Zapper.connect(walletSigner).zapInETH(vault_addr, 0, asset_addr, {value: "15000000000000000000"});
 
       let _vaultAfter = await Vault.connect(walletSigner).balanceOf(await walletSigner.getAddress()); 
-      console.log(`The balance the user has in the vault after depositing is ${_vaultAfter}`); 
+      console.log(`\tThe balance the user has in the vault after depositing is ${_vaultAfter}`); 
 
+      expect(_vaultBefore).to.be.equals(BigNumber.from("0x0"));
       expect(_vaultAfter).to.be.gt(_vaultBefore);
+
+    });
+
+    it.only("Should deposit usdc from the zapper into the vault", async function() {
+      let _vaultBefore = await Vault.connect(walletSigner).balanceOf(await walletSigner.getAddress()); 
+      console.log("Vault balance before is", _vaultBefore);
+
+      await assetContract2.connect(walletSigner).approve(zapper_addr, txnAmt);
+
+      console.log("Bal is", await assetContract2.balanceOf(await walletSigner.getAddress()));
+      await Zapper.connect(walletSigner).zapIn(vault_addr, 0, asset_addr2, txnAmt);
+
+      console.log("part 4");
+
+      let _vaultAfter = await Vault.connect(walletSigner).balanceOf(await walletSigner.getAddress());
+      console.log(`\tThe balance the user has in the vault after depositing is ${_vaultAfter}`); 
+
+      let assetBalAfter2 = await assetContract2.connect(walletSigner).balanceOf(await walletSigner.getAddress());
+
+      expect(_vaultBefore).to.be.equals(BigNumber.from("0x0"));
+      expect(_vaultAfter).to.be.gt(_vaultBefore);
+      expect(assetBalAfter2).to.be.equals(BigNumber.from("0x0"));
 
     });
 

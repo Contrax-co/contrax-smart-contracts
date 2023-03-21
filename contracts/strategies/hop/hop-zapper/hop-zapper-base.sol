@@ -9,6 +9,8 @@ import "../../../interfaces/weth.sol";
 import "../../../interfaces/vault.sol";
 import "../../../interfaces/uniswapv3.sol";
 
+import "hardhat/console.sol";
+
 abstract contract HopZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -34,8 +36,6 @@ abstract contract HopZapperBase {
     receive() external payable {
         assert(msg.sender == weth);
     }
-
-    function _getSwapAmount(uint256 investmentA, uint256 reserveA, uint256 reserveB) public view virtual returns (uint256 swapAmount);
 
     //returns DUST
     function _returnAssets(address[] memory tokens) internal {
@@ -100,7 +100,21 @@ abstract contract HopZapperBase {
         }
     }
 
-    // transfers tokens from msg.sender to this contract 
+    // // transfers tokens from msg.sender to this contract 
+    // function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external {
+    //     require(tokenInAmount >= minimumAmount, "Insignificant input amount");
+    //     require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
+
+    //     // transfer token 
+    //     IERC20(tokenIn).safeTransferFrom(
+    //         msg.sender,
+    //         address(this),
+    //         tokenInAmount
+    //     );
+    //     _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+    // }
+
+     // transfers tokens from msg.sender to this contract 
     function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external {
         require(tokenInAmount >= minimumAmount, "Insignificant input amount");
         require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
@@ -111,7 +125,44 @@ abstract contract HopZapperBase {
             address(this),
             tokenInAmount
         );
-        _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+
+        console.log("Am i here");
+
+        (, IHopSwap pair) = _getVaultPair(vault);
+        (address desiredToken) = pair.getToken(0);
+
+        console.log("The amount of tokens in is", IERC20(tokenIn).balanceOf(address(this)));
+
+        if(desiredToken != tokenIn){
+            address[] memory path = new address[](2);
+            path[0] = tokenIn;
+            path[1] = desiredToken;
+
+            console.log("The token in is", tokenIn);
+            console.log("The desired Token is", desiredToken);
+
+            _approveTokenIfNeeded(path[0], address(router));
+            ISwapRouter.ExactInputParams memory params =
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(path[0], poolFee, weth, poolFee, path[1]),
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: tokenInAmount,
+                amountOutMinimum: 0
+            });
+
+            // Executes the swap
+            uint256 amountOut = ISwapRouter(router).exactInput(params);
+
+            console.log("The amount of tokens in after swap is", IERC20(tokenIn).balanceOf(address(this)));
+            console.log("The amount of desiredTokens after swap is", amountOut);
+
+            _swapAndStake(vault, tokenAmountOutMin, desiredToken);
+
+        }else {
+            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+        }
+        
     }
 
     function zapOutAndSwap(address vault, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public virtual;
@@ -119,7 +170,7 @@ abstract contract HopZapperBase {
     function zapOutAndSwapEth(address vault, uint256 withdrawAmount, uint256 desiredTokenOutMin) public virtual;
 
     function _removeLiquidity(address token, IHopSwap pair) internal {
-        _approveTokenIfNeeded(token, pair);
+        _approveTokenIfNeeded(token, address(pair));
 
         uint256[] memory amounts;
         amounts = new uint256[](2);
@@ -131,7 +182,7 @@ abstract contract HopZapperBase {
 
     function _getVaultPair(address vault_addr) internal view returns (IVault vault, IHopSwap pair){
         vault = IVault(vault_addr);
-        pair = ILPToken(vault.token()).swap();
+        pair = IHopSwap(ILPToken(vault.token()).swap());
 
         require(ILPToken(vault.token()).swap() != address(0), "Liquidity pool address cannot be the zero address");
     }
