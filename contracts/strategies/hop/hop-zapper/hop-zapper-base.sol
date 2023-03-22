@@ -9,8 +9,6 @@ import "../../../interfaces/weth.sol";
 import "../../../interfaces/vault.sol";
 import "../../../interfaces/uniswapv3.sol";
 
-import "hardhat/console.sol";
-
 abstract contract HopZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
