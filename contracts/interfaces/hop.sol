@@ -29,6 +29,18 @@ interface IHopSwap {
         uint256[] calldata minAmounts,
         uint256 deadline
   ) external returns (uint256[] memory);
+
+  function calculateSwap(
+      uint8 tokenIndexFrom,
+      uint8 tokenIndexTo,
+      uint256 dx
+  ) external view returns (uint256);
+
+  function calculateTokenAmount(
+      address account,
+      uint256[] calldata amounts,
+      bool deposit
+  ) external view returns (uint256); 
 }
 
 interface ILPToken {

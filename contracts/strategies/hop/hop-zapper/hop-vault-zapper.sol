@@ -3,7 +3,7 @@ pragma solidity 0.8.4;
 
 import "./hop-zapper-base.sol";
 
-contract VaultZapHop is HopZapperBase {
+contract VaultZapperHop is HopZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -56,7 +56,12 @@ contract VaultZapHop is HopZapperBase {
           // The call to `exactInputSingle` executes the swap.
           ISwapRouter(address(router)).exactInputSingle(params);
 
-          _returnAssets(path);
+          address[] memory path2 = new address[](3);
+          path2[0] = token0;
+          path2[1] = token1; 
+          path2[2] = desiredToken;
+
+          _returnAssets(path2);
         }
         
     }
@@ -108,7 +113,6 @@ contract VaultZapHop is HopZapperBase {
           ISwapRouter(address(router)).exactInputSingle(params);
 
           _returnAssets(path);
-
         }
       
     }
@@ -125,7 +129,6 @@ contract VaultZapHop is HopZapperBase {
         (uint256 _tokenBalance0) = IHopSwap(pair).getTokenBalance(0);
         (uint256 _tokenBalance1) = IHopSwap(pair).getTokenBalance(1);
 
-    
         if(_tokenBalance0 > _tokenBalance1){
           uint256 fullInvestment = IERC20(tokenIn).balanceOf(address(this));
           _approveTokenIfNeeded(token0, address(pair)); 
@@ -143,9 +146,6 @@ contract VaultZapHop is HopZapperBase {
         uint256 _token0 = IERC20(token0).balanceOf(address(this));
         uint256 _token1 = IERC20(token1).balanceOf(address(this));
 
-        console.log("The balance of token 0 is", _token0);
-        console.log("The balance of token 1 is", _token1); 
-
         uint256[] memory amounts;
         amounts = new uint256[](2);
         amounts[0] = _token0;
@@ -160,11 +160,6 @@ contract VaultZapHop is HopZapperBase {
             block.timestamp
         );
 
-        console.log("The balance of token 0 is", IERC20(token0).balanceOf(address(this)));
-        console.log("The balance of token 1 is", IERC20(token1).balanceOf(address(this)));
-
-        console.log("The liquidity amount is", amountLiquidity);
-
         _approveTokenIfNeeded(address(vault.token()), address(vault));
         vault.deposit(amountLiquidity);
 
@@ -178,27 +173,43 @@ contract VaultZapHop is HopZapperBase {
         path[0] = token0;
         path[1] = token1;
 
-        console.log("The balance of token 0 is", IERC20(token0).balanceOf(address(this)));
-        console.log("The balance of token 1 is", IERC20(token1).balanceOf(address(this)));
-
         _returnAssets(path);
     }
 
     function estimateSwap(address vault_addr, address tokenIn, uint256 fullInvestmentIn) public view returns (uint256 swapAmountIn, uint256 swapAmountOut, address swapTokenOut){
-        // (, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
+        (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
 
-        // bool isInputA = pair.token0() == tokenIn;
-        // require(isInputA || pair.token1() == tokenIn, "Input token not present in liquidity pair");
+        bool isInputA = pair.getToken(0) == tokenIn;
+        require(isInputA || pair.getToken(1) == tokenIn, "Input token not present in liquidity pair");
 
-        // (uint256 reserveA, uint256 reserveB, ) = pair.getReserves();
-        // (reserveA, reserveB) = isInputA ? (reserveA, reserveB) : (reserveB, reserveA);
+        (uint256 reserveA) = pair.getTokenBalance(0);
+        (uint256 reserveB) = pair.getTokenBalance(1);
 
-        // swapAmountIn = _getSwapAmount(fullInvestmentIn, reserveA, reserveB);
-        // swapAmountOut = UniswapRouterV2(router).getAmountOut(
-        //     swapAmountIn,
-        //     reserveA,
-        //     reserveB
-        // );
-        // swapTokenOut = isInputA ? pair.token1() : pair.token0();
+        if(isInputA){
+          if(reserveA >= reserveB){
+            uint256 _tokenOut = pair.calculateSwap(0, 1, fullInvestmentIn); 
+
+            uint256[] memory amounts;
+            amounts = new uint256[](2);
+            amounts[0] = 0;
+            amounts[1] = _tokenOut;
+
+            swapAmountOut = pair.calculateTokenAmount(address(this), amounts, true); 
+          }
+        }else {
+          if(reserveB >= reserveA){
+            uint256 _tokenOut = pair.calculateSwap(1, 0, fullInvestmentIn); 
+
+            uint256[] memory amounts;
+            amounts = new uint256[](2);
+            amounts[0] = 0;
+            amounts[1] = _tokenOut;
+
+            swapAmountOut = pair.calculateTokenAmount(address(this), amounts, true); 
+          }
+        }
+        
+        swapAmountIn = fullInvestmentIn; 
+        swapTokenOut = vault.token();
     }
 }
