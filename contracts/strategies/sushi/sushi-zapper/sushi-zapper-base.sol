@@ -8,8 +8,6 @@ import "../../../lib/square-root.sol";
 import "../../../interfaces/weth.sol";
 import "../../../interfaces/vault.sol";
 
-import "hardhat/console.sol";
-
 abstract contract SushiZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -104,9 +102,6 @@ abstract contract SushiZapperBase {
             tokenInAmount
         );
 
-        console.log("the amount of usdsc being transferred in is", tokenInAmount);
-
-
         (, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
 
         if(tokenIn != pair.token0() && tokenIn != pair.token1()){
@@ -146,15 +141,6 @@ abstract contract SushiZapperBase {
                     block.timestamp
                 );
             }
-
-            console.log("The token In address is", tokenIn);
-            console.log("The token in amount is", IERC20(tokenIn).balanceOf(address(this)));
-
-            console.log("The weth amount is", IERC20(weth).balanceOf(address(this)));
-
-            console.log("The desired token address is", desiredToken);
-            console.log("The desired token amount is", IERC20(desiredToken).balanceOf(address(this)));
-
             _swapAndStake(vault_addr, tokenAmountOutMin, desiredToken);
         }else{
             _swapAndStake(vault_addr, tokenAmountOutMin, tokenIn);

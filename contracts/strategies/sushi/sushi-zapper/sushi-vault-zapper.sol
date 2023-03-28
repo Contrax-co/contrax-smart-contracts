@@ -17,18 +17,13 @@ contract VaultZapperSushi is SushiZapperBase {
         address token0 = pair.token0();
         address token1 = pair.token1();
 
-        console.log("the amount of tokens we are withdrawing is", withdrawAmount); 
-
         vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
         vault.withdraw(withdrawAmount);
         _removeLiquidity(address(pair), address(this));
 
-        console.log("The amount of token0 is", IERC20(token0).balanceOf(address(this))); 
-        console.log("The amount of token1 is", IERC20(token1).balanceOf(address(this))); 
-
         if(token0 != desiredToken){
 
-          if(token0 != weth){
+          if(token0 != weth && desiredToken != weth){
               address[] memory path = new address[](3);
               path[0] = token0;
               path[1] = weth;
@@ -57,14 +52,11 @@ contract VaultZapperSushi is SushiZapperBase {
                   block.timestamp
               );
           }
-
-          console.log("The amount of token0 after swap is", IERC20(token0).balanceOf(address(this))); 
-          console.log("The amount of desired token after swap is", IERC20(desiredToken).balanceOf(address(this))); 
          
         }
 
         if(token1 != desiredToken){
-          if(token1 != weth){
+          if(token1 != weth && desiredToken != weth){
               address[] memory path = new address[](3);
               path[0] = token1;
               path[1] = weth;
@@ -93,9 +85,6 @@ contract VaultZapperSushi is SushiZapperBase {
                   block.timestamp
               );
           }
-
-          console.log("The amount of token1 after swap is", IERC20(token1).balanceOf(address(this))); 
-          console.log("The amount of desired token after swap is", IERC20(desiredToken).balanceOf(address(this))); 
         
         }
 
@@ -104,11 +93,6 @@ contract VaultZapperSushi is SushiZapperBase {
           path2[1] = token1;
           path2[2] = weth; 
           path2[3] = desiredToken;
-
-          console.log("The amount of token0 after swap is", IERC20(token0).balanceOf(address(this))); 
-          console.log("The amount of weth token after swap is", IERC20(weth).balanceOf(address(this))); 
-          console.log("The amount of token1 after swap is", IERC20(token1).balanceOf(address(this))); 
-          console.log("The amount of desired token after swap is", IERC20(desiredToken).balanceOf(address(this))); 
 
         _returnAssets(path2);
     }
@@ -178,19 +162,12 @@ contract VaultZapperSushi is SushiZapperBase {
 
         uint256 fullInvestment = IERC20(tokenIn).balanceOf(address(this));
 
-        console.log("The token address is", path[0]);
-        console.log("The token address 2 is", path[1]);
-
-        console.log("The amount of token in is", IERC20(path[0]).balanceOf(address(this)));
-        console.log("The amount of token 2 is", IERC20(path[1]).balanceOf(address(this)));
-
         if(tokenIn != weth && path[1] != weth){
-
             address[] memory path1 = new address[](3);
             path1[0] = tokenIn;
             path1[1] = weth;
             path1[2] = isInputA ? pair.token1() : pair.token0();
-            _approveTokenIfNeeded(path[0], address(router));
+            _approveTokenIfNeeded(path1[0], address(router));
             UniswapRouterV2(router).swapExactTokensForTokens(
                 fullInvestment.div(2),
                 tokenAmountOutMin,
@@ -200,7 +177,6 @@ contract VaultZapperSushi is SushiZapperBase {
             );
 
         } else{
-            console.log("we should be inside here");
             _approveTokenIfNeeded(path[0], address(router));
             UniswapRouterV2(router).swapExactTokensForTokens(
                 fullInvestment.div(2),
@@ -212,9 +188,6 @@ contract VaultZapperSushi is SushiZapperBase {
 
         }
       
-        console.log("The amount of token in is", IERC20(tokenIn).balanceOf(address(this)));
-        console.log("The amount of the other token is", IERC20(path[1]).balanceOf(address(this)));
-
         _approveTokenIfNeeded(path[1], address(router));
         (, , uint256 amountLiquidity) = UniswapRouterV2(router).addLiquidity(
             path[0],
@@ -227,10 +200,6 @@ contract VaultZapperSushi is SushiZapperBase {
             block.timestamp
         );
 
-        console.log("The amount of token in after adding liquditiy is", IERC20(tokenIn).balanceOf(address(this)));
-        console.log("The amount of the other token after adding liquidity is", IERC20(path[1]).balanceOf(address(this)));
-
-        console.log("The amount of the pair token after adding liquidity is", IERC20(vault.token()).balanceOf(address(this)));
         _approveTokenIfNeeded(address(pair), address(vault));
         vault.deposit(amountLiquidity);
 
