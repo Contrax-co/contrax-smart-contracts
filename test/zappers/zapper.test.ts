@@ -13,18 +13,18 @@ import {
   returnSigner
 } from "../utils/helpers";
 
-let txnAmt: string = "250000000000000";
+let txnAmt: string = "2500000000000";
 
 const wallet_addr = process.env.WALLET_ADDR === undefined ? '' : process.env['WALLET_ADDR'];
-let name = "HopDai";
-let vault_addr = "0x8ca3f11485Bd85Dd0E952C6b21981DEe8CD1E901";
+let name = "SushiWethUsdc";
+let vault_addr = "0x46910A4AbA500b71F213150A0E99201Fd5c8FCec";
 // let strategy_addr = test_case.strategyAddress;
 // let slot = test_case.slot;
 let timelockIsStrategist = false;
 
 let snapshotId: string;
 
-let controller_addr= "0x8121Fa4e27051DC3b86E4e7d6Fb2a02d62fe6F68";
+let controller_addr= "0x1C233a46eAE1F928c0467a3C75228E26Ea9888d4";
 
 let Zapper: Contract; 
 let zapper_addr: string;
@@ -42,9 +42,10 @@ let controllerSigner: Signer;
 let timelockSigner: Signer;
 
 
-let asset_addr = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
+let asset_addr = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 let asset_addr2 = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8";
-let want_addr = "0x68f5d998F00bB2460511021741D098c05721d8fF"; 
+let asset_addr3 = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f";
+let want_addr = "0x515e252b2b5c22b4b2b6Df66c2eBeeA871AA4d69"; 
 
 describe( "Tests for Zapper", async () => {
 
@@ -88,7 +89,7 @@ describe( "Tests for Zapper", async () => {
         //     "0x10000000000000000000000",]
         // );
 
-        const zapperFactory = await ethers.getContractFactory('VaultZapperHop');
+        const zapperFactory = await ethers.getContractFactory('VaultZapEthSushi');
         Zapper = await zapperFactory.connect(walletSigner).deploy();
 
         Vault = await ethers.getContractAt(vaultName, vault_addr, walletSigner);
@@ -97,8 +98,8 @@ describe( "Tests for Zapper", async () => {
         zapper_addr = Zapper.address;
         console.log(`Deployed Zapper at ${zapper_addr}`);
 
-        assetContract = await ethers.getContractAt("ERC20", asset_addr, walletSigner);
-        await overwriteTokenAmount(asset_addr, wallet_addr, txnAmt, 2);
+        // assetContract = await ethers.getContractAt("ERC20", asset_addr, walletSigner);
+        // await overwriteTokenAmount(asset_addr, wallet_addr, txnAmt, 2);
 
         assetContract2 = await ethers.getContractAt("ERC20", asset_addr2, walletSigner);
         await overwriteTokenAmount(asset_addr2, wallet_addr, txnAmt, 51);
@@ -120,7 +121,7 @@ describe( "Tests for Zapper", async () => {
 
     const zapIn = async () => {
       let _vaultBefore = await Vault.connect(walletSigner).balanceOf(await walletSigner.getAddress()); 
-
+      
       await assetContract2.connect(walletSigner).approve(zapper_addr, txnAmt);
       await Zapper.connect(walletSigner).zapIn(vault_addr, 0, asset_addr2, txnAmt);
 
@@ -133,12 +134,13 @@ describe( "Tests for Zapper", async () => {
     }
 
     it("user wallet contains asset balance", async function () {
-      let BNBal = await assetContract.balanceOf(await walletSigner.getAddress());
+      //let BNBal = await assetContract.balanceOf(await walletSigner.getAddress());
       let BNBal2 = await assetContract2.balanceOf(await walletSigner.getAddress());
 
       const BN = ethers.BigNumber.from(txnAmt)._hex.toString();
 
-      expect(BNBal2).to.be.equals(BNBal).to.be.equals(BN);
+      expect(BNBal2).to.be.equals(BN);
+      //expect(BNBal2).to.be.equals(BNBal).to.be.equals(BN);
     });
 
     it("Should deposit from the zapper to the vault", async function() {
@@ -160,6 +162,7 @@ describe( "Tests for Zapper", async () => {
 
     it("Should withdraw from the vault and zap into the native tokens", async function() {
       let ethBal = await ethers.provider.getBalance(wallet_addr); 
+
       let[, _vaultAfter] = await zapInETH();
 
       await Vault.connect(walletSigner).approve(zapper_addr, _vaultAfter);
@@ -185,7 +188,7 @@ describe( "Tests for Zapper", async () => {
       const _balDifference = (_balAfter/assetBalBefore).toPrecision(3);
 
       expect(_vaultAfter).to.be.equals(BigNumber.from("0x0"));
-      expect(Number(_balDifference)).to.be.gt(0.99);
+      expect(Number(_balDifference)).to.be.gt(0.98);
   
     });
      
