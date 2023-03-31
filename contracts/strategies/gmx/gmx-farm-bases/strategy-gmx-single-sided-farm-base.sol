@@ -36,20 +36,17 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
     {
     }
 
-    // BUILT 
     function balanceOfPool() public view override returns (uint256) {
-        uint256 amount = IRewardTracker(rewardTracker).stakedAmounts(address(this)); 
+        uint256 amount = IRewardTracker(rewardTracker).depositBalances(address(this), gmx); 
         return amount;
     }
 
-    // BUILT
     function getHarvestable() external view returns (uint256) {
         uint256 _pendingesGMX = IRewardTracker(rewardTracker).claimable(address(this));
         return (_pendingesGMX);
     }
 
     // **** Setters ****
-    //BUILT
     function deposit() public override {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
@@ -70,9 +67,9 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keepSUSHI) external {
+    function setKeep(uint256 _keep) external {
         require(msg.sender == timelock, "!timelock");
-        keep = _keepSUSHI;
+        keep = _keep;
     }
 
     function setKeepReward(uint256 _keepReward) external {
@@ -90,6 +87,9 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
 
     // **** State Mutations ****
 
+    // Declare a Harvest Event
+    event Harvest(uint _timestamp, uint _value); 
+
     function harvest() public override onlyBenevolent {
         //  Collects rewards 
         IRewardRouterV2(rewardRouter).handleRewards(
@@ -97,7 +97,7 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
             true, 
             false, 
             false, 
-            true, 
+            false, 
             true, 
             false
         );
@@ -112,6 +112,10 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
             );
             _swapSushiswap(weth, gmx, _weth.sub(_keepWETH));
         }
+
+        uint256 _want = IERC20(want).balanceOf(address(this));
+    
+        emit Harvest(block.timestamp, _want);
 
         // We want to get back GMX tokens
         _distributePerformanceFeesAndDeposit();
