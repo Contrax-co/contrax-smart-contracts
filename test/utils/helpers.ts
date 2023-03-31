@@ -124,7 +124,7 @@ export function returnController(controller: string): string {
     switch (controller) {
         case "sushi": address = "0x1C233a46eAE1F928c0467a3C75228E26Ea9888d4"; break;
         case "dpx": address = "0x19390136f374A1Ef3CD15C97d8a430eDa26596cC"; break;
-        case "gmx": address= "0x6322bf7c9ed6563DBe9f73bbE2085d6cd19371e7"; break;
+        case "gmx": address= "0x6cCc135D543f8fFD7D93174f8A11Ba4860695808"; break;
         case "dodo": address= "0xaC58Ff6C1f02779869beB4Db5dF9d25A6213ae95"; break;
         case "plutus": address = "0xAFC36887EE43EDDeB5773fedC877481ec97625a7"; break;
         case "jones": address = "0xF6e1d062DEfe3AEBF8674B930f621Adc36Ad870c"; break;

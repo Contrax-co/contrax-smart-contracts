@@ -16,9 +16,13 @@ interface IRewardRouterV2 {
 
     function unstakeGmx(uint256 _amount) external;
 
+    function unstakeEsGmx(uint256 _amount) external; 
+
 }
 
 interface IRewardTracker {
     function stakedAmounts(address) external view returns (uint256);
     function claimable(address _account) external view returns (uint256);
+
+    function depositBalances(address, address) external view returns (uint256); 
 }
