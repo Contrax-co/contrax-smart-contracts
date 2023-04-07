@@ -7,6 +7,7 @@ import "../../../lib/square-root.sol";
 import "../../../interfaces/weth.sol";
 import "../../../interfaces/vault.sol";
 import "../../../interfaces/uniswapv3.sol";
+import "../../../interfaces/uniswapv2.sol";
 
 abstract contract GmxZapperBase {
     using SafeERC20 for IERC20;
@@ -60,18 +61,15 @@ abstract contract GmxZapperBase {
 
         WETH(weth).deposit{value: msg.value}();
 
+        (, address token) = _getVaultPair(vault);
+
         // allows us to zapIn if eth isn't part of the original pair
-        if (tokenIn != weth){
+        if (tokenIn != token){
             uint256 _amount = IERC20(weth).balanceOf(address(this));
-
-            (, address token) = _getVaultPair(vault);
-
-            bool isInputA = token == tokenIn;
-            require(isInputA, "Input token not present in liquidity pair");
 
             address[] memory path = new address[](2);
             path[0] = weth;
-            path[1] = tokenIn;
+            path[1] = token;
        
             _approveTokenIfNeeded(path[0], address(router));
             ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
@@ -88,7 +86,7 @@ abstract contract GmxZapperBase {
             // The call to `exactInputSingle` executes the swap.
             ISwapRouter(address(router)).exactInputSingle(params);
             
-            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+            _swapAndStake(vault, tokenAmountOutMin, token);
         }else{
             _swapAndStake(vault, tokenAmountOutMin, tokenIn);
         }

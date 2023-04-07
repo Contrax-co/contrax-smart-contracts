@@ -9,6 +9,9 @@ contract VaultZapperGmx is GmxZapperBase {
     using SafeMath for uint256;
     using SafeERC20 for IVault;
 
+    address router2 = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; 
+    address gmx = 0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a;
+
     constructor()
         GmxZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564){}
 
@@ -36,7 +39,7 @@ contract VaultZapperGmx is GmxZapperBase {
             recipient: address(this),
             deadline: block.timestamp,
             amountIn: IERC20(path[0]).balanceOf(address(this)),
-            amountOutMinimum: 0,
+            amountOutMinimum: desiredTokenOutMin,
             sqrtPriceLimitX96: 0
           });
 
@@ -76,13 +79,12 @@ contract VaultZapperGmx is GmxZapperBase {
             recipient: address(this),
             deadline: block.timestamp,
             amountIn: IERC20(path[0]).balanceOf(address(this)),
-            amountOutMinimum: 0,
+            amountOutMinimum: desiredTokenOutMin,
             sqrtPriceLimitX96: 0
           });
 
           // The call to `exactInputSingle` executes the swap.
           ISwapRouter(address(router)).exactInputSingle(params);
-
           _returnAssets(path);
         }
       
@@ -102,47 +104,42 @@ contract VaultZapperGmx is GmxZapperBase {
 
         //taking receipt token and sending back to user
         vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
-
-        address[] memory path = new address[](1);
+        
+        address[] memory path = new address[](2);
         path[0] = token;
+        path[1] = weth;
 
         _returnAssets(path);
     }
 
     function estimateSwap(address vault_addr, address tokenIn, uint256 fullInvestmentIn) public view returns (uint256 swapAmountIn, uint256 swapAmountOut, address swapTokenOut){
-        (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
+        (, address token) = _getVaultPair(vault_addr);
 
-        bool isInputA = pair.getToken(0) == tokenIn;
-        require(isInputA || pair.getToken(1) == tokenIn, "Input token not present in liquidity pair");
-
-        (uint256 reserveA) = pair.getTokenBalance(0);
-        (uint256 reserveB) = pair.getTokenBalance(1);
+        bool isInputA = token == tokenIn;
 
         if(isInputA){
-          if(reserveA >= reserveB){
-            uint256 _tokenOut = pair.calculateSwap(0, 1, fullInvestmentIn); 
+          swapAmountOut = fullInvestmentIn; 
+          swapAmountIn = fullInvestmentIn;
 
-            uint256[] memory amounts;
-            amounts = new uint256[](2);
-            amounts[0] = 0;
-            amounts[1] = _tokenOut;
+          swapTokenOut = gmx;
 
-            swapAmountOut = pair.calculateTokenAmount(address(this), amounts, true); 
-          }
-        }else {
-          if(reserveB >= reserveA){
-            uint256 _tokenOut = pair.calculateSwap(1, 0, fullInvestmentIn); 
 
-            uint256[] memory amounts;
-            amounts = new uint256[](2);
-            amounts[0] = 0;
-            amounts[1] = _tokenOut;
+        }else{
+            address[] memory path = new address[](2);
+            path[0]= tokenIn;
+            path[1] = gmx; 
 
-            swapAmountOut = pair.calculateTokenAmount(address(this), amounts, true); 
-          }
+            uint256[] memory amounts = UniswapRouterV2(router).getAmountsOut(
+                fullInvestmentIn,
+                path
+            );
+
+            swapAmountOut = amounts[1]; 
+            swapAmountIn = amounts[0];
+
+            swapTokenOut = gmx;
+
         }
-        
-        swapAmountIn = fullInvestmentIn; 
-        swapTokenOut = vault.token();
     }
+    
 }
