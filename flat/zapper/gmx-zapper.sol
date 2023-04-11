@@ -788,15 +788,195 @@ library SafeERC20 {
 }
 
 
-// File contracts/zapper/vault-zapper-1.sol
+// File contracts/lib/square-root.sol
 
-// Sources flattened with hardhat v2.9.9 https://hardhat.org
+// File: @uniswap/lib/contracts/libraries/Babylonian.sol
 
-// File contracts/lib/safe-math.sol
+pragma solidity 0.8.4;
+
+// computes square roots using the babylonian method
+// https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method
+library Babylonian {
+    // credit for this implementation goes to
+    // https://github.com/abdk-consulting/abdk-libraries-solidity/blob/master/ABDKMath64x64.sol#L687
+    function sqrt(uint256 x) internal pure returns (uint256) {
+        if (x == 0) return 0;
+        // this block is equivalent to r = uint256(1) << (BitMath.mostSignificantBit(x) / 2);
+        // however that code costs significantly more gas
+        uint256 xx = x;
+        uint256 r = 1;
+        if (xx >= 0x100000000000000000000000000000000) {
+            xx >>= 128;
+            r <<= 64;
+        }
+        if (xx >= 0x10000000000000000) {
+            xx >>= 64;
+            r <<= 32;
+        }
+        if (xx >= 0x100000000) {
+            xx >>= 32;
+            r <<= 16;
+        }
+        if (xx >= 0x10000) {
+            xx >>= 16;
+            r <<= 8;
+        }
+        if (xx >= 0x100) {
+            xx >>= 8;
+            r <<= 4;
+        }
+        if (xx >= 0x10) {
+            xx >>= 4;
+            r <<= 2;
+        }
+        if (xx >= 0x8) {
+            r <<= 1;
+        }
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1; // Seven iterations should be enough
+        uint256 r1 = x / r;
+        return (r < r1 ? r : r1);
+    }
+}
+
+
+// File contracts/interfaces/weth.sol
 
 
 
 pragma solidity 0.8.4;
+
+interface WETH {
+    function name() external view returns (string memory);
+
+    function approve(address guy, uint256 wad) external returns (bool);
+
+    function totalSupply() external view returns (uint256);
+
+    function transferFrom(
+        address src,
+        address dst,
+        uint256 wad
+    ) external returns (bool);
+
+    function withdraw(uint256 wad) external;
+
+    function withdrawTo(address account, uint256 amount) external; 
+
+    function decimals() external view returns (uint8);
+
+    function balanceOf(address) external view returns (uint256);
+
+    function symbol() external view returns (string memory);
+
+    function transfer(address dst, uint256 wad) external returns (bool);
+
+    function deposit() external payable;
+
+    function allowance(address, address) external view returns (uint256);
+}
+
+
+// File contracts/interfaces/vault.sol
+
+
+pragma solidity 0.8.4;
+
+interface IVault is IERC20 {
+    function token() external view returns (address);
+    
+    function reward() external view returns (address);
+
+    function claimInsurance() external; // NOTE: Only yDelegatedVault implements this
+
+    function getRatio() external view returns (uint256);
+
+    function depositAll() external;
+    
+    function balance() external view returns (uint256);
+
+    function deposit(uint256) external;
+
+    function withdrawAll() external;
+
+    function withdraw(uint256) external;
+
+    function earn() external;
+
+    function decimals() external view returns (uint8);
+}
+
+
+// File contracts/interfaces/uniswapv3.sol
+
+pragma solidity 0.8.4;
+pragma abicoder v2;
+
+interface ISwapRouter{
+   struct ExactInputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    /// @notice Swaps `amountIn` of one token for as much as possible of another token
+    /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
+
+    struct ExactInputParams {
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+    }
+
+    /// @notice Swaps `amountIn` of one token for as much as possible of another along the specified path
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut);
+
+    struct ExactOutputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    /// @notice Swaps as little as possible of one token for `amountOut` of another token
+    /// @param params The parameters necessary for the swap, encoded as `ExactOutputSingleParams` in calldata
+    /// @return amountIn The amount of the input token
+    function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn);
+
+    struct ExactOutputParams {
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+    }
+
+    /// @notice Swaps as little as possible of one token for `amountOut` of another along the specified path (reversed)
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata
+    /// @return amountIn The amount of the input token
+    function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);
+
+}
 
 
 // File contracts/interfaces/uniswapv2.sol
@@ -849,12 +1029,21 @@ interface UniswapRouterV2 {
     function removeLiquidity(
         address tokenA,
         address tokenB,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
+        uint liquidity,
+        uint amountAMin,
+        uint amountBMin,
         address to,
-        uint256 deadline
-    ) external returns (uint256 amountA, uint256 amountB);
+        uint deadline
+    ) external returns (uint amountA, uint amountB);
+
+    function removeLiquidityETH(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountToken, uint amountETH); 
 
      function quote(
         uint256 amountA,
@@ -886,10 +1075,10 @@ interface UniswapRouterV2 {
     ) external payable returns (uint256[] memory amounts);
 
     function swapExactETHForTokens(
-        uint256 amountOutMin,
+        uint amountOutMin,
         address[] calldata path,
         address to,
-        uint256 deadline
+        uint deadline
     ) external payable returns (uint256[] memory amounts);
 }
 
@@ -1027,129 +1216,7 @@ interface IUniswapV2Factory {
 }
 
 
-// File contracts/lib/square-root.sol
-
-// File: @uniswap/lib/contracts/libraries/Babylonian.sol
-
-pragma solidity 0.8.4;
-
-// computes square roots using the babylonian method
-// https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method
-library Babylonian {
-    // credit for this implementation goes to
-    // https://github.com/abdk-consulting/abdk-libraries-solidity/blob/master/ABDKMath64x64.sol#L687
-    function sqrt(uint256 x) internal pure returns (uint256) {
-        if (x == 0) return 0;
-        // this block is equivalent to r = uint256(1) << (BitMath.mostSignificantBit(x) / 2);
-        // however that code costs significantly more gas
-        uint256 xx = x;
-        uint256 r = 1;
-        if (xx >= 0x100000000000000000000000000000000) {
-            xx >>= 128;
-            r <<= 64;
-        }
-        if (xx >= 0x10000000000000000) {
-            xx >>= 64;
-            r <<= 32;
-        }
-        if (xx >= 0x100000000) {
-            xx >>= 32;
-            r <<= 16;
-        }
-        if (xx >= 0x10000) {
-            xx >>= 16;
-            r <<= 8;
-        }
-        if (xx >= 0x100) {
-            xx >>= 8;
-            r <<= 4;
-        }
-        if (xx >= 0x10) {
-            xx >>= 4;
-            r <<= 2;
-        }
-        if (xx >= 0x8) {
-            r <<= 1;
-        }
-        r = (r + x / r) >> 1;
-        r = (r + x / r) >> 1;
-        r = (r + x / r) >> 1;
-        r = (r + x / r) >> 1;
-        r = (r + x / r) >> 1;
-        r = (r + x / r) >> 1;
-        r = (r + x / r) >> 1; // Seven iterations should be enough
-        uint256 r1 = x / r;
-        return (r < r1 ? r : r1);
-    }
-}
-
-
-// File contracts/interfaces/weth.sol
-
-
-
-pragma solidity 0.8.4;
-
-interface WETH {
-    function name() external view returns (string memory);
-
-    function approve(address guy, uint256 wad) external returns (bool);
-
-    function totalSupply() external view returns (uint256);
-
-    function transferFrom(
-        address src,
-        address dst,
-        uint256 wad
-    ) external returns (bool);
-
-    function withdraw(uint256 wad) external;
-
-    function decimals() external view returns (uint8);
-
-    function balanceOf(address) external view returns (uint256);
-
-    function symbol() external view returns (string memory);
-
-    function transfer(address dst, uint256 wad) external returns (bool);
-
-    function deposit() external payable;
-
-    function allowance(address, address) external view returns (uint256);
-}
-
-
-// File contracts/interfaces/vault.sol
-
-
-pragma solidity 0.8.4;
-
-interface IVault is IERC20 {
-    function token() external view returns (address);
-    
-    function reward() external view returns (address);
-
-    function claimInsurance() external; // NOTE: Only yDelegatedVault implements this
-
-    function getRatio() external view returns (uint256);
-
-    function depositAll() external;
-    
-    function balance() external view returns (uint256);
-
-    function deposit(uint256) external;
-
-    function withdrawAll() external;
-
-    function withdraw(uint256) external;
-
-    function earn() external;
-
-    function decimals() external view returns (uint8);
-}
-
-
-// File contracts/zapper/zapper-base.sol
+// File contracts/strategies/gmx/gmx-zapper/gmx-zapper-base.sol
 
 
 pragma solidity 0.8.4;
@@ -1159,7 +1226,8 @@ pragma solidity 0.8.4;
 
 
 
-abstract contract ZapperBase {
+
+abstract contract GmxZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -1171,6 +1239,9 @@ abstract contract ZapperBase {
 
     uint256 public constant minimumAmount = 1000;
 
+    // For this example, we will set the pool fee to 0.3%.
+    uint24 public constant poolFee = 3000;
+
     constructor(address _router) {
         // Safety checks to ensure WETH token address
         WETH(weth).deposit{value: 0}();
@@ -1181,8 +1252,6 @@ abstract contract ZapperBase {
     receive() external payable {
         assert(msg.sender == weth);
     }
-
-    function _getSwapAmount(uint256 investmentA, uint256 reserveA, uint256 reserveB) public view virtual returns (uint256 swapAmount);
 
     //returns DUST
     function _returnAssets(address[] memory tokens) internal {
@@ -1210,39 +1279,37 @@ abstract contract ZapperBase {
 
         WETH(weth).deposit{value: msg.value}();
 
+        (, address token) = _getVaultPair(vault);
+
         // allows us to zapIn if eth isn't part of the original pair
-        if (tokenIn != weth){
+        if (tokenIn != token){
             uint256 _amount = IERC20(weth).balanceOf(address(this));
-
-            (, IUniswapV2Pair pair) = _getVaultPair(vault);
-
-            (uint256 reserveA, uint256 reserveB, ) = pair.getReserves();
-            require(reserveA > minimumAmount && reserveB > minimumAmount, "Liquidity pair reserves too low");
-
-            bool isInputA = pair.token0() == tokenIn;
-            require(isInputA || pair.token1() == tokenIn, "Input token not present in liquidity pair");
 
             address[] memory path = new address[](2);
             path[0] = weth;
-            path[1] = tokenIn;
-
-            uint256 swapAmountIn;
-        
-            swapAmountIn = _getSwapAmount(_amount, reserveA, reserveB);
+            path[1] = token;
        
             _approveTokenIfNeeded(path[0], address(router));
-            UniswapRouterV2(router).swapExactTokensForTokens(
-                swapAmountIn,
-                tokenAmountOutMin,
-                path,
-                address(this),
-                block.timestamp
-            );
-            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+              tokenIn: path[0],
+              tokenOut: path[1],
+              fee: poolFee,
+              recipient: address(this),
+              deadline: block.timestamp,
+              amountIn: _amount,
+              amountOutMinimum: 0,
+              sqrtPriceLimitX96: 0
+            });
+
+            // The call to `exactInputSingle` executes the swap.
+            ISwapRouter(address(router)).exactInputSingle(params);
+            
+            _swapAndStake(vault, tokenAmountOutMin, token);
         }else{
             _swapAndStake(vault, tokenAmountOutMin, tokenIn);
         }
     }
+
 
     // transfers tokens from msg.sender to this contract 
     function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external {
@@ -1256,69 +1323,44 @@ abstract contract ZapperBase {
             tokenInAmount
         );
 
-        (, IUniswapV2Pair pair) = _getVaultPair(vault);
+        (, address token) = _getVaultPair(vault);
 
-        if(tokenIn != pair.token0() && tokenIn != pair.token1()){
-            (address desiredToken) = pair.token0();
+        if(token != tokenIn){
+            address[] memory path = new address[](2);
+            path[0] = tokenIn;
+            path[1] = token;
 
-            if(tokenIn != weth && desiredToken != weth){
-                // execute swap from tokenin to desired token
-                uint256 _amount = IERC20(tokenIn).balanceOf(address(this));
+            _approveTokenIfNeeded(path[0], address(router));
+            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+                tokenIn: path[0],
+                tokenOut: path[1],
+                fee: poolFee,
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: tokenInAmount,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
 
-                address[] memory path = new address[](3);
-                path[0] = tokenIn;
-                path[1] = weth;
-                path[2] = desiredToken;
-        
-                _approveTokenIfNeeded(path[0], address(router));
-                UniswapRouterV2(router).swapExactTokensForTokens(
-                    _amount,
-                    tokenAmountOutMin,
-                    path,
-                    address(this),
-                    block.timestamp
-                );
-            
-            }else {
-                // execute swap from tokenin to desired token
-                uint256 _amount = IERC20(tokenIn).balanceOf(address(this));
+            // The call to `exactInputSingle` executes the swap.
+            ISwapRouter(address(router)).exactInputSingle(params);
+            _swapAndStake(vault, tokenAmountOutMin, token);
 
-                address[] memory path = new address[](2);
-                path[0] = tokenIn;
-                path[1] = desiredToken;
-        
-                _approveTokenIfNeeded(path[0], address(router));
-                UniswapRouterV2(router).swapExactTokensForTokens(
-                    _amount,
-                    tokenAmountOutMin,
-                    path,
-                    address(this),
-                    block.timestamp
-                );
-            }
-
-            _swapAndStake(vault, tokenAmountOutMin, desiredToken);
         }else {
             _swapAndStake(vault, tokenAmountOutMin, tokenIn);
         }
+        
     }
 
     function zapOutAndSwap(address vault, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public virtual;
 
-    function _removeLiquidity(address pair, address to) internal {
-        IERC20(pair).safeTransfer(pair, IERC20(pair).balanceOf(address(this)));
-        (uint256 amount0, uint256 amount1) = IUniswapV2Pair(pair).burn(to);
+    function zapOutAndSwapEth(address vault, uint256 withdrawAmount, uint256 desiredTokenOutMin) public virtual;
 
-        require(amount0 >= minimumAmount, "Router: INSUFFICIENT_A_AMOUNT");
-        require(amount1 >= minimumAmount, "Router: INSUFFICIENT_B_AMOUNT");
-    }
-
-    function _getVaultPair(address vault_addr) internal view returns (IVault vault, IUniswapV2Pair pair){
-
+    function _getVaultPair(address vault_addr) internal view returns (IVault vault, address token){
         vault = IVault(vault_addr);
-        pair = IUniswapV2Pair(vault.token());
+        token = vault.token();
 
-        require(pair.factory() == IUniswapV2Pair(router).factory(), "Incompatible liquidity pair factory");
+        require(token != address(0), "Liquidity pool address cannot be the zero address");
     }
 
     function _approveTokenIfNeeded(address token, address spender) internal {
@@ -1328,289 +1370,162 @@ abstract contract ZapperBase {
     }
 
     function zapOut(address vault_addr, uint256 withdrawAmount) external {
-        (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
+        (IVault vault, address token) = _getVaultPair(vault_addr);
 
         IERC20(vault_addr).safeTransferFrom(msg.sender, address(this), withdrawAmount);
         vault.withdraw(withdrawAmount);
 
-        if (pair.token0() != weth && pair.token1() != weth) {
-            return _removeLiquidity(address(pair), msg.sender);
-        }
-
-
-        _removeLiquidity(address(pair), address(this));
-
         address[] memory tokens = new address[](2);
-        tokens[0] = pair.token0();
-        tokens[1] = pair.token1();
+        tokens[0] = token;
+        tokens[1] = address(vault.token());
 
         _returnAssets(tokens);
     }
 }
 
 
-// File contracts/zapper/vault-zapper.sol
+// File contracts/strategies/gmx/gmx-zapper/gmx-vault-zapper.sol
 
 
 pragma solidity 0.8.4;
 
-contract VaultZapEthSushi is ZapperBase {
+contract VaultZapperGmx is GmxZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
     using SafeERC20 for IVault;
 
+    address router2 = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; 
+    address gmx = 0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a;
+
     constructor()
-        ZapperBase(0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506){}
+        GmxZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564){}
 
     function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override {
-        (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
-        address token0 = pair.token0();
-        address token1 = pair.token1();
-
-        address firstToken = token0;
+        (IVault vault, address token) = _getVaultPair(vault_addr);
 
         vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
         vault.withdraw(withdrawAmount);
-        _removeLiquidity(address(pair), address(this));
 
-        address swapToken = token1 == firstToken ? token0 : token1;
+        if(desiredToken == token){
+          address[] memory path = new address[](1);
+          path[0] = desiredToken;
 
-        if(swapToken == weth || firstToken == weth){
-            address[] memory path = new address[](2);
-            path[0] = swapToken;
-            path[1] = firstToken;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            UniswapRouterV2(router).swapExactTokensForTokens(
-                IERC20(swapToken).balanceOf(address(this)),
-                desiredTokenOutMin,
-                path,
-                address(this),
-                block.timestamp
-            );
-
+          _returnAssets(path);
         }else {
-            address[] memory path = new address[](3);
-            path[0] = swapToken;
-            path[1] = weth;
-            path[2] = firstToken;
+          address[] memory path = new address[](2);
+          path[0] = token;
+          path[1] = desiredToken;
+      
+          _approveTokenIfNeeded(path[0], address(router));
+          ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: path[0],
+            tokenOut: path[1],
+            fee: poolFee,
+            recipient: address(this),
+            deadline: block.timestamp,
+            amountIn: IERC20(path[0]).balanceOf(address(this)),
+            amountOutMinimum: desiredTokenOutMin,
+            sqrtPriceLimitX96: 0
+          });
 
-            _approveTokenIfNeeded(path[0], address(router));
-            UniswapRouterV2(router).swapExactTokensForTokens(
-                IERC20(swapToken).balanceOf(address(this)),
-                desiredTokenOutMin,
-                path,
-                address(this),
-                block.timestamp
-            );
+          // The call to `exactInputSingle` executes the swap.
+          ISwapRouter(address(router)).exactInputSingle(params);
+
+          address[] memory path2 = new address[](2);
+          path2[0] = token;
+          path2[1] = desiredToken;
+
+          _returnAssets(path2);
         }
-
-        if(desiredToken != firstToken) {
-            
-            if(desiredToken == weth || firstToken == weth){
-                address[] memory path1 = new address[](2);
-                path1[0] = firstToken;
-                path1[1] = desiredToken;
-
-                _approveTokenIfNeeded(path1[0], address(router));
-                UniswapRouterV2(router).swapExactTokensForTokens(
-                    IERC20(firstToken).balanceOf(address(this)),
-                    desiredTokenOutMin,
-                    path1,
-                    address(this),
-                    block.timestamp
-                );
-
-                _returnAssets(path1); 
-
-            }else {
-                address[] memory path1 = new address[](3);
-                path1[0] = firstToken;
-                path1[1] = weth;
-                path1[2] = desiredToken;
-
-                _approveTokenIfNeeded(path1[0], address(router));
-                UniswapRouterV2(router).swapExactTokensForTokens(
-                    IERC20(firstToken).balanceOf(address(this)),
-                    desiredTokenOutMin,
-                    path1,
-                    address(this),
-                    block.timestamp
-                );
-
-                _returnAssets(path1); 
-            }
-        }
-
-        address[] memory path2 = new address[](3);
-        path2[0] = swapToken;
-        path2[1] = weth;
-        path2[2] = firstToken;
-
-        _returnAssets(path2);
+        
     }
 
-    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public {
-        (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
-        address token0 = pair.token0();
-        address token1 = pair.token1();
-
-        address desiredToken = token0; 
+    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override {
+        (IVault vault, address token) = _getVaultPair(vault_addr);
 
         vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
         vault.withdraw(withdrawAmount);
-        _removeLiquidity(address(pair), address(this));
 
-        address swapToken = token1 == desiredToken ? token0 : token1;
-
-        if(swapToken == weth || desiredToken == weth){
-            address[] memory path = new address[](2);
-            path[0] = swapToken;
-            path[1] = desiredToken;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            UniswapRouterV2(router).swapExactTokensForTokens(
-                IERC20(swapToken).balanceOf(address(this)),
-                desiredTokenOutMin,
-                path,
-                address(this),
-                block.timestamp
-            );
-
+        if(token == weth){
+          address[] memory path = new address[](1);
+          path[0] = token;
+    
+          _returnAssets(path);
         }else {
-            address[] memory path = new address[](3);
-            path[0] = swapToken;
-            path[1] = weth;
-            path[2] = desiredToken;
+          address[] memory path = new address[](2);
+          path[0] = token;
+          path[1] = weth;
+      
+          _approveTokenIfNeeded(path[0], address(router));
+          ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: path[0],
+            tokenOut: path[1],
+            fee: poolFee,
+            recipient: address(this),
+            deadline: block.timestamp,
+            amountIn: IERC20(path[0]).balanceOf(address(this)),
+            amountOutMinimum: desiredTokenOutMin,
+            sqrtPriceLimitX96: 0
+          });
 
-            _approveTokenIfNeeded(path[0], address(router));
-            UniswapRouterV2(router).swapExactTokensForTokens(
-                IERC20(swapToken).balanceOf(address(this)),
-                desiredTokenOutMin,
-                path,
-                address(this),
-                block.timestamp
-            );
+          // The call to `exactInputSingle` executes the swap.
+          ISwapRouter(address(router)).exactInputSingle(params);
+          _returnAssets(path);
         }
-       
-
-        if(desiredToken != weth) {
-            address[] memory path1 = new address[](2);
-            path1[0] = desiredToken;
-            path1[1] = weth;
-
-            _approveTokenIfNeeded(path1[0], address(router));
-            UniswapRouterV2(router).swapExactTokensForTokens(
-                IERC20(desiredToken).balanceOf(address(this)),
-                desiredTokenOutMin,
-                path1,
-                address(this),
-                block.timestamp
-            );
-
-             _returnAssets(path1);
-
-        }
-
-        address[] memory path2 = new address[](3);
-        path2[0] = swapToken;
-        path2[1] = weth;
-        path2[2] = desiredToken;
-
-        _returnAssets(path2);
+      
     }
-
 
     function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override {
-        (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
+        (IVault vault, address token) = _getVaultPair(vault_addr);
 
-        (uint256 reserveA, uint256 reserveB, ) = pair.getReserves();
-        require(reserveA > minimumAmount && reserveB > minimumAmount, "Liquidity pair reserves too low");
+        bool isInputA = token == tokenIn;
+        require(isInputA, "Input token not present in liquidity pair");
 
-        bool isInputA = pair.token0() == tokenIn;
-        require(isInputA || pair.token1() == tokenIn, "Input token not present in liquidity pair");
-
-        address[] memory path = new address[](2);
-        path[0] = tokenIn;
-        path[1] = isInputA ? pair.token1() : pair.token0();
-
-        uint256 fullInvestment = IERC20(tokenIn).balanceOf(address(this));
-        uint256 swapAmountIn;
-        if (isInputA) {
-            swapAmountIn = _getSwapAmount(fullInvestment, reserveA, reserveB);
-        } else {
-            swapAmountIn = _getSwapAmount(fullInvestment, reserveB, reserveA);
-        }
-
-        _approveTokenIfNeeded(path[0], address(router));
-        uint256[] memory swappedAmounts = UniswapRouterV2(router)
-            .swapExactTokensForTokens(
-                swapAmountIn,
-                tokenAmountOutMin,
-                path,
-                address(this),
-                block.timestamp
-            );
-
-        _approveTokenIfNeeded(path[1], address(router));
-        (, , uint256 amountLiquidity) = UniswapRouterV2(router).addLiquidity(
-            path[0],
-            path[1],
-            fullInvestment.sub(swappedAmounts[0]),
-            swappedAmounts[1],
-            1,
-            1,
-            address(this),
-            block.timestamp
-        );
-
-        _approveTokenIfNeeded(address(pair), address(vault));
-        vault.deposit(amountLiquidity);
+        _approveTokenIfNeeded(address(vault.token()), address(vault));
+        vault.deposit(IERC20(token).balanceOf(address(this)));
 
         //add to guage if possible instead of returning to user, and so no receipt token
         vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
 
         //taking receipt token and sending back to user
         vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
+        
+        address[] memory path = new address[](2);
+        path[0] = token;
+        path[1] = weth;
 
         _returnAssets(path);
     }
 
-    function _getSwapAmount(uint256 investmentA, uint256 reserveA, uint256 reserveB) public view override returns (uint256 swapAmount) {
-        uint256 halfInvestment = investmentA.div(2);
-        uint256 nominator = UniswapRouterV2(router).getAmountOut(
-            halfInvestment,
-            reserveA,
-            reserveB
-        );
-        uint256 denominator = UniswapRouterV2(router).quote(
-            halfInvestment,
-            reserveA.add(halfInvestment),
-            reserveB.sub(nominator)
-        );
-        swapAmount = investmentA.sub(
-            Babylonian.sqrt(
-                (halfInvestment * halfInvestment * nominator) / denominator
-            )
-        );
-    }
-
     function estimateSwap(address vault_addr, address tokenIn, uint256 fullInvestmentIn) public view returns (uint256 swapAmountIn, uint256 swapAmountOut, address swapTokenOut){
-        (, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
+        (, address token) = _getVaultPair(vault_addr);
 
-        bool isInputA = pair.token0() == tokenIn;
-        require(isInputA || pair.token1() == tokenIn, "Input token not present in liquidity pair");
+        bool isInputA = token == tokenIn;
 
-        (uint256 reserveA, uint256 reserveB, ) = pair.getReserves();
-        (reserveA, reserveB) = isInputA ? (reserveA, reserveB) : (reserveB, reserveA);
+        if(isInputA){
+          swapAmountOut = fullInvestmentIn; 
+          swapAmountIn = fullInvestmentIn;
 
-        swapAmountIn = _getSwapAmount(fullInvestmentIn, reserveA, reserveB);
-        swapAmountOut = UniswapRouterV2(router).getAmountOut(
-            swapAmountIn,
-            reserveA,
-            reserveB
-        );
-        swapTokenOut = isInputA ? pair.token1() : pair.token0();
+          swapTokenOut = gmx;
+
+
+        }else{
+            address[] memory path = new address[](2);
+            path[0]= tokenIn;
+            path[1] = gmx; 
+
+            uint256[] memory amounts = UniswapRouterV2(router).getAmountsOut(
+                fullInvestmentIn,
+                path
+            );
+
+            swapAmountOut = amounts[1]; 
+            swapAmountIn = amounts[0];
+
+            swapTokenOut = gmx;
+
+        }
     }
+    
 }
