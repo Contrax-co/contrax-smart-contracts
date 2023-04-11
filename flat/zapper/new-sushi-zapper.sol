@@ -1375,37 +1375,80 @@ contract VaultZapEthSushi is ZapperBase {
         _removeLiquidity(address(pair), address(this));
 
         address swapToken = token1 == firstToken ? token0 : token1;
-        address[] memory path = new address[](2);
-        path[0] = swapToken;
-        path[1] = firstToken;
 
-        _approveTokenIfNeeded(path[0], address(router));
-        UniswapRouterV2(router).swapExactTokensForTokens(
-            IERC20(swapToken).balanceOf(address(this)),
-            desiredTokenOutMin,
-            path,
-            address(this),
-            block.timestamp
-        );
+        if(swapToken == weth || firstToken == weth){
+            address[] memory path = new address[](2);
+            path[0] = swapToken;
+            path[1] = firstToken;
 
-        if(desiredToken != firstToken) {
-            address[] memory path1 = new address[](2);
-            path1[0] = firstToken;
-            path1[1] = desiredToken;
-
-            _approveTokenIfNeeded(path1[0], address(router));
+            _approveTokenIfNeeded(path[0], address(router));
             UniswapRouterV2(router).swapExactTokensForTokens(
-                IERC20(firstToken).balanceOf(address(this)),
+                IERC20(swapToken).balanceOf(address(this)),
                 desiredTokenOutMin,
-                path1,
+                path,
                 address(this),
                 block.timestamp
             );
 
-            _returnAssets(path1); 
+        }else {
+            address[] memory path = new address[](3);
+            path[0] = swapToken;
+            path[1] = weth;
+            path[2] = firstToken;
 
+            _approveTokenIfNeeded(path[0], address(router));
+            UniswapRouterV2(router).swapExactTokensForTokens(
+                IERC20(swapToken).balanceOf(address(this)),
+                desiredTokenOutMin,
+                path,
+                address(this),
+                block.timestamp
+            );
         }
-        _returnAssets(path);
+
+        if(desiredToken != firstToken) {
+            
+            if(desiredToken == weth || firstToken == weth){
+                address[] memory path1 = new address[](2);
+                path1[0] = firstToken;
+                path1[1] = desiredToken;
+
+                _approveTokenIfNeeded(path1[0], address(router));
+                UniswapRouterV2(router).swapExactTokensForTokens(
+                    IERC20(firstToken).balanceOf(address(this)),
+                    desiredTokenOutMin,
+                    path1,
+                    address(this),
+                    block.timestamp
+                );
+
+                _returnAssets(path1); 
+
+            }else {
+                address[] memory path1 = new address[](3);
+                path1[0] = firstToken;
+                path1[1] = weth;
+                path1[2] = desiredToken;
+
+                _approveTokenIfNeeded(path1[0], address(router));
+                UniswapRouterV2(router).swapExactTokensForTokens(
+                    IERC20(firstToken).balanceOf(address(this)),
+                    desiredTokenOutMin,
+                    path1,
+                    address(this),
+                    block.timestamp
+                );
+
+                _returnAssets(path1); 
+            }
+        }
+
+        address[] memory path2 = new address[](3);
+        path2[0] = swapToken;
+        path2[1] = weth;
+        path2[2] = firstToken;
+
+        _returnAssets(path2);
     }
 
     function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public {
@@ -1420,18 +1463,37 @@ contract VaultZapEthSushi is ZapperBase {
         _removeLiquidity(address(pair), address(this));
 
         address swapToken = token1 == desiredToken ? token0 : token1;
-        address[] memory path = new address[](2);
-        path[0] = swapToken;
-        path[1] = desiredToken;
 
-        _approveTokenIfNeeded(path[0], address(router));
-        UniswapRouterV2(router).swapExactTokensForTokens(
-            IERC20(swapToken).balanceOf(address(this)),
-            desiredTokenOutMin,
-            path,
-            address(this),
-            block.timestamp
-        );
+        if(swapToken == weth || desiredToken == weth){
+            address[] memory path = new address[](2);
+            path[0] = swapToken;
+            path[1] = desiredToken;
+
+            _approveTokenIfNeeded(path[0], address(router));
+            UniswapRouterV2(router).swapExactTokensForTokens(
+                IERC20(swapToken).balanceOf(address(this)),
+                desiredTokenOutMin,
+                path,
+                address(this),
+                block.timestamp
+            );
+
+        }else {
+            address[] memory path = new address[](3);
+            path[0] = swapToken;
+            path[1] = weth;
+            path[2] = desiredToken;
+
+            _approveTokenIfNeeded(path[0], address(router));
+            UniswapRouterV2(router).swapExactTokensForTokens(
+                IERC20(swapToken).balanceOf(address(this)),
+                desiredTokenOutMin,
+                path,
+                address(this),
+                block.timestamp
+            );
+        }
+       
 
         if(desiredToken != weth) {
             address[] memory path1 = new address[](2);
@@ -1451,7 +1513,12 @@ contract VaultZapEthSushi is ZapperBase {
 
         }
 
-        _returnAssets(path);
+        address[] memory path2 = new address[](3);
+        path2[0] = swapToken;
+        path2[1] = weth;
+        path2[2] = desiredToken;
+
+        _returnAssets(path2);
     }
 
 
