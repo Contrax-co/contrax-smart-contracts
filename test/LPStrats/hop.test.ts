@@ -16,7 +16,7 @@ const tests = [
     // },
     {
         name: "HopDai",
-        controller: "hop",
+        controller: "gmx",
     },
 
 ];

@@ -1,0 +1,31 @@
+# .fuzz_token.yml
+
+fuzz:
+    # Tell the CLI where to find the compiled contracts and compilation artifacts
+    build_directory: artifacts/contracts/vaults/sushi/vault-sushi-weth-dai.sol
+    
+    # The following address is going to be the main target for the fuzzing campaign
+    deployed_contract_address: "0x3C0c76ceb491Cb0Bacb31F8e7dc6407A25FD87C0"
+    
+    # We'll do fuzzing with 2 cores 🚀
+    number_of_cores: 2
+    
+    # Run the campaign for just 10 minutes
+    time_limit: 10m 
+
+    # Put the campaign in the Sribble Exercise 1 project
+    project: "Vault Exercise 1"
+    
+    # When the campaign is created it'll get a name <prefix>_<random_characters>
+    campaign_name_prefix: "ERC20 campaign"
+    
+    # Point to your ganache node which holds the seed 🌱
+    rpc_url: "https://arb1.arbitrum.io/rpc"
+    
+    key: "MXczMzBnN1NUVFJmRU5PUTh0QUlwT0s4S005d2ZnWmY6OmRpbGlnZW5jZS51cy5hdXRoMC5jb20=::v1.MWNIMem7rEjGvfXMB_R4EOogaaSPuKUFRhp4xLjEtwpR-xRxpzXLR9NZJYeeuF3DbO7lTbM08ALW2BxEm3BOk0I"
+
+
+    # This is the contract that the campaign will show coverage for/ map issues to etc
+    # It's a list of all the relevant contracts (don't worry about dependencies, we'll get those automatically 🙌)
+    targets:
+        - "contracts/vaults/sushi/vault-sushi-weth-dpx.sol"

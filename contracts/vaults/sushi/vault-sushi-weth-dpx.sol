@@ -86,6 +86,10 @@ contract VaultSushiWethDpx is ERC20 {
     // Declare a Deposit Event
     event Deposit(address indexed _from, uint _timestamp, uint _value, uint _shares); 
 
+    /// #if_succeeds {:msg "Deposits are succesfull"}
+    /// let first := old(token.balanceOf(address(this))) in
+    /// let delta := (token.balanceOf(address(this)) - first) in
+    /// _amount == delta; 
     function deposit(uint256 _amount) public {
         uint256 _pool = balance();
         uint256 _before = token.balanceOf(address(this));
@@ -118,6 +122,10 @@ contract VaultSushiWethDpx is ERC20 {
     event Withdraw(address indexed _from, uint _timestamp, uint _value, uint _shares); 
 
     // No rebalance implementation for lower fees and faster swaps
+    /// #if_succeeds {:msg "Withdraws are succesfull"}
+    /// let first := old(token.balanceOf(address(this))) in
+    /// let delta := first - (token.balanceOf(address(this))) in
+    /// _shares == delta; 
     function withdraw(uint256 _shares) public {
         uint256 r = (balance().mul(_shares)).div(totalSupply());
         _burn(msg.sender, _shares);

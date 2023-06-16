@@ -56,6 +56,10 @@ const config: HardhatUserConfig = {
       url: "https://rinkeby.arbitrum.io/rpc",
       accounts: [process.env.PRIVATE_KEY ?? '']
     },
+    localhost: {
+      chainId: 1337,
+      url: "http://127.0.0.1:8545/"
+    }
   },
   mocha: {
     timeout: 1000000

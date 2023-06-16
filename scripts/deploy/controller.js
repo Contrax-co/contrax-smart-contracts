@@ -3,17 +3,17 @@ require("@nomiclabs/hardhat-waffle");
 require('dotenv').config();
 
 async function main() {
-    const platform = "GMX";
+    const platform = "Sushi";
     const controller_name = platform+"Controller";
 
     const [deployer] = await ethers.getSigners();
     console.log("Deploying contracts with the account:", deployer.address);
 
-    const governance_addr = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
-    const strategist_addr = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
-    const timelock_addr = "0xCb410A689A03E06de0a6247b13C13D14237DecC8"; 
-    const devfund_addr = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
-    const treasury_addr = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
+    const governance_addr = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1";
+    const strategist_addr = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1";
+    const timelock_addr = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"; 
+    const devfund_addr = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1";
+    const treasury_addr = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1";
 
     const controllerFactory = await ethers.getContractFactory(controller_name);
 

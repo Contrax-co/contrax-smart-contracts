@@ -25,4 +25,6 @@ interface IVault is IERC20 {
     function earn() external;
 
     function decimals() external view returns (uint8);
+
+    function governance() external view returns (address);
 }
