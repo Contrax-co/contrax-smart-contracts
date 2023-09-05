@@ -14,10 +14,19 @@ const tests = [
     //     name: "HopUsdt",
     //     controller: "hop",
     // },
+    // {
+    //     name: "HopDai",
+    //     controller: "hop",
+    // },
+    // {
+    //     name: "HopMagic",
+    //     controller: "hop",
+    // },
     {
-        name: "HopDai",
+        name: "HoprEth",
         controller: "hop",
     },
+
 
 ];
 
