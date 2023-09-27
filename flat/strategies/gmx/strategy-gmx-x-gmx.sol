@@ -1722,9 +1722,9 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
         IRewardRouterV2(rewardRouter).handleRewards(
             true, 
             true, 
-            false, 
-            false, 
-            false, 
+            true, 
+            true, 
+            true, 
             true, 
             false
         );
