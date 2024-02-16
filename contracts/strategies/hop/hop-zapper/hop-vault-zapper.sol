@@ -10,9 +10,9 @@ contract VaultZapperHop is HopZapperBase {
     using SafeERC20 for IVault;
 
     constructor()
-        HopZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564){}
+        HopZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564, 0xCb410A689A03E06de0a6247b13C13D14237DecC8){}
 
-    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override {
+    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
         (address token0) = pair.getToken(0);
         (address token1) = pair.getToken(1); 
@@ -66,7 +66,7 @@ contract VaultZapperHop is HopZapperBase {
         
     }
 
-    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override {
+    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
 
         (address token0) = pair.getToken(0);
@@ -164,9 +164,6 @@ contract VaultZapperHop is HopZapperBase {
         vault.deposit(amountLiquidity);
 
         //add to guage if possible instead of returning to user, and so no receipt token
-        vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
-
-        //taking receipt token and sending back to user
         vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
 
         address[] memory path = new address[](2);

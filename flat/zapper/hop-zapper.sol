@@ -968,6 +968,7 @@ interface IVault is IERC20 {
 // File contracts/interfaces/uniswapv3.sol
 
 pragma solidity 0.8.4;
+pragma abicoder v2;
 
 interface ISwapRouter{
    struct ExactInputSingleParams {
@@ -1051,21 +1052,53 @@ abstract contract HopZapperBase {
     address public router;
 
     address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address public governance;
+
+    // Define a mapping to store whether an address is whitelisted or not
+    mapping(address => bool) public whitelistedVaults;
 
     uint256 public constant minimumAmount = 1000;
 
     // For this example, we will set the pool fee to 0.3%.
     uint24 public constant poolFee = 3000;
 
-    constructor(address _router) {
+    constructor(
+        address _router,  
+        address _governance
+    ) {
         // Safety checks to ensure WETH token address
         WETH(weth).deposit{value: 0}();
         WETH(weth).withdraw(0);
         router = _router;
+        governance = _governance;
     }
 
     receive() external payable {
         assert(msg.sender == weth);
+    }
+
+     // **** Modifiers **** //
+
+    // Modifier to restrict access to whitelisted vaults only
+    modifier onlyWhitelistedVaults(address vault) {
+        require(whitelistedVaults[vault], "Vault is not whitelisted");
+        _;
+    }
+
+    // Modifier to restrict access to governance only
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "Caller is not the governance");
+        _;
+    }
+    
+    // Function to add a vault to the whitelist
+    function addToWhitelist(address _vault) external onlyGovernance {
+        whitelistedVaults[_vault] = true;
+    }
+
+    // Function to remove a vault from the whitelist
+    function removeFromWhitelist(address _vault) external onlyGovernance {
+        whitelistedVaults[_vault] = false;
     }
 
     //returns DUST
@@ -1089,7 +1122,7 @@ abstract contract HopZapperBase {
 
     function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual;
 
-    function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable{
+    function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable onlyWhitelistedVaults(vault){
         require(msg.value >= minimumAmount, "Insignificant input amount");
 
         WETH(weth).deposit{value: msg.value}();
@@ -1133,7 +1166,7 @@ abstract contract HopZapperBase {
 
 
     // transfers tokens from msg.sender to this contract 
-    function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external {
+    function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external onlyWhitelistedVaults(vault){
         require(tokenInAmount >= minimumAmount, "Insignificant input amount");
         require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
 
@@ -1202,7 +1235,7 @@ abstract contract HopZapperBase {
         }
     }
 
-    function zapOut(address vault_addr, uint256 withdrawAmount) external {
+    function zapOut(address vault_addr, uint256 withdrawAmount) external onlyWhitelistedVaults(vault_addr){
         (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
 
         IERC20(vault_addr).safeTransferFrom(msg.sender, address(this), withdrawAmount);
@@ -1231,9 +1264,9 @@ contract VaultZapperHop is HopZapperBase {
     using SafeERC20 for IVault;
 
     constructor()
-        HopZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564){}
+        HopZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564, 0xCb410A689A03E06de0a6247b13C13D14237DecC8){}
 
-    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override {
+    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
         (address token0) = pair.getToken(0);
         (address token1) = pair.getToken(1); 
@@ -1287,7 +1320,7 @@ contract VaultZapperHop is HopZapperBase {
         
     }
 
-    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override {
+    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
 
         (address token0) = pair.getToken(0);
@@ -1385,9 +1418,6 @@ contract VaultZapperHop is HopZapperBase {
         vault.deposit(amountLiquidity);
 
         //add to guage if possible instead of returning to user, and so no receipt token
-        vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
-
-        //taking receipt token and sending back to user
         vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
 
         address[] memory path = new address[](2);

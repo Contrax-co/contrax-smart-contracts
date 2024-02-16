@@ -13,9 +13,9 @@ contract VaultZapperGmx is GmxZapperBase {
     address gmx = 0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a;
 
     constructor()
-        GmxZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564){}
+        GmxZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564, 0xCb410A689A03E06de0a6247b13C13D14237DecC8){}
 
-    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override {
+    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, address token) = _getVaultPair(vault_addr);
 
         vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
@@ -55,7 +55,7 @@ contract VaultZapperGmx is GmxZapperBase {
         
     }
 
-    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override {
+    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, address token) = _getVaultPair(vault_addr);
 
         vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
@@ -100,9 +100,6 @@ contract VaultZapperGmx is GmxZapperBase {
         vault.deposit(IERC20(token).balanceOf(address(this)));
 
         //add to guage if possible instead of returning to user, and so no receipt token
-        vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
-
-        //taking receipt token and sending back to user
         vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
         
         address[] memory path = new address[](2);
