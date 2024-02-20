@@ -117,7 +117,7 @@ contract VaultZapperHop is HopZapperBase {
       
     }
 
-    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override {
+    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
 
         (address token0) = pair.getToken(0);

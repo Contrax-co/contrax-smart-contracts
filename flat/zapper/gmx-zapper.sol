@@ -1508,7 +1508,7 @@ contract VaultZapperGmx is GmxZapperBase {
       
     }
 
-    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override {
+    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, address token) = _getVaultPair(vault_addr);
 
         bool isInputA = token == tokenIn;

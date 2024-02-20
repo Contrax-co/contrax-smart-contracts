@@ -1151,13 +1151,7 @@ interface IVault is IERC20 {
 
 // File contracts/zapper/zapper-base.sol
 
-
 pragma solidity 0.8.4;
-
-
-
-
-
 
 abstract contract ZapperBase {
     using SafeERC20 for IERC20;
@@ -1554,7 +1548,7 @@ contract VaultZapEthSushi is ZapperBase {
     }
 
 
-    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override {
+    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override onlyWhitelistedVaults(vault_addr) {
         (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
 
         (uint256 reserveA, uint256 reserveB, ) = pair.getReserves();
