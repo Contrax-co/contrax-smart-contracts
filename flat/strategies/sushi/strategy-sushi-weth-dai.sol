@@ -61,7 +61,11 @@ library SafeMath {
      *
      * - Subtraction cannot overflow.
      */
-    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    function sub(
+        uint256 a,
+        uint256 b,
+        string memory errorMessage
+    ) internal pure returns (uint256) {
         require(b <= a, errorMessage);
         uint256 c = a - b;
 
@@ -120,7 +124,11 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    function div(
+        uint256 a,
+        uint256 b,
+        string memory errorMessage
+    ) internal pure returns (uint256) {
         require(b > 0, errorMessage);
         uint256 c = a / b;
         // assert(a == b * c + a % b); // There is no case in which this doesn't hold
@@ -156,16 +164,17 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    function mod(
+        uint256 a,
+        uint256 b,
+        string memory errorMessage
+    ) internal pure returns (uint256) {
         require(b != 0, errorMessage);
         return a % b;
     }
 }
 
-
 // File contracts/lib/context.sol
-
-
 
 pragma solidity 0.8.4;
 
@@ -190,18 +199,13 @@ abstract contract Context {
     }
 }
 
-
 // File contracts/lib/erc20.sol
 
 // File: contracts/GSN/Context.sol
 
-
-
 pragma solidity 0.8.4;
 
-
 // File: contracts/token/ERC20/IERC20.sol
-
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
@@ -224,7 +228,10 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transfer(address recipient, uint256 amount) external returns (bool);
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
 
     /**
      * @dev Returns the remaining number of tokens that `spender` will be
@@ -233,7 +240,10 @@ interface IERC20 {
      *
      * This value changes when {approve} or {transferFrom} are called.
      */
-    function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256);
 
     /**
      * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
@@ -260,7 +270,11 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
 
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
@@ -274,11 +288,14 @@ interface IERC20 {
      * @dev Emitted when the allowance of a `spender` for an `owner` is set by
      * a call to {approve}. `value` is the new allowance.
      */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 }
 
 // File: contracts/utils/Address.sol
-
 
 /**
  * @dev Collection of functions related to the address type
@@ -308,7 +325,9 @@ library Address {
 
         uint256 size;
         // solhint-disable-next-line no-inline-assembly
-        assembly { size := extcodesize(account) }
+        assembly {
+            size := extcodesize(account)
+        }
         return size > 0;
     }
 
@@ -329,11 +348,17 @@ library Address {
      * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
      */
     function sendValue(address payable recipient, uint256 amount) internal {
-        require(address(this).balance >= amount, "Address: insufficient balance");
+        require(
+            address(this).balance >= amount,
+            "Address: insufficient balance"
+        );
 
         // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
-        (bool success, ) = recipient.call{ value: amount }("");
-        require(success, "Address: unable to send value, recipient may have reverted");
+        (bool success, ) = recipient.call{value: amount}("");
+        require(
+            success,
+            "Address: unable to send value, recipient may have reverted"
+        );
     }
 
     /**
@@ -354,8 +379,11 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
-      return functionCall(target, data, "Address: low-level call failed");
+    function functionCall(
+        address target,
+        bytes memory data
+    ) internal returns (bytes memory) {
+        return functionCall(target, data, "Address: low-level call failed");
     }
 
     /**
@@ -364,7 +392,11 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
+    function functionCall(
+        address target,
+        bytes memory data,
+        string memory errorMessage
+    ) internal returns (bytes memory) {
         return _functionCallWithValue(target, data, 0, errorMessage);
     }
 
@@ -379,8 +411,18 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
-        return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
+    function functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value
+    ) internal returns (bytes memory) {
+        return
+            functionCallWithValue(
+                target,
+                data,
+                value,
+                "Address: low-level call with value failed"
+            );
     }
 
     /**
@@ -389,16 +431,31 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {
-        require(address(this).balance >= value, "Address: insufficient balance for call");
+    function functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 value,
+        string memory errorMessage
+    ) internal returns (bytes memory) {
+        require(
+            address(this).balance >= value,
+            "Address: insufficient balance for call"
+        );
         return _functionCallWithValue(target, data, value, errorMessage);
     }
 
-    function _functionCallWithValue(address target, bytes memory data, uint256 weiValue, string memory errorMessage) private returns (bytes memory) {
+    function _functionCallWithValue(
+        address target,
+        bytes memory data,
+        uint256 weiValue,
+        string memory errorMessage
+    ) private returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory returndata) = target.call{ value: weiValue }(data);
+        (bool success, bytes memory returndata) = target.call{value: weiValue}(
+            data
+        );
         if (success) {
             return returndata;
         } else {
@@ -448,9 +505,9 @@ contract ERC20 is Context, IERC20 {
     using SafeMath for uint256;
     using Address for address;
 
-    mapping (address => uint256) private _balances;
+    mapping(address => uint256) private _balances;
 
-    mapping (address => mapping (address => uint256)) private _allowances;
+    mapping(address => mapping(address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
 
@@ -467,7 +524,7 @@ contract ERC20 is Context, IERC20 {
      * All three of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor (string memory name_, string memory symbol_) {
+    constructor(string memory name_, string memory symbol_) {
         _name = name_;
         _symbol = symbol_;
         _decimals = 18;
@@ -527,7 +584,10 @@ contract ERC20 is Context, IERC20 {
      * - `recipient` cannot be the zero address.
      * - the caller must have a balance of at least `amount`.
      */
-    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) public virtual override returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
@@ -535,7 +595,10 @@ contract ERC20 is Context, IERC20 {
     /**
      * @dev See {IERC20-allowance}.
      */
-    function allowance(address owner, address spender) public view virtual override returns (uint256) {
+    function allowance(
+        address owner,
+        address spender
+    ) public view virtual override returns (uint256) {
         return _allowances[owner][spender];
     }
 
@@ -546,7 +609,10 @@ contract ERC20 is Context, IERC20 {
      *
      * - `spender` cannot be the zero address.
      */
-    function approve(address spender, uint256 amount) public virtual override returns (bool) {
+    function approve(
+        address spender,
+        uint256 amount
+    ) public virtual override returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
@@ -563,9 +629,20 @@ contract ERC20 is Context, IERC20 {
      * - the caller must have allowance for ``sender``'s tokens of at least
      * `amount`.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) public virtual override returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
+        _approve(
+            sender,
+            _msgSender(),
+            _allowances[sender][_msgSender()].sub(
+                amount,
+                "ERC20: transfer amount exceeds allowance"
+            )
+        );
         return true;
     }
 
@@ -581,8 +658,15 @@ contract ERC20 is Context, IERC20 {
      *
      * - `spender` cannot be the zero address.
      */
-    function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
-        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
+    function increaseAllowance(
+        address spender,
+        uint256 addedValue
+    ) public virtual returns (bool) {
+        _approve(
+            _msgSender(),
+            spender,
+            _allowances[_msgSender()][spender].add(addedValue)
+        );
         return true;
     }
 
@@ -600,8 +684,18 @@ contract ERC20 is Context, IERC20 {
      * - `spender` must have allowance for the caller of at least
      * `subtractedValue`.
      */
-    function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
-        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
+    function decreaseAllowance(
+        address spender,
+        uint256 subtractedValue
+    ) public virtual returns (bool) {
+        _approve(
+            _msgSender(),
+            spender,
+            _allowances[_msgSender()][spender].sub(
+                subtractedValue,
+                "ERC20: decreased allowance below zero"
+            )
+        );
         return true;
     }
 
@@ -619,13 +713,20 @@ contract ERC20 is Context, IERC20 {
      * - `recipient` cannot be the zero address.
      * - `sender` must have a balance of at least `amount`.
      */
-    function _transfer(address sender, address recipient, uint256 amount) internal virtual {
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal virtual {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
         _beforeTokenTransfer(sender, recipient, amount);
 
-        _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
+        _balances[sender] = _balances[sender].sub(
+            amount,
+            "ERC20: transfer amount exceeds balance"
+        );
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
     }
@@ -665,7 +766,10 @@ contract ERC20 is Context, IERC20 {
 
         _beforeTokenTransfer(account, address(0), amount);
 
-        _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
+        _balances[account] = _balances[account].sub(
+            amount,
+            "ERC20: burn amount exceeds balance"
+        );
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
@@ -683,7 +787,11 @@ contract ERC20 is Context, IERC20 {
      * - `owner` cannot be the zero address.
      * - `spender` cannot be the zero address.
      */
-    function _approve(address owner, address spender, uint256 amount) internal virtual {
+    function _approve(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal virtual {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -716,7 +824,11 @@ contract ERC20 is Context, IERC20 {
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual {}
 }
 
 /**
@@ -733,11 +845,22 @@ library SafeERC20 {
     using Address for address;
 
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(token.transfer.selector, to, value)
+        );
     }
 
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
+    function safeTransferFrom(
+        IERC20 token,
+        address from,
+        address to,
+        uint256 value
+    ) internal {
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(token.transferFrom.selector, from, to, value)
+        );
     }
 
     /**
@@ -747,25 +870,60 @@ library SafeERC20 {
      * Whenever possible, use {safeIncreaseAllowance} and
      * {safeDecreaseAllowance} instead.
      */
-    function safeApprove(IERC20 token, address spender, uint256 value) internal {
+    function safeApprove(
+        IERC20 token,
+        address spender,
+        uint256 value
+    ) internal {
         // safeApprove should only be called when setting an initial allowance,
         // or when resetting it to zero. To increase and decrease it, use
         // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
         // solhint-disable-next-line max-line-length
-        require((value == 0) || (token.allowance(address(this), spender) == 0),
+        require(
+            (value == 0) || (token.allowance(address(this), spender) == 0),
             "SafeERC20: approve from non-zero to non-zero allowance"
         );
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(token.approve.selector, spender, value)
+        );
     }
 
-    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).add(value);
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
+    function safeIncreaseAllowance(
+        IERC20 token,
+        address spender,
+        uint256 value
+    ) internal {
+        uint256 newAllowance = token.allowance(address(this), spender).add(
+            value
+        );
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(
+                token.approve.selector,
+                spender,
+                newAllowance
+            )
+        );
     }
 
-    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).sub(value, "SafeERC20: decreased allowance below zero");
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
+    function safeDecreaseAllowance(
+        IERC20 token,
+        address spender,
+        uint256 value
+    ) internal {
+        uint256 newAllowance = token.allowance(address(this), spender).sub(
+            value,
+            "SafeERC20: decreased allowance below zero"
+        );
+        _callOptionalReturn(
+            token,
+            abi.encodeWithSelector(
+                token.approve.selector,
+                spender,
+                newAllowance
+            )
+        );
     }
 
     /**
@@ -779,17 +937,22 @@ library SafeERC20 {
         // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
         // the target address contains contract code and also asserts for success in the low-level call.
 
-        bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
-        if (returndata.length > 0) { // Return data is optional
+        bytes memory returndata = address(token).functionCall(
+            data,
+            "SafeERC20: low-level call failed"
+        );
+        if (returndata.length > 0) {
+            // Return data is optional
             // solhint-disable-next-line max-line-length
-            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
+            require(
+                abi.decode(returndata, (bool)),
+                "SafeERC20: ERC20 operation did not succeed"
+            );
         }
     }
 }
 
-
 // File contracts/interfaces/uniswapv2.sol
-
 
 pragma solidity 0.8.4;
 
@@ -811,13 +974,7 @@ interface UniswapRouterV2 {
         uint256 amountBMin,
         address to,
         uint256 deadline
-    )
-        external
-        returns (
-            uint256 amountA,
-            uint256 amountB,
-            uint256 liquidity
-        );
+    ) external returns (uint256 amountA, uint256 amountB, uint256 liquidity);
 
     function addLiquidityETH(
         address token,
@@ -829,11 +986,7 @@ interface UniswapRouterV2 {
     )
         external
         payable
-        returns (
-            uint256 amountToken,
-            uint256 amountETH,
-            uint256 liquidity
-        );
+        returns (uint256 amountToken, uint256 amountETH, uint256 liquidity);
 
     function removeLiquidity(
         address tokenA,
@@ -852,29 +1005,29 @@ interface UniswapRouterV2 {
         uint amountETHMin,
         address to,
         uint deadline
-    ) external returns (uint amountToken, uint amountETH); 
+    ) external returns (uint amountToken, uint amountETH);
 
-     function quote(
+    function quote(
         uint256 amountA,
         uint256 reserveA,
         uint256 reserveB
     ) external pure returns (uint256 amountB);
 
-     function getAmountOut(
+    function getAmountOut(
         uint256 amountIn,
         uint256 reserveIn,
         uint256 reserveOut
     ) external pure returns (uint256 amountOut);
 
-    function getAmountsOut(uint256 amountIn, address[] calldata path)
-        external
-        view
-        returns (uint256[] memory amounts);
+    function getAmountsOut(
+        uint256 amountIn,
+        address[] calldata path
+    ) external view returns (uint256[] memory amounts);
 
-    function getAmountsIn(uint256 amountOut, address[] calldata path)
-        external
-        view
-        returns (uint256[] memory amounts);
+    function getAmountsIn(
+        uint256 amountOut,
+        address[] calldata path
+    ) external view returns (uint256[] memory amounts);
 
     function swapETHForExactTokens(
         uint256 amountOut,
@@ -909,10 +1062,10 @@ interface IUniswapV2Pair {
 
     function balanceOf(address owner) external view returns (uint256);
 
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256);
 
     function approve(address spender, uint256 value) external returns (bool);
 
@@ -968,11 +1121,7 @@ interface IUniswapV2Pair {
     function getReserves()
         external
         view
-        returns (
-            uint112 reserve0,
-            uint112 reserve1,
-            uint32 blockTimestampLast
-        );
+        returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 
     function price0CumulativeLast() external view returns (uint256);
 
@@ -982,9 +1131,9 @@ interface IUniswapV2Pair {
 
     function mint(address to) external returns (uint256 liquidity);
 
-    function burn(address to)
-        external
-        returns (uint256 amount0, uint256 amount1);
+    function burn(
+        address to
+    ) external returns (uint256 amount0, uint256 amount1);
 
     function swap(
         uint256 amount0Out,
@@ -1006,10 +1155,10 @@ interface IUniswapV2Factory {
         uint256
     );
 
-    function getPair(address tokenA, address tokenB)
-        external
-        view
-        returns (address pair);
+    function getPair(
+        address tokenA,
+        address tokenB
+    ) external view returns (address pair);
 
     function allPairs(uint256) external view returns (address pair);
 
@@ -1019,14 +1168,13 @@ interface IUniswapV2Factory {
 
     function feeToSetter() external view returns (address);
 
-    function createPair(address tokenA, address tokenB)
-        external
-        returns (address pair);
+    function createPair(
+        address tokenA,
+        address tokenB
+    ) external returns (address pair);
 }
 
-
 // File contracts/interfaces/staking-rewards.sol
-
 
 pragma solidity 0.8.4;
 
@@ -1103,25 +1251,22 @@ interface IStakingRewardsFactory {
 
     function stakingRewardsGenesis() external view returns (uint256);
 
-    function stakingRewardsInfoByStakingToken(address)
-        external
-        view
-        returns (address stakingRewards, uint256 rewardAmount);
+    function stakingRewardsInfoByStakingToken(
+        address
+    ) external view returns (address stakingRewards, uint256 rewardAmount);
 
     function stakingTokens(uint256) external view returns (address);
 
     function transferOwnership(address newOwner) external;
 }
 
-
 // File contracts/interfaces/vault.sol
-
 
 pragma solidity 0.8.4;
 
 interface IVault is IERC20 {
     function token() external view returns (address);
-    
+
     function reward() external view returns (address);
 
     function claimInsurance() external; // NOTE: Only yDelegatedVault implements this
@@ -1129,7 +1274,7 @@ interface IVault is IERC20 {
     function getRatio() external view returns (uint256);
 
     function depositAll() external;
-    
+
     function balance() external view returns (uint256);
 
     function deposit(uint256) external;
@@ -1143,9 +1288,7 @@ interface IVault is IERC20 {
     function decimals() external view returns (uint8);
 }
 
-
 // File contracts/interfaces/controller.sol
-
 
 pragma solidity 0.8.4;
 
@@ -1181,18 +1324,12 @@ interface IController {
     function setTimelock(address _timelock) external;
 }
 
-
 // File contracts/strategies/strategy-base.sol
 
-	
 pragma solidity 0.8.4;
 
-
-
-
-
 /**
- * The is the Strategy Base that most LPs will inherit 
+ * The is the Strategy Base that most LPs will inherit
  */
 abstract contract StrategyBase {
     using SafeERC20 for IERC20;
@@ -1230,7 +1367,7 @@ abstract contract StrategyBase {
     address public strategist;
     address public timelock;
 
-    // Dex 
+    // Dex
     address public sushiRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
 
     mapping(address => bool) public harvesters;
@@ -1257,7 +1394,7 @@ abstract contract StrategyBase {
 
     // **** Modifiers **** //
 
-    modifier onlyBenevolent {
+    modifier onlyBenevolent() {
         require(
             harvesters[msg.sender] ||
                 msg.sender == governance ||
@@ -1272,25 +1409,31 @@ abstract contract StrategyBase {
         return IERC20(want).balanceOf(address(this));
     }
 
-    function balanceOfPool() public virtual view returns (uint256);
+    function balanceOfPool() public view virtual returns (uint256);
 
     function balanceOf() public view returns (uint256) {
         return balanceOfWant().add(balanceOfPool());
     }
 
-    function getName() external virtual pure returns (string memory);
+    function getName() external pure virtual returns (string memory);
 
     // **** Setters **** //
 
     function whitelistHarvester(address _harvester) external {
-        require(msg.sender == governance ||
-             msg.sender == strategist || harvesters[msg.sender], "not authorized");
+        require(
+            msg.sender == governance ||
+                msg.sender == strategist ||
+                harvesters[msg.sender],
+            "not authorized"
+        );
         harvesters[_harvester] = true;
     }
 
     function revokeHarvester(address _harvester) external {
-        require(msg.sender == governance ||
-             msg.sender == strategist, "not authorized");
+        require(
+            msg.sender == governance || msg.sender == strategist,
+            "not authorized"
+        );
         harvesters[_harvester] = false;
     }
 
@@ -1314,9 +1457,9 @@ abstract contract StrategyBase {
         performanceDevFee = _performanceDevFee;
     }
 
-    function setPerformanceTreasuryFee(uint256 _performanceTreasuryFee)
-        external
-    {
+    function setPerformanceTreasuryFee(
+        uint256 _performanceTreasuryFee
+    ) external {
         require(msg.sender == timelock, "!timelock");
         performanceTreasuryFee = _performanceTreasuryFee;
     }
@@ -1353,6 +1496,18 @@ abstract contract StrategyBase {
     }
 
     // Withdraw partial funds, normally used with a vault withdrawal
+    /*
+    Note:My Current Understading as far
+    *Withdraw takes amount, which will be an lp amount,
+    *if contract lp bal is less then amount then _withdrawSome
+        funtion takes difference of <= amount - bal and get that much amount of lp
+        in this strategy contract. Then bal is again added to amount.
+        eg: am: 15 , cbal:10, => 15 - 10 = 5, => 5 + 10 = 15
+        Note: Extra lp amount is coming from SushiFarm where it
+            withdraws lp from farm and send it to cAdd
+    *Extract specified fees and sent to given addresses in Lp
+    *Lastly => sent Lp to specified vaultAdd extracted from controller
+    */
     function withdraw(uint256 _amount) external {
         require(msg.sender == controller, "!controller");
         uint256 _balance = IERC20(want).balanceOf(address(this));
@@ -1377,14 +1532,24 @@ abstract contract StrategyBase {
         address _vault = IController(controller).vaults(address(want));
         require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
 
-        IERC20(want).safeTransfer(_vault, _amount.sub(_feeDev).sub(_feeTreasury));
+        IERC20(want).safeTransfer(
+            _vault,
+            _amount.sub(_feeDev).sub(_feeTreasury)
+        );
     }
 
+    /*
+    Note:My Current Understading as far
+    *WithdrawForSwap takes amount which will be an lp amount.
+    *_withDrawSome => takes lp amount to withDraw from sushiFarm
+        and sent lp tokens to cAdd
+    * Sent updated contract lp token bal to vault.
+        => lpBal + lpAm(gets from sushiFarm) = LpBal to sent in vault
+    */
     // Withdraw funds, used to swap between strategies
-    function withdrawForSwap(uint256 _amount)
-        external
-        returns (uint256 balance)
-    {
+    function withdrawForSwap(
+        uint256 _amount
+    ) external returns (uint256 balance) {
         require(msg.sender == controller, "!controller");
         _withdrawSome(_amount);
 
@@ -1394,6 +1559,13 @@ abstract contract StrategyBase {
         require(_vault != address(0), "!vault");
         IERC20(want).safeTransfer(_vault, balance);
     }
+
+    /*
+    Note:My Current Understading as far
+    *withDrawAll() gets All Lp from contract and from sushi farm
+        and sent it to vAdd
+    
+    */
 
     // Withdraw all funds, normally used when migrating strategies
     function withdrawAll() external returns (uint256 balance) {
@@ -1417,11 +1589,10 @@ abstract contract StrategyBase {
 
     // **** Emergency functions ****
 
-    function execute(address _target, bytes memory _data)
-        public
-        payable
-        returns (bytes memory response)
-    {
+    function execute(
+        address _target,
+        bytes memory _data
+    ) public payable returns (bytes memory response) {
         require(msg.sender == timelock, "!timelock");
         require(_target != address(0), "!target");
 
@@ -1446,14 +1617,25 @@ abstract contract StrategyBase {
             returndatacopy(add(response, 0x20), 0, size)
 
             switch iszero(succeeded)
-                case 1 {
-                    // throw if delegatecall failed
-                    revert(add(response, 0x20), size)
-                }
+            case 1 {
+                // throw if delegatecall failed
+                revert(add(response, 0x20), size)
+            }
         }
     }
 
     // **** Internal functions ****
+    /*
+    Note:My Current Understading as far
+    *_swapSushiswap() swaps tokens to tokens using uniV2
+    * If weth is one of the tokens then it will use normal swaping.
+    * If form or to is not weth anyOther tokens then,
+        it will swap from, _from to weth and weth to _to
+        eg: _from = dai
+            _to = sushi
+            _from to weth => dai to weth
+            weth to _to => weth to sushi
+    */
     function _swapSushiswap(
         address _from,
         address _to,
@@ -1473,7 +1655,7 @@ abstract contract StrategyBase {
             path[1] = weth;
             path[2] = _to;
         }
-        
+
         IERC20(_from).safeApprove(sushiRouter, 0);
         IERC20(_from).safeApprove(sushiRouter, _amount);
         UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
@@ -1484,7 +1666,9 @@ abstract contract StrategyBase {
             block.timestamp.add(60)
         );
     }
-
+    /*
+        Simply takes path to swap, same as Above.
+    */
     function _swapSushiswapWithPath(
         address[] memory path,
         uint256 _amount
@@ -1501,6 +1685,12 @@ abstract contract StrategyBase {
             block.timestamp.add(60)
         );
     }
+
+    /*
+     *Distribute performance fees/ Dev fees in (weth/dai) Lp token.
+     *Calls Depoist function which depoists all (weth/dai) Lp token 
+        *held by cAdd to sushi farms and gets Sushi tokens.
+     */
 
     function _distributePerformanceFeesAndDeposit() internal {
         uint256 _want = IERC20(want).balanceOf(address(this));
@@ -1522,7 +1712,16 @@ abstract contract StrategyBase {
         }
     }
 
-    function _distributePerformanceFeesBasedAmountAndDeposit(uint256 _amount) internal {
+    /*
+
+     *Distribute performance fees/ Dev fees in weth/Dai Lp from a specified Given Amount.
+     
+     *Calls Depoist function which depoists all (weth/dai) Lp token held by cAdd to sushi farms and gets Sushi tokens.
+
+    */
+    function _distributePerformanceFeesBasedAmountAndDeposit(
+        uint256 _amount
+    ) internal {
         uint256 _want = IERC20(want).balanceOf(address(this));
 
         if (_amount > _want) {
@@ -1545,61 +1744,85 @@ abstract contract StrategyBase {
             deposit();
         }
     }
-
 }
-
 
 // File contracts/lib/BoringERC20.sol
 
 pragma solidity 0.8.4;
 
 library BoringERC20 {
-    function safeSymbol(IERC20 token) internal view returns(string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x95d89b41));
+    function safeSymbol(IERC20 token) internal view returns (string memory) {
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(0x95d89b41)
+        );
         return success && data.length > 0 ? abi.decode(data, (string)) : "???";
     }
 
-    function safeName(IERC20 token) internal view returns(string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x06fdde03));
+    function safeName(IERC20 token) internal view returns (string memory) {
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(0x06fdde03)
+        );
         return success && data.length > 0 ? abi.decode(data, (string)) : "???";
     }
 
     function safeDecimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(0x313ce567));
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(0x313ce567)
+        );
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 
     function safeTransfer(IERC20 token, address to, uint256 amount) internal {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, to, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: Transfer failed");
+        (bool success, bytes memory data) = address(token).call(
+            abi.encodeWithSelector(0xa9059cbb, to, amount)
+        );
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "BoringERC20: Transfer failed"
+        );
     }
 
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 amount) internal {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0x23b872dd, from, to, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: TransferFrom failed");
+    function safeTransferFrom(
+        IERC20 token,
+        address from,
+        address to,
+        uint256 amount
+    ) internal {
+        (bool success, bytes memory data) = address(token).call(
+            abi.encodeWithSelector(0x23b872dd, from, to, amount)
+        );
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "BoringERC20: TransferFrom failed"
+        );
     }
 }
 
-
 // File contracts/interfaces/IRewarder.sol
-
-
 
 pragma solidity 0.8.4;
 
 interface IRewarder {
-    function onSushiReward(uint256 pid, address user, address recipient, uint256 sushiAmount, uint256 newLpAmount) external;
-    function pendingTokens(uint256 pid, address user, uint256 sushiAmount) external view returns (IERC20[] memory, uint256[] memory);
+    function onSushiReward(
+        uint256 pid,
+        address user,
+        address recipient,
+        uint256 sushiAmount,
+        uint256 newLpAmount
+    ) external;
+    function pendingTokens(
+        uint256 pid,
+        address user,
+        uint256 sushiAmount
+    ) external view returns (IERC20[] memory, uint256[] memory);
 }
 
-
 // File contracts/interfaces/minichefv2.sol
-
 
 pragma solidity 0.8.4;
 pragma experimental ABIEncoderV2;
 
-interface IMiniChefV2{
+interface IMiniChefV2 {
     struct UserInfo {
         uint256 amount;
         uint256 rewardDebt;
@@ -1613,23 +1836,41 @@ interface IMiniChefV2{
 
     function rewarder(uint256 _pid) external view returns (IRewarder);
     function poolLength() external view returns (uint256);
-    function updatePool(uint256 pid) external returns (IMiniChefV2.PoolInfo memory);
-    function userInfo(uint256 _pid, address _user) external view returns (uint256, uint256);
-    function deposit(uint256 pid, uint256 amount, address to) external;
-    function withdraw(uint256 pid, uint256 amount, address to) external;
-    function harvest(uint256 pid, address to) external;
-    function withdrawAndHarvest(uint256 pid, uint256 amount, address to) external;
-    function emergencyWithdraw(uint256 pid, address to) external;
-    function pendingSushi(uint256 _pid, address _user) external view returns (uint256 pending);
-}
+    function updatePool(
+        uint256 pid
+    ) external returns (IMiniChefV2.PoolInfo memory);
+    function userInfo(
+        uint256 _pid,
+        address _user
+    ) external view returns (uint256, uint256);
 
+    /// @notice Deposit LP tokens to MCV2 for SUSHI allocation.
+    /// @param pid The index of the pool. See `poolInfo`.
+    /// @param amount LP token amount to deposit.
+    /// @param to The receiver of `amount` deposit benefit.
+    function deposit(uint256 pid, uint256 amount, address to) external;
+
+    function withdraw(uint256 pid, uint256 amount, address to) external;
+
+    /// @notice Harvest proceeds for transaction sender to `to`.
+    /// @param pid The index of the pool. See `poolInfo`.
+    /// @param to Receiver of SUSHI rewards
+    function harvest(uint256 pid, address to) external;
+    function withdrawAndHarvest(
+        uint256 pid,
+        uint256 amount,
+        address to
+    ) external;
+    function emergencyWithdraw(uint256 pid, address to) external;
+    function pendingSushi(
+        uint256 _pid,
+        address _user
+    ) external view returns (uint256 pending);
+}
 
 // File contracts/strategies/sushi-farm-bases/strategy-sushi-farm-base.sol
 
-
 pragma solidity 0.8.4;
-
-
 
 abstract contract StrategySushiFarmBase is StrategyBase {
     using SafeERC20 for IERC20;
@@ -1638,14 +1879,15 @@ abstract contract StrategySushiFarmBase is StrategyBase {
 
     // Token addresses
     address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
-    address public constant miniChef = 0xF4d73326C13a4Fc5FD7A064217e12780e9Bd62c3;
+    address public constant miniChef =
+        0xF4d73326C13a4Fc5FD7A064217e12780e9Bd62c3;
 
     // WETH/<token1> pair
     address public token0;
     address public token1;
     address rewardToken;
 
-    // How much tokens to keep?
+    // How much tokens to keep? 10%
     uint256 public keep = 1000;
     uint256 public keepReward = 1000;
     uint256 public constant keepMax = 10000;
@@ -1661,9 +1903,7 @@ abstract contract StrategySushiFarmBase is StrategyBase {
         address _strategist,
         address _controller,
         address _timelock
-    )
-        StrategyBase(_lp, _governance, _strategist, _controller, _timelock)
-    {
+    ) StrategyBase(_lp, _governance, _strategist, _controller, _timelock) {
         poolId = _poolId;
         token0 = _token0;
         token1 = _token1;
@@ -1686,6 +1926,13 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     }
 
     // **** Setters ****
+
+    /*
+     Note: My Current Understading as far.
+     *Calls Deposit function which deposits all (weth/Dai) Lp held by cAdd to sushi farms.
+        and gets sushi tokens in return from MiniChefV2 into cAdd
+    */
+
     function deposit() public override {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
@@ -1695,11 +1942,9 @@ abstract contract StrategySushiFarmBase is StrategyBase {
         }
     }
 
-    function _withdrawSome(uint256 _amount)
-        internal
-        override
-        returns (uint256)
-    {
+    function _withdrawSome(
+        uint256 _amount
+    ) internal override returns (uint256) {
         IMiniChefV2(miniChef).withdraw(poolId, _amount, address(this));
         return _amount;
     }
@@ -1727,8 +1972,18 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     // **** State Mutations ****
 
     // Declare a Harvest Event
-    event Harvest(uint _timestamp, uint _value); 
+    event Harvest(uint _timestamp, uint _value);
 
+    /*
+        Note: My Current Understading as far.
+        *Calls Harvest function, harvests sushi tokens that acumulates funds(sushi token) to cAdd.
+        *Sends 10% of sushi to treasury and remaining sushi tokens will be swapped with WETH.
+        *Sends 10% of reward tokens to treasury and remaining reward tokens will be swapped with WETH.
+        *Swaps halfWETH for each token0 and token1, which in our case will be WETH and DAI.
+        *Add liquidity with token0 and token1 and sends remaining bal of token0,token1 to treasuryAdd.
+        *Calls _distributePerformanceFeesAndDeposit() please check this func for more info.
+
+    */
     function harvest() public override onlyBenevolent {
         // Collects SUSHI tokens
         IMiniChefV2(miniChef).harvest(poolId, address(this));
@@ -1755,7 +2010,7 @@ abstract contract StrategySushiFarmBase is StrategyBase {
                     _keepReward
                 );
 
-                 _reward = IERC20(rewardToken).balanceOf(address(this));
+                _reward = IERC20(rewardToken).balanceOf(address(this));
                 _swapSushiswap(rewardToken, weth, _reward);
             }
         }
@@ -1810,9 +2065,7 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     }
 }
 
-
 // File contracts/strategies/sushi/strategy-sushi-weth-dai.sol
-
 
 pragma solidity 0.8.4;
 
@@ -1820,7 +2073,8 @@ contract StrategySushiWethDai is StrategySushiFarmBase {
     // Token/ETH pool id in MasterChef contract
     uint256 public sushi_dai_poolId = 14;
     // Token addresses
-    address public sushi_weth_dai_lp = 0x692a0B300366D1042679397e40f3d2cb4b8F7D30;
+    address public sushi_weth_dai_lp =
+        0x692a0B300366D1042679397e40f3d2cb4b8F7D30;
     address public dai = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
 
     constructor(
@@ -1843,7 +2097,7 @@ contract StrategySushiWethDai is StrategySushiFarmBase {
 
     // **** Views ****
 
-    function getName() external override pure returns (string memory) {
+    function getName() external pure override returns (string memory) {
         return "StrategySushiWethDai";
     }
 }

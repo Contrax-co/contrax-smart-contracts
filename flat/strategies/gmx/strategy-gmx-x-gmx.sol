@@ -1638,10 +1638,13 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
     using SafeMath for uint256;
 
     // Token addresses
+    //protocol native token
     address public constant gmx = 0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a;
+    //not used any where
     address public constant esGMX = 0xf42Ae1D54fd613C9bb14810b0588FaAa09a426cA; 
+    //Like Uni v2 router
     address public constant rewardRouter = 0xA906F338CB21815cBc4Bc87ace9e68c87eF8d8F1;
-
+    //Farming contract for Gmx
     address public constant rewardTracker = 0x908C4D94D34924765f1eDc22A1DD098397c59dD4;
 
     
@@ -1660,7 +1663,7 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
         address _timelock
     )
         StrategyBase(_lp, _governance, _strategist, _controller, _timelock)
-    {
+    { 
     }
 
     function balanceOfPool() public view override returns (uint256) {
@@ -1674,6 +1677,12 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
     }
 
     // **** Setters ****
+
+    /*
+     Note: My Current Understading as far.
+     *Calls Deposit function which sends all gmx tokens held by cAdd to gmx reward router Add.
+        and gets gmx tokens from Gmx farm.
+    */
     function deposit() public override {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {

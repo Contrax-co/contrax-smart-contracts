@@ -17,7 +17,7 @@ interface IController {
     function balanceOf(address) external view returns (uint256);
 
     function withdraw(address, uint256) external;
-
+ 
     function earn(address, uint256) external;
 
     // For Big Green Button:
