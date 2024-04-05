@@ -909,7 +909,7 @@ contract VaultGmx is ERC20 {
 
     function depositAll() external {
         deposit(token.balanceOf(msg.sender));
-    }
+    } 
 
     // Declare a Deposit Event
     event Deposit(address indexed _from, uint _timestamp, uint _value, uint _shares); 
@@ -950,7 +950,7 @@ contract VaultGmx is ERC20 {
         uint256 r = (balance().mul(_shares)).div(totalSupply());
         _burn(msg.sender, _shares);
 
-        // Check balance
+        // Check balance 
         uint256 b = token.balanceOf(address(this));
         if (b < r) {
             uint256 _withdraw = r.sub(b);

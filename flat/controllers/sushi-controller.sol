@@ -1098,13 +1098,6 @@ contract SushiController {
         strategies[_token] = _strategy;
     }
 
-    /*
-     Note: My Current Understading as far.
-     *Earn takes a token and an amount and checks if the token is the same as the want,
-        if it is then it transfers the amount to the strategy, if it isn't then it calls.
-        The converter contract to convert the tokens into the want token and deposit into the strategy.
-      Note: Converter contract functionality is unknown!
-    */
     function earn(address _token, uint256 _amount) public {
         address _strategy = strategies[_token];
         address _want = IStrategy(_strategy).want();
@@ -1167,15 +1160,6 @@ contract SushiController {
 
     // Only allows to withdraw non-core strategy tokens ~ this is over and above normal yield
 
-     /*
-     Note: My Current Understading as far.
-     *Yearn takes a strategy Add, token Add, and parts(Which is currently unknown) and withdraws the token from the strategy.
-     *If after and before are the same then it does nothing.
-     *If after is greater than before, it first approves the tokens amount(<=after - before) to the onessplit contract.
-        Swaps given token with want token(Lp token) and send to the treasury Add. If want bal is increased from before to after
-        then it sends the difference to the earn function and to treasury Add.
-      
-    */
     function yearn(
         address _strategy,
         address _token,

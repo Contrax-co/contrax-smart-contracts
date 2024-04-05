@@ -1496,18 +1496,7 @@ abstract contract StrategyBase {
     }
 
     // Withdraw partial funds, normally used with a vault withdrawal
-    /*
-    Note:My Current Understading as far
-    *Withdraw takes amount, which will be an lp amount,
-    *if contract lp bal is less then amount then _withdrawSome
-        funtion takes difference of <= amount - bal and get that much amount of lp
-        in this strategy contract. Then bal is again added to amount.
-        eg: am: 15 , cbal:10, => 15 - 10 = 5, => 5 + 10 = 15
-        Note: Extra lp amount is coming from SushiFarm where it
-            withdraws lp from farm and send it to cAdd
-    *Extract specified fees and sent to given addresses in Lp
-    *Lastly => sent Lp to specified vaultAdd extracted from controller
-    */
+   
     function withdraw(uint256 _amount) external {
         require(msg.sender == controller, "!controller");
         uint256 _balance = IERC20(want).balanceOf(address(this));
@@ -1538,14 +1527,6 @@ abstract contract StrategyBase {
         );
     }
 
-    /*
-    Note:My Current Understading as far
-    *WithdrawForSwap takes amount which will be an lp amount.
-    *_withDrawSome => takes lp amount to withDraw from sushiFarm
-        and sent lp tokens to cAdd
-    * Sent updated contract lp token bal to vault.
-        => lpBal + lpAm(gets from sushiFarm) = LpBal to sent in vault
-    */
     // Withdraw funds, used to swap between strategies
     function withdrawForSwap(
         uint256 _amount
@@ -1560,12 +1541,7 @@ abstract contract StrategyBase {
         IERC20(want).safeTransfer(_vault, balance);
     }
 
-    /*
-    Note:My Current Understading as far
-    *withDrawAll() gets All Lp from contract and from sushi farm
-        and sent it to vAdd
     
-    */
 
     // Withdraw all funds, normally used when migrating strategies
     function withdrawAll() external returns (uint256 balance) {
@@ -1625,17 +1601,7 @@ abstract contract StrategyBase {
     }
 
     // **** Internal functions ****
-    /*
-    Note:My Current Understading as far
-    *_swapSushiswap() swaps tokens to tokens using uniV2
-    * If weth is one of the tokens then it will use normal swaping.
-    * If form or to is not weth anyOther tokens then,
-        it will swap from, _from to weth and weth to _to
-        eg: _from = dai
-            _to = sushi
-            _from to weth => dai to weth
-            weth to _to => weth to sushi
-    */
+  
     function _swapSushiswap(
         address _from,
         address _to,
@@ -1686,11 +1652,6 @@ abstract contract StrategyBase {
         );
     }
 
-    /*
-     *Distribute performance fees/ Dev fees in (weth/dai) Lp token.
-     *Calls Depoist function which depoists all (weth/dai) Lp token 
-        *held by cAdd to sushi farms and gets Sushi tokens.
-     */
 
     function _distributePerformanceFeesAndDeposit() internal {
         uint256 _want = IERC20(want).balanceOf(address(this));
@@ -1712,13 +1673,6 @@ abstract contract StrategyBase {
         }
     }
 
-    /*
-
-     *Distribute performance fees/ Dev fees in weth/Dai Lp from a specified Given Amount.
-     
-     *Calls Depoist function which depoists all (weth/dai) Lp token held by cAdd to sushi farms and gets Sushi tokens.
-
-    */
     function _distributePerformanceFeesBasedAmountAndDeposit(
         uint256 _amount
     ) internal {
@@ -1927,11 +1881,6 @@ abstract contract StrategySushiFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    /*
-     Note: My Current Understading as far.
-     *Calls Deposit function which deposits all (weth/Dai) Lp held by cAdd to sushi farms.
-        and gets sushi tokens in return from MiniChefV2 into cAdd
-    */
 
     function deposit() public override {
         uint256 _want = IERC20(want).balanceOf(address(this));
@@ -1974,16 +1923,7 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     // Declare a Harvest Event
     event Harvest(uint _timestamp, uint _value);
 
-    /*
-        Note: My Current Understading as far.
-        *Calls Harvest function, harvests sushi tokens that acumulates funds(sushi token) to cAdd.
-        *Sends 10% of sushi to treasury and remaining sushi tokens will be swapped with WETH.
-        *Sends 10% of reward tokens to treasury and remaining reward tokens will be swapped with WETH.
-        *Swaps halfWETH for each token0 and token1, which in our case will be WETH and DAI.
-        *Add liquidity with token0 and token1 and sends remaining bal of token0,token1 to treasuryAdd.
-        *Calls _distributePerformanceFeesAndDeposit() please check this func for more info.
 
-    */
     function harvest() public override onlyBenevolent {
         // Collects SUSHI tokens
         IMiniChefV2(miniChef).harvest(poolId, address(this));

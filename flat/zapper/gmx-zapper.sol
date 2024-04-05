@@ -1222,11 +1222,6 @@ interface IUniswapV2Factory {
 pragma solidity 0.8.4;
 
 
-
-
-
-
-
 abstract contract GmxZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -1305,6 +1300,7 @@ abstract contract GmxZapperBase {
     }
 
     function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual;
+
 
     function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable onlyWhitelistedVaults(vault){
         require(msg.value >= minimumAmount, "Insignificant input amount");
@@ -1400,7 +1396,7 @@ abstract contract GmxZapperBase {
             IERC20(token).safeApprove(spender, type(uint256).max);
         }
     }
-
+  
     function zapOut(address vault_addr, uint256 withdrawAmount) external onlyWhitelistedVaults(vault_addr){
         (IVault vault, address token) = _getVaultPair(vault_addr);
 
@@ -1432,6 +1428,7 @@ contract VaultZapperGmx is GmxZapperBase {
 
     constructor()
         GmxZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564, 0xCb410A689A03E06de0a6247b13C13D14237DecC8){}
+
 
     function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, address token) = _getVaultPair(vault_addr);
@@ -1473,6 +1470,8 @@ contract VaultZapperGmx is GmxZapperBase {
         
     }
 
+    
+
     function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, address token) = _getVaultPair(vault_addr);
 
@@ -1507,6 +1506,7 @@ contract VaultZapperGmx is GmxZapperBase {
         }
       
     }
+
 
     function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override onlyWhitelistedVaults(vault_addr){
         (IVault vault, address token) = _getVaultPair(vault_addr);

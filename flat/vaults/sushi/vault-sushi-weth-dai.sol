@@ -1071,22 +1071,13 @@ contract VaultSushiWethDai is ERC20 {
     }
 
     // Declare a Deposit Event
-    event Deposit(
+    event Deposit( 
         address indexed _from,
         uint _timestamp,
         uint _value,
         uint _shares
     );
 
-    /*
-    Note:My Current Understading as far
-    *Deposit takes amount which will be an lp amount.
-    *Sends amount to the vaultAdd.
-    *Checks if totalSupply of is zero, if yes then shares = amount,
-        otherwise shares = (amount * totalSupply) / pool.
-        here pool = LpBal of vault + LpBal of controller
-    *Mints shares to msg.sender
-    */
     function deposit(uint256 _amount) public {
         uint256 _pool = balance();
         uint256 _before = token.balanceOf(address(this));
@@ -1122,23 +1113,6 @@ contract VaultSushiWethDai is ERC20 {
         uint _value,
         uint _shares
     );
-
-    /*
-    Note:My Current Understading as far
-    *Withdraw takes shares, which will be a vault token amount.
-    *shares(<=amountOfVaultToken)
-    *Calculates r = (LpBalOfVault + LpBalOfController)*shares/totalSupply
-    * Where as r is the amount that holds the value of shares of a user in vault
-    *Burns shares from msg.sender
-    *Calculates b = LpBalOfVault (beforeBal)
-    *Checks if b < r, if not then r will be the balance of the lpTokens for user in our case (WETH/Dai)Lp
-        which he can withdraw from the vault.
-        if not then 
-        withdraw value will be (r-b) from controller and vault gets that much of LpTokens
-        calculates diff = afterBal - b(beforeBal)
-        if diff < withdraw value then => r = b + diff
-    *Sends r to msg.sender 
-    */
 
     // No rebalance implementation for lower fees and faster swaps
     function withdraw(uint256 _shares) public {
