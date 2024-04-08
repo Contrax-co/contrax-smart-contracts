@@ -8,7 +8,7 @@ interface IVaultForSteer is IERC20 {
     
     function steerVaultTokens() external view returns (address,address);
 
-    function deposit(uint256) external;
+    function deposit(address,uint256, uint256) external;
 
     function withdraw(uint256) external returns (uint256, uint256); 
 

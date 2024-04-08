@@ -7,18 +7,14 @@ import "../../../lib/square-root.sol";
 import "../../../interfaces/weth.sol";
 import "../../../interfaces/vaultForSteer.sol";
 import "../../../interfaces/uniswapv3.sol";
-import "../../../interfaces/ISteerPeriphery.sol";
 
-abstract contract GmxZapperBase {
+contract SteerZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
     using SafeERC20 for IVaultForSteer;
 
     address public router; //0xE592427A0AEce92De3Edee1F18E0157C05861564 Sushi V3 router
-
-    address public SteerPeripheryAddress =
-        0x806c2240793b3738000fcb62C66BF462764B903F;
     address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
     address public governance;
 
@@ -60,7 +56,7 @@ abstract contract GmxZapperBase {
     }
 
     // Function to add local vault against steer vault
-    function addToSteerVault(
+    function addLocalVaultToSteerVault(
         address _vault,
         address _localVault
     ) external onlyGovernance {
@@ -96,50 +92,64 @@ abstract contract GmxZapperBase {
         }
     }
 
-    function depositToSteer(
+    function deposit(
         address vault,
         uint256 amount0,
         uint256 amount1
     ) public onlyWhitelistedVaults(vault) {
-        (address token0, address token1) = IVaultForSteer(vault)
-            .steerVaultTokens();
-        //approve both tokens to Steer Periphery contract
-        _approveTokenIfNeeded(token0, SteerPeripheryAddress);
-        _approveTokenIfNeeded(token1, SteerPeripheryAddress);
-
-        //deposit to Steer Periphery contract
-        ISteerPeriphery(SteerPeripheryAddress).deposit(
-            vault,
-            amount0,
-            amount1,
-            0,
-            0,
-            address(this)
-        );
         address localVault = steerVaultToLocalVault[vault];
         require(
             localVault != address(0),
             "local vault not set against steer vault"
         );
 
-        //approve steer vault tokens to local vault
-        _approveTokenIfNeeded(vault, localVault);
-        //depoist steer vault shares to local vault
-        IVaultForSteer(localVault).deposit(
-            IERC20(vault).balanceOf(address(this))
+        (address token0, address token1) = IVaultForSteer(vault)
+            .steerVaultTokens();
+
+        //transfer both tokens from zapper to local vault
+        IERC20(token0).safeTransfer(
+            localVault,
+            IERC20(token0).balanceOf(address(this))
         );
+
+        IERC20(token1).safeTransfer(
+            localVault,
+            IERC20(token1).balanceOf(address(this))
+        );
+
+        //depoist steer vault shares to local vault
+        IVaultForSteer(localVault).deposit(vault, amount0, amount1);
 
         //return local vaults tokens to user
         IERC20(localVault).safeTransfer(
             msg.sender,
             IERC20(localVault).balanceOf(address(this))
         );
+    }
 
+    function _swap(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    ) private {
         address[] memory path = new address[](2);
-        path[0] = token0;
-        path[1] = token1;
+        path[0] = tokenIn;
+        path[1] = tokenOut;
 
-        _returnAssets(path);
+        _approveTokenIfNeeded(path[0], address(router));
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams({
+                tokenIn: path[0],
+                tokenOut: path[1],
+                fee: poolFee,
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+        ISwapRouter(address(router)).exactInputSingle(params);
     }
 
     function zapInETH(
@@ -148,7 +158,6 @@ abstract contract GmxZapperBase {
         address tokenIn
     ) external payable onlyWhitelistedVaults(vault) {
         require(msg.value >= minimumAmount, "Insignificant input amount");
-
         require(
             steerVaultToLocalVault[vault] != address(0),
             "local vault not set against steer vault"
@@ -158,113 +167,21 @@ abstract contract GmxZapperBase {
 
         (address token0, address token1) = IVaultForSteer(vault)
             .steerVaultTokens();
-
         uint256 _amount = IERC20(weth).balanceOf(address(this));
-        // allows us to zapIn if eth isn't part of the original pair
+
         if (tokenIn != token0 && tokenIn != token1) {
-            address[] memory path = new address[](2);
-            path[0] = weth;
-            path[1] = token0;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: _amount.div(2),
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            address[] memory path1 = new address[](2);
-            path1[0] = weth;
-            path1[1] = token1;
-
-            _approveTokenIfNeeded(path1[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params2 = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path1[0],
-                    tokenOut: path1[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: _amount.sub(_amount.div(2)),
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params2);
-
-            // deposit to steer
-            depositToSteer(
-                vault,
-                IERC20(token0).balanceOf(address(this)),
-                IERC20(token1).balanceOf(address(this))
-            );
-
-            // _swapAndStake(vault, tokenAmountOutMin, token);
-        } else if (token0 == tokenIn) {
-            address[] memory path = new address[](2);
-            path[0] = weth;
-            path[1] = token1;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: _amount.div(2),
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            // deposit to steer
-            depositToSteer(
-                vault,
-                IERC20(token0).balanceOf(address(this)),
-                IERC20(token1).balanceOf(address(this))
-            );
-        } else if (token1 == tokenIn) {
-            address[] memory path = new address[](2);
-            path[0] = weth;
-            path[1] = token0;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: _amount.div(2),
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            // deposit to steer
-            depositToSteer(
-                vault,
-                IERC20(token0).balanceOf(address(this)),
-                IERC20(token1).balanceOf(address(this))
-            );
+            _swap(weth, token0, _amount.div(2));
+            _swap(weth, token1, _amount.sub(_amount.div(2)));
+        } else {
+            address tokenOut = tokenIn == token0 ? token1 : token0;
+            _swap(weth, tokenOut, _amount.div(2));
         }
+
+        deposit(
+            vault,
+            IERC20(token0).balanceOf(address(this)),
+            IERC20(token1).balanceOf(address(this))
+        );
     }
 
     function zapIn(
@@ -296,107 +213,18 @@ abstract contract GmxZapperBase {
 
         //Note : tokenIn pair must exist with both steerVaultTokens
         if (token0 != tokenIn && token1 != tokenIn) {
-            address[] memory path = new address[](2);
-            path[0] = tokenIn;
-            path[1] = token0;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: tokenInAmount.div(2),
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            address[] memory path1 = new address[](2);
-            path1[0] = tokenIn;
-            path1[1] = token1;
-
-            _approveTokenIfNeeded(path1[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params2 = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path1[0],
-                    tokenOut: path1[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: tokenInAmount.sub(tokenInAmount.div(2)),
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params2);
-
-            // deposit to steer
-            depositToSteer(
-                vault,
-                IERC20(token0).balanceOf(address(this)),
-                IERC20(token1).balanceOf(address(this))
-            );
-        } else if (token0 == tokenIn) {
-            address[] memory path = new address[](2);
-            path[0] = tokenIn;
-            path[1] = token1;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: tokenInAmount.div(2),
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            // deposit to steer
-            depositToSteer(
-                vault,
-                IERC20(token0).balanceOf(address(this)),
-                IERC20(token1).balanceOf(address(this))
-            );
-        } else if (token1 == tokenIn) {
-            address[] memory path = new address[](2);
-            path[0] = tokenIn;
-            path[1] = token0;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: tokenInAmount.div(2),
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            // deposit to steer
-            depositToSteer(
-                vault,
-                IERC20(token0).balanceOf(address(this)),
-                IERC20(token1).balanceOf(address(this))
-            );
+            _swap(tokenIn, token0, tokenInAmount.div(2));
+            _swap(tokenIn, token1, tokenInAmount.sub(tokenInAmount.div(2)));
+        } else {
+            address tokenOut = tokenIn == token0 ? token1 : token0;
+            _swap(weth, tokenOut, tokenInAmount.div(2));
         }
+
+        deposit(
+            vault,
+            IERC20(token0).balanceOf(address(this)),
+            IERC20(token1).balanceOf(address(this))
+        );
     }
 
     function zapOutAndSwap(
@@ -409,120 +237,34 @@ abstract contract GmxZapperBase {
             steerVaultToLocalVault[vault] != address(0),
             "local vault not set against steer vault"
         );
+
         address localVault = steerVaultToLocalVault[vault];
         IERC20(localVault).safeTransferFrom(
             msg.sender,
             address(this),
             withdrawAmount
         );
+
         (uint256 amount0, uint256 amount1) = IVaultForSteer(localVault)
             .withdraw(withdrawAmount);
-
         (address token0, address token1) = IVaultForSteer(vault)
             .steerVaultTokens();
 
-        //swapping
-        if (token0 != desiredToken && token1 != desiredToken) {
-            address[] memory path = new address[](2);
-            path[0] = token0;
-            path[1] = desiredToken;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: amount0,
-                    amountOutMinimum: desiredTokenOutMin,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            address[] memory path1 = new address[](2);
-            path1[0] = token1;
-            path1[1] = desiredToken;
-
-            _approveTokenIfNeeded(path1[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params2 = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path1[0],
-                    tokenOut: path1[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: amount1,
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params2);
-
-            address[] memory path2 = new address[](3);
-            path2[0] = token0;
-            path2[1] = token1;
-            path2[2] = desiredToken;
-
-            _returnAssets(path2);
-        } else if (token0 == desiredToken) {
-            address[] memory path = new address[](2);
-            path[0] = token1;
-            path[1] = desiredToken;
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: amount1,
-                    amountOutMinimum: desiredTokenOutMin,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            // send to user
-            address[] memory path2 = new address[](2);
-            path2[0] = token1;
-            path2[1] = desiredToken;
-
-            _returnAssets(path2);
-        } else if (token1 == desiredToken) {
-            address[] memory path = new address[](2);
-            path[0] = token0;
-            path[1] = desiredToken;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: amount0,
-                    amountOutMinimum: desiredTokenOutMin,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            // send to user
-            address[] memory path2 = new address[](2);
-            path2[0] = token0;
-            path2[1] = desiredToken;
-
-            _returnAssets(path2);
+        // Swapping
+        if (token0 != desiredToken) {
+            _swap(token0, desiredToken, amount0);
         }
+
+        if (token1 != desiredToken) {
+            _swap(token1, desiredToken, amount1);
+        }
+
+        address[] memory path = new address[](3);
+        path[0] = token0;
+        path[1] = token1;
+        path[2] = desiredToken;
+
+        _returnAssets(path);
     }
 
     function zapOutAndSwapEth(
@@ -534,120 +276,34 @@ abstract contract GmxZapperBase {
             steerVaultToLocalVault[vault] != address(0),
             "local vault not set against steer vault"
         );
+
         address localVault = steerVaultToLocalVault[vault];
         IERC20(localVault).safeTransferFrom(
             msg.sender,
             address(this),
             withdrawAmount
         );
+
         (uint256 amount0, uint256 amount1) = IVaultForSteer(localVault)
             .withdraw(withdrawAmount);
-
         (address token0, address token1) = IVaultForSteer(vault)
             .steerVaultTokens();
 
-        //swapping
-        if (token0 != weth && token1 != weth) {
-            address[] memory path = new address[](2);
-            path[0] = token0;
-            path[1] = weth;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: amount0,
-                    amountOutMinimum: desiredTokenOutMin,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            address[] memory path1 = new address[](2);
-            path1[0] = token1;
-            path1[1] = weth;
-
-            _approveTokenIfNeeded(path1[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params2 = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path1[0],
-                    tokenOut: path1[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: amount1,
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params2);
-
-            address[] memory path2 = new address[](3);
-            path2[0] = token0;
-            path2[1] = token1;
-            path2[2] = weth;
-
-            _returnAssets(path2);
-        } else if (token0 == weth) {
-            address[] memory path = new address[](2);
-            path[0] = token1;
-            path[1] = weth;
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: amount1,
-                    amountOutMinimum: desiredTokenOutMin,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            // send to user
-            address[] memory path2 = new address[](2);
-            path2[0] = token1;
-            path2[1] = weth;
-
-            _returnAssets(path2);
-        } else if (token1 == weth) {
-            address[] memory path = new address[](2);
-            path[0] = token0;
-            path[1] = weth;
-
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-                .ExactInputSingleParams({
-                    tokenIn: path[0],
-                    tokenOut: path[1],
-                    fee: poolFee,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: amount0,
-                    amountOutMinimum: desiredTokenOutMin,
-                    sqrtPriceLimitX96: 0
-                });
-
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-
-            // send to user
-            address[] memory path2 = new address[](2);
-            path2[0] = token0;
-            path2[1] = weth;
-
-            _returnAssets(path2);
+        // Swapping
+        if (token0 != weth) {
+            _swap(token0, weth, amount0);
         }
+
+        if (token1 != weth) {
+            _swap(token1, weth, amount1);
+        }
+
+        address[] memory path = new address[](3);
+        path[0] = token0;
+        path[1] = token1;
+        path[2] = weth;
+
+        _returnAssets(path);
     }
 
     function _approveTokenIfNeeded(address token, address spender) internal {
