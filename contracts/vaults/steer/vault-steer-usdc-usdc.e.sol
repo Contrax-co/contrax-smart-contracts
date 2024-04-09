@@ -11,7 +11,7 @@ import "../../interfaces/ISteerPeriphery.sol";
 //0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65
 
 contract VaultSteerSushiUsdcUsdce is ERC20 {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20; 
     using SafeMath for uint256;
     using Address for address;
 
@@ -27,7 +27,7 @@ contract VaultSteerSushiUsdcUsdce is ERC20 {
     event Deposit(
         address indexed _from,
         uint _timestamp,
-        uint _value,
+        uint _value, 
         uint _shares
     );
 

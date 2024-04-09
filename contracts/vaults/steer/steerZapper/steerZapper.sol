@@ -8,6 +8,8 @@ import "../../../interfaces/weth.sol";
 import "../../../interfaces/vaultForSteer.sol";
 import "../../../interfaces/uniswapv3.sol";
 
+
+
 contract SteerZapperBase {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -22,7 +24,7 @@ contract SteerZapperBase {
     mapping(address => bool) public whitelistedVaults;
 
     // mapping to store steer vault to local vaults
-    mapping(address => address) public steerVaultToLocalVault;
+    mapping(address => address) public localVaultToSteerVault;
 
     uint256 public constant minimumAmount = 1000;
 
@@ -56,11 +58,11 @@ contract SteerZapperBase {
     }
 
     // Function to add local vault against steer vault
-    function addLocalVaultToSteerVault(
-        address _vault,
-        address _localVault
+    function addSteerVault(
+        address _localVault,
+        address _steerVault
     ) external onlyGovernance {
-        steerVaultToLocalVault[_vault] = _localVault;
+        localVaultToSteerVault[_localVault] = _steerVault;
     }
 
     // Function to add a vault to the whitelist
@@ -97,9 +99,9 @@ contract SteerZapperBase {
         uint256 amount0,
         uint256 amount1
     ) public onlyWhitelistedVaults(vault) {
-        address localVault = steerVaultToLocalVault[vault];
+        address steerVault = localVaultToSteerVault[vault];
         require(
-            localVault != address(0),
+            steerVault != address(0),
             "local vault not set against steer vault"
         );
 
@@ -108,22 +110,22 @@ contract SteerZapperBase {
 
         //transfer both tokens from zapper to local vault
         IERC20(token0).safeTransfer(
-            localVault,
+            vault,
             IERC20(token0).balanceOf(address(this))
         );
 
         IERC20(token1).safeTransfer(
-            localVault,
+            vault,
             IERC20(token1).balanceOf(address(this))
         );
 
         //depoist steer vault shares to local vault
-        IVaultForSteer(localVault).deposit(vault, amount0, amount1);
+        IVaultForSteer(vault).deposit(steerVault, amount0, amount1);
 
         //return local vaults tokens to user
-        IERC20(localVault).safeTransfer(
+        IERC20(vault).safeTransfer(
             msg.sender,
-            IERC20(localVault).balanceOf(address(this))
+            IERC20(vault).balanceOf(address(this))
         );
     }
 
@@ -159,7 +161,7 @@ contract SteerZapperBase {
     ) external payable onlyWhitelistedVaults(vault) {
         require(msg.value >= minimumAmount, "Insignificant input amount");
         require(
-            steerVaultToLocalVault[vault] != address(0),
+            localVaultToSteerVault[vault] != address(0),
             "local vault not set against steer vault"
         );
 
@@ -192,7 +194,7 @@ contract SteerZapperBase {
     ) external onlyWhitelistedVaults(vault) {
         require(tokenInAmount >= minimumAmount, "Insignificant input amount");
         require(
-            steerVaultToLocalVault[vault] != address(0),
+            localVaultToSteerVault[vault] != address(0),
             "local vault not set against steer vault"
         );
         require(
@@ -217,7 +219,7 @@ contract SteerZapperBase {
             _swap(tokenIn, token1, tokenInAmount.sub(tokenInAmount.div(2)));
         } else {
             address tokenOut = tokenIn == token0 ? token1 : token0;
-            _swap(weth, tokenOut, tokenInAmount.div(2));
+            _swap(tokenIn, tokenOut, tokenInAmount.div(2));
         }
 
         deposit(
@@ -234,18 +236,16 @@ contract SteerZapperBase {
         uint256 desiredTokenOutMin
     ) public onlyWhitelistedVaults(vault) {
         require(
-            steerVaultToLocalVault[vault] != address(0),
+            localVaultToSteerVault[vault] != address(0),
             "local vault not set against steer vault"
         );
-
-        address localVault = steerVaultToLocalVault[vault];
-        IERC20(localVault).safeTransferFrom(
+        IERC20(vault).safeTransferFrom(
             msg.sender,
             address(this),
             withdrawAmount
         );
 
-        (uint256 amount0, uint256 amount1) = IVaultForSteer(localVault)
+        (uint256 amount0, uint256 amount1) = IVaultForSteer(vault)
             .withdraw(withdrawAmount);
         (address token0, address token1) = IVaultForSteer(vault)
             .steerVaultTokens();
@@ -273,18 +273,17 @@ contract SteerZapperBase {
         uint256 desiredTokenOutMin
     ) public onlyWhitelistedVaults(vault) {
         require(
-            steerVaultToLocalVault[vault] != address(0),
+            localVaultToSteerVault[vault] != address(0),
             "local vault not set against steer vault"
         );
 
-        address localVault = steerVaultToLocalVault[vault];
-        IERC20(localVault).safeTransferFrom(
+        IERC20(vault).safeTransferFrom(
             msg.sender,
             address(this),
             withdrawAmount
         );
 
-        (uint256 amount0, uint256 amount1) = IVaultForSteer(localVault)
+        (uint256 amount0, uint256 amount1) = IVaultForSteer(vault)
             .withdraw(withdrawAmount);
         (address token0, address token1) = IVaultForSteer(vault)
             .steerVaultTokens();
