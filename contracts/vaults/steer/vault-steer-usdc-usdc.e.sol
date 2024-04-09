@@ -11,7 +11,7 @@ import "../../interfaces/ISteerPeriphery.sol";
 //0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65
 
 contract VaultSteerSushiUsdcUsdce is ERC20 {
-    using SafeERC20 for IERC20; 
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using Address for address;
 
@@ -27,7 +27,7 @@ contract VaultSteerSushiUsdcUsdce is ERC20 {
     event Deposit(
         address indexed _from,
         uint _timestamp,
-        uint _value, 
+        uint _value,
         uint _shares
     );
 
@@ -75,17 +75,13 @@ contract VaultSteerSushiUsdcUsdce is ERC20 {
         timelock = _timelock;
     }
 
-    function deposit(
-        address vault,
-        uint256 amount0,
-        uint256 amount1
-    ) external {
+    function deposit(address vault, uint256 amount0, uint256 amount1) external {
         (address token0, address token1) = steerVaultTokens();
 
         //approve both tokens to Steer Periphery contract
         _approveTokenIfNeeded(token0, SteerPeripheryAddress);
         _approveTokenIfNeeded(token1, SteerPeripheryAddress);
-        
+
         // extract before deposit balance of vault
         uint256 beforeBal = IERC20(vault).balanceOf(address(this));
 
@@ -109,21 +105,7 @@ contract VaultSteerSushiUsdcUsdce is ERC20 {
         _mint(msg.sender, shares);
 
         emit Deposit(tx.origin, block.timestamp, amount0, amount1);
-
     }
-
-    
-
-    // function deposit(uint256 _amount) external {
-    //     //Transfer steerVault token to vault
-    //     IERC20(steerVault).safeTransferFrom(msg.sender, address(this), _amount);
-
-    //     _mint(msg.sender, _amount);
-
-    //     emit Deposit(tx.origin, block.timestamp, _amount, _amount);
-    // }
-
-
 
     function withdraw(
         uint256 _shares
