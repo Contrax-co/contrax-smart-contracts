@@ -1,26 +1,22 @@
 {
-  "name": "protocols",
+  "name": "contrax-smart-contracts",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "This repository includes Solidity files for Contrax's underlying smart contracts.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "export SET NODE_OPTIONS=--openssl-legacy-provider && npx hardhat node"
   },
-  "keywords": [],
+  "keywords": [
+    "contrax",
+    "defi",
+    "yield farming",
+    "auto compounding"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@nomiclabs/buidler": "^1.4.8",
-    "@nomiclabs/hardhat-ethers": "^2.1.0",
-    "@nomiclabs/hardhat-waffle": "^2.0.3",
-    "@types/mocha": "^9.1.1",
-    "chai": "^4.3.6",
-    "ethereum-waffle": "^3.4.4",
-    "ethers": "^5.6.9",
-    "hardhat": "^2.22.2",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.8.2"
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "hardhat": "^2.22.2"
   },
   "dependencies": {
     "@uniswap/v3-core": "^1.0.1",
@@ -29,3 +25,4 @@
     "slot20": "^0.0.3"
   }
 }
+

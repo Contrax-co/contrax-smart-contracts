@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: MIT 
-pragma solidity  ^0.8.4;
-
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
 
 interface ISteerPeriphery {
-    /**
+  /**
     @param _vaultAddress	address	The address of the vault to deposit to
     @param amount0Desired	uint256	Max amount of token0 to deposit
     @param amount1Desired	uint256	Max amount of token1 to deposit
@@ -12,12 +11,12 @@ interface ISteerPeriphery {
     @param to	            address	Recipient of shares
     */
 
-    function deposit(
-        address _vaultAddress,
-        uint256 amount0Desired,
-        uint256 amount1Desired,
-        uint256 amount0Min,
-        uint256 amount1Min,
-        address to
-    ) external;
+  function deposit(
+    address _vaultAddress,
+    uint256 amount0Desired,
+    uint256 amount1Desired,
+    uint256 amount0Min,
+    uint256 amount1Min,
+    address to
+  ) external;
 }
