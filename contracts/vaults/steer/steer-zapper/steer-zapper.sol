@@ -14,7 +14,7 @@ contract SteerZapperBase {
   using SafeMath for uint256;
   using SafeERC20 for IVaultSteerBase;
 
-  address public router = 0xE592427A0AEce92De3Edee1F18E0157C05861564; // Sushi V3 router
+  address public router = 0xE592427A0AEce92De3Edee1F18E0157C05861564; // uniswap V3 router
   address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
   address public governance;
 

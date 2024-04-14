@@ -67,8 +67,7 @@ describe("Steer Zapper Test", async () => {
 
     const tokenInAmount0 = BigNumber.from(zapInEthAmount).div(2);
     const tokenInAmount1 = BigNumber.from(zapInEthAmount).sub(tokenInAmount0);
-    console.log("tokenInAmount0", tokenInAmount0);
-    console.log("tokenInAmount1", tokenInAmount1);
+
     await zapperContract
       .connect(walletSigner)
       .zapInETH(vaultContract.address, 0, wethAddress, tokenInAmount0.toString(), tokenInAmount1.toString(), {

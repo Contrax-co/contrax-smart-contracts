@@ -67,19 +67,25 @@ const vaultName = "VaultSteerSushiUsdcUsdce";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  // const VaultSteerSushiWethUsdc = await deploy("VaultSteerSushiWethUsdc", [governance, timelock]);
-  // const VaultSteerSushiUsdcUsdce = await deploy("VaultSteerSushiUsdcUsdce", [governance, timelock]);
+  const VaultSteerSushiUsdtUsdc = await deploy("VaultSteerSushiUsdtUsdc", [governance, timelock]);
+  const VaultSteerSushiUsdcUsdce = await deploy("VaultSteerSushiUsdcUsdce", [governance, timelock]);
 
-  // const SteerZapperBase = await deploy("SteerZapperBase", [
-  //   governance,
-  //   ["0x20d2Bf806184790b0b9E4BfCedFD0D665a1DD5F0", VaultSteerSushiUsdcUsdce.address],
-  // ]);
+  const SteerZapperBase = await deploy("SteerZapperBase", [
+    governance,
+    [VaultSteerSushiUsdtUsdc.address, VaultSteerSushiUsdcUsdce.address],
+  ]);
 
-  // await hre.run("verify:verify", {
-  //   address: "0x2eC47ee3323D40CbB254C6d139a05dBF30823048",
-  //   constructorArguments: [governance, timelock],
-  //   contract: "contracts/vaults/steer/vault-steer-usdc-usdc.e.sol:VaultSteerSushiUsdcUsdce",
-  // });
+  await hre.run("verify:verify", {
+    address: "0x3fB6C1C5b7319Af78608570F97b920a553aB0Ed3",
+    constructorArguments: [governance, timelock],
+    contract: "contracts/vaults/steer/vault-steer-usdt-usdc.sol:VaultSteerSushiUsdtUsdc",
+  });
+
+  await hre.run("verify:verify", {
+    address: "0xe41586C416D8fAb3ee01e8a29DaD6f3a8655097d",
+    constructorArguments: [governance, timelock],
+    contract: "contracts/vaults/steer/vault-steer-usdc-usdc.e.sol:VaultSteerSushiUsdcUsdce",
+  });
 }
 
 main()
