@@ -64,9 +64,16 @@ describe("Steer Zapper Test", async () => {
     let _vaultBalanceBefore: BigNumber = await vaultContract
       .connect(walletSigner)
       .balanceOf(await walletSigner.getAddress());
-    await zapperContract.connect(walletSigner).zapInETH(vaultContract.address, 0, wethAddress, {
-      value: zapInEthAmount,
-    });
+
+    const tokenInAmount0 = BigNumber.from(zapInEthAmount).div(2);
+    const tokenInAmount1 = BigNumber.from(zapInEthAmount).sub(tokenInAmount0);
+    console.log("tokenInAmount0", tokenInAmount0);
+    console.log("tokenInAmount1", tokenInAmount1);
+    await zapperContract
+      .connect(walletSigner)
+      .zapInETH(vaultContract.address, 0, wethAddress, tokenInAmount0.toString(), tokenInAmount1.toString(), {
+        value: zapInEthAmount,
+      });
 
     let _vaultBalanceAfter: BigNumber = await vaultContract
       .connect(walletSigner)
@@ -84,7 +91,12 @@ describe("Steer Zapper Test", async () => {
       .balanceOf(await walletSigner.getAddress());
 
     await usdcContract.connect(walletSigner).approve(zapperContract.address, zapInUsdcAmount);
-    await zapperContract.connect(walletSigner).zapIn(vaultContract.address, 0, usdcAddress, zapInUsdcAmount);
+
+    const tokenInAmount0 = BigNumber.from(zapInUsdcAmount).div(2);
+    const tokenInAmount1 = BigNumber.from(zapInUsdcAmount).sub(tokenInAmount0);
+    await zapperContract
+      .connect(walletSigner)
+      .zapIn(vaultContract.address, 0, usdcAddress, tokenInAmount0.toString(), tokenInAmount1.toString());
 
     let _vaultBalanceAfter: BigNumber = await vaultContract
       .connect(walletSigner)
@@ -97,29 +109,16 @@ describe("Steer Zapper Test", async () => {
     return [_vaultBalanceBefore, _vaultBalanceAfter, _usdcBalanceBefore, _usdcBalanceAfter];
   };
 
-  const calculateTokenRatios = async (amount0Desired: string, amount1Desired: string) => {
-    const [shares, amount0Used, amount1Used]: BigNumber[] = await vaultContract._calcSharesAndAmounts(
-      amount0Desired,
-      amount1Desired
-    );
-    const [total0, total1]: BigNumber[] = await vaultContract.getTotalAmounts();
-    console.log("_calcSharesAndAmounts: ", amount0Used.toNumber(), amount1Used.toNumber());
-    console.log("getTotalAmounts: ", total0.toNumber(), total1.toNumber());
-    return { shares, amount0Used, amount1Used };
-  };
-
   it("User wallet contains usdc balance", async function () {
     let usdcBalance: BigNumber = await usdcContract.balanceOf(await walletSigner.getAddress());
     expect(usdcBalance.toNumber()).to.be.gt(0);
     expect(usdcBalance.toString()).to.be.equals(zapInUsdcAmount);
   });
 
-  // it("Should ZapIn with Eth", async function () {
-  //   calculateTokenRatios("1000000", "1000000");
-  //   calculateTokenRatios("10000000000", "10000000000");
-  //   let [_vaultBefore, _vaultAfter] = await zapInETH();
-  //   expect(_vaultAfter).to.be.gt(_vaultBefore);
-  // });
+  it("Should ZapIn with Eth", async function () {
+    let [_vaultBefore, _vaultAfter] = await zapInETH();
+    expect(_vaultAfter).to.be.gt(_vaultBefore);
+  });
 
   it("Should ZapIn with USDC", async function () {
     let [_vaultBefore, _vaultAfter, _usdcBalanceBefore, _usdcBalanceAfter] = await zapIn();

@@ -7,6 +7,7 @@ import "../../../lib/square-root.sol";
 import "../../../interfaces/weth.sol";
 import "../../../interfaces/IVaultSteerBase.sol";
 import "../../../interfaces/uniswapv3.sol";
+import "hardhat/console.sol";
 
 contract SteerZapperBase {
   using SafeERC20 for IERC20;
@@ -15,7 +16,6 @@ contract SteerZapperBase {
   using SafeERC20 for IVaultSteerBase;
 
   address public router = 0xE592427A0AEce92De3Edee1F18E0157C05861564; // Sushi V3 router
-  IQuoterV2 public quoter = IQuoterV2(0x61fFE014bA17989E743c5F6cB21bF9697530B21e); // Sushi V3 quoter
   address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
   address public governance;
 
@@ -103,8 +103,14 @@ contract SteerZapperBase {
 
     require(vaultBalance >= amountOutMin, "Insignificant amountOutMin");
 
-    //return local vaults tokens to user
+    //return vault tokens to user
     IERC20(address(vault)).safeTransfer(msg.sender, vaultBalance);
+
+    address[] memory tokens = new address[](2);
+    tokens[0] = token0;
+    tokens[1] = token1;
+
+    _returnAssets(tokens);
   }
 
   function _swap(address tokenIn, address tokenOut, uint256 amountIn) private {
@@ -130,21 +136,29 @@ contract SteerZapperBase {
   function zapInETH(
     IVaultSteerBase vault,
     uint256 tokenAmountOutMin,
-    address tokenIn
+    address tokenIn,
+    uint256 tokenInAmount0,
+    uint256 tokenInAmount1
   ) external payable onlyWhitelistedVaults(address(vault)) {
+    uint256 tokenInAmount = tokenInAmount0 + tokenInAmount1;
     require(msg.value >= minimumAmount, "Insignificant input amount");
+    require(msg.value >= tokenInAmount, "Insignificant token in amounts");
 
     WETH(weth).deposit{value: msg.value}();
 
     (address token0, address token1) = vault.steerVaultTokens();
-    uint256 _amount = IERC20(weth).balanceOf(address(this));
 
     if (tokenIn != token0 && tokenIn != token1) {
-      _swap(weth, token0, _amount.div(2));
-      _swap(weth, token1, _amount.sub(_amount.div(2)));
+      _swap(weth, token0, tokenInAmount0);
+      _swap(weth, token1, tokenInAmount1);
     } else {
-      address tokenOut = tokenIn == token0 ? token1 : token0;
-      _swap(weth, tokenOut, _amount.div(2));
+      address tokenOut = token0;
+      uint256 amountToSwap = tokenInAmount0;
+      if (tokenIn == token0) {
+        tokenOut = token1;
+        amountToSwap = tokenInAmount1;
+      }
+      _swap(weth, tokenOut, amountToSwap);
     }
 
     deposit(vault, IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), tokenAmountOutMin);
@@ -154,8 +168,10 @@ contract SteerZapperBase {
     IVaultSteerBase vault,
     uint256 tokenAmountOutMin,
     address tokenIn,
-    uint256 tokenInAmount
+    uint256 tokenInAmount0,
+    uint256 tokenInAmount1
   ) external onlyWhitelistedVaults(address(vault)) {
+    uint256 tokenInAmount = tokenInAmount0 + tokenInAmount1;
     require(tokenInAmount >= minimumAmount, "Insignificant input amount");
     require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
 
@@ -163,18 +179,17 @@ contract SteerZapperBase {
     IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), tokenInAmount);
 
     (address token0, address token1) = vault.steerVaultTokens();
-    (uint256 split0, uint256 split1) = calculateAmountSplit(tokenIn, tokenInAmount, vault);
 
     //Note : tokenIn pair must exist with both steerVaultTokens
     if (token0 != tokenIn && token1 != tokenIn) {
-      _swap(tokenIn, token0, split0);
-      _swap(tokenIn, token1, split1);
+      _swap(tokenIn, token0, tokenInAmount0);
+      _swap(tokenIn, token1, tokenInAmount1);
     } else {
       address tokenOut = token0;
-      uint256 amountToSwap = split0;
+      uint256 amountToSwap = tokenInAmount0;
       if (tokenIn == token0) {
         tokenOut = token1;
-        amountToSwap = split1;
+        amountToSwap = tokenInAmount1;
       }
       _swap(tokenIn, tokenOut, amountToSwap);
     }
@@ -245,42 +260,5 @@ contract SteerZapperBase {
     if (IERC20(token).allowance(address(this), spender) == 0) {
       IERC20(token).safeApprove(spender, type(uint256).max);
     }
-  }
-
-  function estimateAmountOut(address tokenIn, address tokenOut, uint256 amountIn) public returns (uint256) {
-    // Simulate the swap to get the amount out
-    // This is a simplified example, in practice you may need to handle different paths
-    // and ensure the quoter contract is correctly addressed
-    try
-      quoter.quoteExactInputSingle(
-        IQuoterV2.QuoteExactInputSingleParams({
-          tokenIn: tokenIn,
-          tokenOut: tokenOut,
-          amountIn: amountIn,
-          fee: poolFee,
-          sqrtPriceLimitX96: 0 // No specific limit
-        })
-      )
-    returns (uint256 amountOut, uint160, uint32, uint256) {
-      return amountOut;
-    } catch {
-      // Handle failed swap estimate
-      revert("Swap failed.");
-    }
-  }
-
-  function calculateAmountSplit(
-    address tokenIn,
-    uint256 tokenInAmount,
-    IVaultSteerBase vault
-  ) internal returns (uint256 split0, uint256 split1) {
-    (address token0, address token1) = vault.steerVaultTokens();
-    (uint256 token0Total, uint256 token1Total) = vault.getTotalAmounts();
-
-    uint256 token0AmountOut = estimateAmountOut(token0, tokenIn, token0Total);
-    uint256 token1AmountOut = estimateAmountOut(token1, tokenIn, token1Total);
-
-    split0 = (tokenInAmount * token0AmountOut) / token0AmountOut + token1AmountOut;
-    split1 = tokenInAmount - split0;
   }
 }
