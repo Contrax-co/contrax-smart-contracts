@@ -119,4 +119,9 @@ contract VaultSteerBase is ERC20, IVaultSteerBase {
   function getTotalAmounts() public view override returns (uint256, uint256) {
     return steerVault.getTotalAmounts();
   }
+
+  function inCaseTokensGetStuck(address _token, uint256 _amount) public {
+    require(msg.sender == governance || msg.sender == timelock, "!governance");
+    IERC20(_token).safeTransfer(msg.sender, _amount);
+  }
 }
