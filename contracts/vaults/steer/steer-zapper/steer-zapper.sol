@@ -7,7 +7,6 @@ import "../../../lib/square-root.sol";
 import "../../../interfaces/weth.sol";
 import "../../../interfaces/IVaultSteerBase.sol";
 import "../../../interfaces/uniswapv3.sol";
-import "hardhat/console.sol";
 
 contract SteerZapperBase {
   using SafeERC20 for IERC20;
