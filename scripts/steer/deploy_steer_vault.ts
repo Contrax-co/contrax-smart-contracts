@@ -14,7 +14,13 @@ const sleep = async (s: number) => {
   }
 };
 
-const verify = async (contractAddress: string, args: (string | number)[] = [], name?: string, wait: number = 100) => {
+const verify = async (
+  contractAddress: string,
+  args: (string | number)[] = [],
+  name?: string,
+  wait: number = 20,
+  contractPath?: string
+) => {
   try {
     await hre.run("verify:verify", {
       address: contractAddress,
@@ -34,6 +40,7 @@ const verify = async (contractAddress: string, args: (string | number)[] = [], n
       await hre.run("verify:verify", {
         address: contractAddress,
         constructorArguments: args,
+        contract: contractPath,
       });
       return true;
     } catch (e) {
@@ -48,44 +55,36 @@ const verify = async (contractAddress: string, args: (string | number)[] = [], n
   }
 };
 
-const deploy = async (name: string, args: any[] = [], verificationWait = 100) => {
-  const contractFactory = await ethers.getContractFactory(name);
-  const contract = await contractFactory.deploy(...args);
+const deploy = async (params: { name: string; args: any[]; verificationWait?: number; contractPath?: string }) => {
+  const contractFactory = await ethers.getContractFactory(params.name);
+  const contract = await contractFactory.deploy(...params.args);
   await contract.deployed();
-  console.log(`${name}: ${contract.address}`);
+  console.log(`${params.name}: ${contract.address}`);
 
   if (hre.network.name === "localhost") return contract;
 
   console.log("Verifying...");
-  await verify(contract.address, args, name);
+  await verify(contract.address, params.args, params.name, params.verificationWait, params.contractPath);
 
   return contract;
 };
+
 const governance = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 const timelock = governance;
-const vaultName = "VaultSteerSushiUsdcUsdce";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const VaultSteerSushiUsdtUsdc = await deploy("VaultSteerSushiUsdtUsdc", [governance, timelock]);
-  const VaultSteerSushiUsdcUsdce = await deploy("VaultSteerSushiUsdcUsdce", [governance, timelock]);
 
-  const SteerZapperBase = await deploy("SteerZapperBase", [
-    governance,
-    [VaultSteerSushiUsdtUsdc.address, VaultSteerSushiUsdcUsdce.address],
-  ]);
-
-  await hre.run("verify:verify", {
-    address: "0x3fB6C1C5b7319Af78608570F97b920a553aB0Ed3",
-    constructorArguments: [governance, timelock],
-    contract: "contracts/vaults/steer/vault-steer-usdt-usdc.sol:VaultSteerSushiUsdtUsdc",
+  const VaultSteerSushiWethSushi = await deploy({
+    name: "VaultSteerSushiWethSushi",
+    args: [governance, timelock],
+    contractPath: "contracts/vaults/steer/vault-steer-weth-sushi.sol:VaultSteerSushiWethSushi",
   });
 
-  await hre.run("verify:verify", {
-    address: "0xe41586C416D8fAb3ee01e8a29DaD6f3a8655097d",
-    constructorArguments: [governance, timelock],
-    contract: "contracts/vaults/steer/vault-steer-usdc-usdc.e.sol:VaultSteerSushiUsdcUsdce",
-  });
+  // const SteerZapperBase = await deploy("SteerZapperBase", [
+  //   governance,
+  //   [VaultSteerSushiWethUsdc.address, VaultSteerSushiWethSushi.address],
+  // ]);
 }
 
 main()
