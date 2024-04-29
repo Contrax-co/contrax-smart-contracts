@@ -20,11 +20,9 @@ contract SteerZapperBase {
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
+  mapping(address => uint24) public vaultPoolFees;
 
   uint256 public constant minimumAmount = 1000;
-
-  // For this example, we will set the pool fee to 0.3%.
-  uint24 public constant poolFee = 3000;
 
   constructor(address _governance, address[] memory _vaults) {
     // Safety checks to ensure WETH token address`
@@ -58,6 +56,10 @@ contract SteerZapperBase {
   // Function to add a vault to the whitelist
   function addToWhitelist(address _vault) external onlyGovernance {
     whitelistedVaults[_vault] = true;
+  }
+  // for stable pool 0.01%
+  function setVaultPoolFees(uint24 _poolFee, address _vault) external onlyGovernance {
+    vaultPoolFees[_vault] = _poolFee;
   }
 
   // Function to remove a vault from the whitelist
@@ -112,7 +114,7 @@ contract SteerZapperBase {
     _returnAssets(tokens);
   }
 
-  function _swap(address tokenIn, address tokenOut, uint256 amountIn) private {
+  function _swap(uint24 poolFee, address tokenIn, address tokenOut, uint256 amountIn) private {
     address[] memory path = new address[](2);
     path[0] = tokenIn;
     path[1] = tokenOut;
@@ -148,8 +150,8 @@ contract SteerZapperBase {
     (address token0, address token1) = vault.steerVaultTokens();
 
     if (tokenIn != token0 && tokenIn != token1) {
-      _swap(weth, token0, tokenInAmount0);
-      _swap(weth, token1, tokenInAmount1);
+      _swap(vaultPoolFees[address(vault)], weth, token0, tokenInAmount0);
+      _swap(vaultPoolFees[address(vault)], weth, token1, tokenInAmount1);
     } else {
       address tokenOut = token0;
       uint256 amountToSwap = tokenInAmount0;
@@ -157,7 +159,7 @@ contract SteerZapperBase {
         tokenOut = token1;
         amountToSwap = tokenInAmount1;
       }
-      _swap(weth, tokenOut, amountToSwap);
+      _swap(vaultPoolFees[address(vault)], weth, tokenOut, amountToSwap);
     }
 
     deposit(vault, IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), tokenAmountOutMin);
@@ -181,8 +183,8 @@ contract SteerZapperBase {
 
     //Note : tokenIn pair must exist with both steerVaultTokens
     if (token0 != tokenIn && token1 != tokenIn) {
-      _swap(tokenIn, token0, tokenInAmount0);
-      _swap(tokenIn, token1, tokenInAmount1);
+      _swap(vaultPoolFees[address(vault)], tokenIn, token0, tokenInAmount0);
+      _swap(vaultPoolFees[address(vault)], tokenIn, token1, tokenInAmount1);
     } else {
       address tokenOut = token0;
       uint256 amountToSwap = tokenInAmount0;
@@ -190,7 +192,7 @@ contract SteerZapperBase {
         tokenOut = token1;
         amountToSwap = tokenInAmount1;
       }
-      _swap(tokenIn, tokenOut, amountToSwap);
+      _swap(vaultPoolFees[address(vault)], tokenIn, tokenOut, amountToSwap);
     }
 
     deposit(vault, IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), tokenAmountOutMin);
@@ -209,11 +211,11 @@ contract SteerZapperBase {
 
     // Swapping
     if (token0 != desiredToken) {
-      _swap(token0, desiredToken, amount0);
+      _swap(vaultPoolFees[address(vault)], token0, desiredToken, amount0);
     }
 
     if (token1 != desiredToken) {
-      _swap(token1, desiredToken, amount1);
+      _swap(vaultPoolFees[address(vault)], token1, desiredToken, amount1);
     }
 
     address[] memory path = new address[](3);
@@ -238,11 +240,11 @@ contract SteerZapperBase {
 
     // Swapping
     if (token0 != weth) {
-      _swap(token0, weth, amount0);
+      _swap(vaultPoolFees[address(vault)], token0, weth, amount0);
     }
 
     if (token1 != weth) {
-      _swap(token1, weth, amount1);
+      _swap(vaultPoolFees[address(vault)], token1, weth, amount1);
     }
 
     address[] memory path = new address[](3);
