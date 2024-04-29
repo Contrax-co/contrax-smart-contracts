@@ -18,9 +18,41 @@ let vaultContract: Contract;
 let walletSigner: Signer;
 
 let wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
-let usdcAddress = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8";
+let usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 
-const vaultName = "VaultSteerSushiWethUsdc";
+const vaultName = "VaultSteerSushiUsdcUsdce";
+const poolFees = [
+  {
+    poolFee: 100,
+    token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    token1: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+  }, // usdc-usdce
+  {
+    poolFee: 500,
+    token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  }, // usdc-weth
+  {
+    poolFee: 100,
+    token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    token1: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+  }, // usdc-usdt
+  {
+    poolFee: 500,
+    token0: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+    token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  }, // usdt-weth
+  {
+    poolFee: 500,
+    token0: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+    token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  }, // usdce-weth
+  // {
+  //   poolFee: 100,
+  //   token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+  //   token1: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+  // },// usdc-usdt
+];
 
 describe("Steer Zapper Test", async () => {
   // These reset the state after each test is executed
@@ -52,12 +84,16 @@ describe("Steer Zapper Test", async () => {
       .deploy(walletSigner.getAddress(), walletSigner.getAddress());
 
     const zapperFactory = await ethers.getContractFactory("SteerZapperBase");
-    zapperContract = await zapperFactory
-      .connect(walletSigner)
-      .deploy(walletSigner.getAddress(), [vaultContract.address]);
+    zapperContract = await zapperFactory.connect(walletSigner).deploy(
+      walletSigner.getAddress(),
+      [vaultContract.address],
+      poolFees.map((e) => e.token0),
+      poolFees.map((e) => e.token1),
+      poolFees.map((e) => e.poolFee)
+    );
 
     usdcContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", usdcAddress, walletSigner);
-    await overwriteTokenAmount(usdcAddress, walletAddress, zapInUsdcAmount, 51);
+    await overwriteTokenAmount(usdcAddress, walletAddress, zapInUsdcAmount, 9);
   });
 
   const zapInETH = async () => {

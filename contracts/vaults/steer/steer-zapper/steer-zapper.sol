@@ -20,18 +20,36 @@ contract SteerZapperBase {
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
-  mapping(address => uint24) public vaultPoolFees;
+  // tokenIn => tokenOut => poolFee
+  mapping(address => mapping(address => uint24)) public poolFees;
 
   uint256 public constant minimumAmount = 1000;
 
-  constructor(address _governance, address[] memory _vaults) {
+  constructor(
+    address _governance,
+    address[] memory _vaults,
+    address[] memory _token0,
+    address[] memory _token1,
+    uint24[] memory _poolFee
+  ) {
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
     governance = _governance;
 
+    require(
+      _token0.length == _poolFee.length && _token1.length == _poolFee.length,
+      "token and pool fee length must be equal"
+    );
+
     for (uint i = 0; i < _vaults.length; i++) {
       whitelistedVaults[_vaults[i]] = true;
+    }
+
+    for (uint i = 0; i < _poolFee.length; i++) {
+      poolFees[_token0[i]][_token1[i]] = _poolFee[i];
+      // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
+      poolFees[_token1[i]][_token0[i]] = _poolFee[i];
     }
   }
 
@@ -53,13 +71,24 @@ contract SteerZapperBase {
     _;
   }
 
+  function getPoolFee(address token0, address token1) public view returns (uint24) {
+    uint24 fee = poolFees[token0][token1];
+    require(fee > 0, "pool fee is not set");
+    return fee;
+  }
+
   // Function to add a vault to the whitelist
   function addToWhitelist(address _vault) external onlyGovernance {
     whitelistedVaults[_vault] = true;
   }
-  // for stable pool 0.01%
-  function setVaultPoolFees(uint24 _poolFee, address _vault) external onlyGovernance {
-    vaultPoolFees[_vault] = _poolFee;
+
+  function setPoolFees(address _token0, address _token1, uint24 _poolFee) external onlyGovernance {
+    require(_poolFee > 0, "pool fee must be greater than 0");
+    require(_token0 != address(0) && _token1 != address(0), "invalid address");
+
+    poolFees[_token0][_token1] = _poolFee;
+    // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
+    poolFees[_token1][_token0] = _poolFee;
   }
 
   // Function to remove a vault from the whitelist
@@ -114,7 +143,7 @@ contract SteerZapperBase {
     _returnAssets(tokens);
   }
 
-  function _swap(uint24 poolFee, address tokenIn, address tokenOut, uint256 amountIn) private {
+  function _swap(address tokenIn, address tokenOut, uint256 amountIn) private {
     address[] memory path = new address[](2);
     path[0] = tokenIn;
     path[1] = tokenOut;
@@ -123,7 +152,7 @@ contract SteerZapperBase {
     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
       tokenIn: path[0],
       tokenOut: path[1],
-      fee: poolFee,
+      fee: getPoolFee(tokenIn, tokenOut),
       recipient: address(this),
       deadline: block.timestamp,
       amountIn: amountIn,
@@ -150,8 +179,8 @@ contract SteerZapperBase {
     (address token0, address token1) = vault.steerVaultTokens();
 
     if (tokenIn != token0 && tokenIn != token1) {
-      _swap(vaultPoolFees[address(vault)], weth, token0, tokenInAmount0);
-      _swap(vaultPoolFees[address(vault)], weth, token1, tokenInAmount1);
+      _swap(weth, token0, tokenInAmount0);
+      _swap(weth, token1, tokenInAmount1);
     } else {
       address tokenOut = token0;
       uint256 amountToSwap = tokenInAmount0;
@@ -159,7 +188,7 @@ contract SteerZapperBase {
         tokenOut = token1;
         amountToSwap = tokenInAmount1;
       }
-      _swap(vaultPoolFees[address(vault)], weth, tokenOut, amountToSwap);
+      _swap(weth, tokenOut, amountToSwap);
     }
 
     deposit(vault, IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), tokenAmountOutMin);
@@ -183,8 +212,8 @@ contract SteerZapperBase {
 
     //Note : tokenIn pair must exist with both steerVaultTokens
     if (token0 != tokenIn && token1 != tokenIn) {
-      _swap(vaultPoolFees[address(vault)], tokenIn, token0, tokenInAmount0);
-      _swap(vaultPoolFees[address(vault)], tokenIn, token1, tokenInAmount1);
+      _swap(tokenIn, token0, tokenInAmount0);
+      _swap(tokenIn, token1, tokenInAmount1);
     } else {
       address tokenOut = token0;
       uint256 amountToSwap = tokenInAmount0;
@@ -192,7 +221,7 @@ contract SteerZapperBase {
         tokenOut = token1;
         amountToSwap = tokenInAmount1;
       }
-      _swap(vaultPoolFees[address(vault)], tokenIn, tokenOut, amountToSwap);
+      _swap(tokenIn, tokenOut, amountToSwap);
     }
 
     deposit(vault, IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), tokenAmountOutMin);
@@ -211,11 +240,11 @@ contract SteerZapperBase {
 
     // Swapping
     if (token0 != desiredToken) {
-      _swap(vaultPoolFees[address(vault)], token0, desiredToken, amount0);
+      _swap(token0, desiredToken, amount0);
     }
 
     if (token1 != desiredToken) {
-      _swap(vaultPoolFees[address(vault)], token1, desiredToken, amount1);
+      _swap(token1, desiredToken, amount1);
     }
 
     address[] memory path = new address[](3);
@@ -240,11 +269,11 @@ contract SteerZapperBase {
 
     // Swapping
     if (token0 != weth) {
-      _swap(vaultPoolFees[address(vault)], token0, weth, amount0);
+      _swap(token0, weth, amount0);
     }
 
     if (token1 != weth) {
-      _swap(vaultPoolFees[address(vault)], token1, weth, amount1);
+      _swap(token1, weth, amount1);
     }
 
     address[] memory path = new address[](3);

@@ -72,19 +72,59 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
 const governance = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 const timelock = governance;
 
+const poolFees = [
+  {
+    poolFee: 100,
+    token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    token1: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+  }, // usdc-usdce
+  {
+    poolFee: 500,
+    token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  }, // usdc-weth
+  {
+    poolFee: 100,
+    token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    token1: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+  }, // usdc-usdt
+  {
+    poolFee: 500,
+    token0: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+    token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  }, // usdt-weth
+  {
+    poolFee: 500,
+    token0: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+    token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  }, // usdce-weth
+];
+
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  const VaultSteerSushiWethSushi = await deploy({
-    name: "VaultSteerSushiWethSushi",
-    args: [governance, timelock],
-    contractPath: "contracts/vaults/steer/vault-steer-weth-sushi.sol:VaultSteerSushiWethSushi",
-  });
+  // const VaultSteerSushiWethSushi = await deploy({
+  //   name: "VaultSteerSushiWethSushi",
+  //   args: [governance, timelock],
+  //   contractPath: "contracts/vaults/steer/vault-steer-weth-sushi.sol:VaultSteerSushiWethSushi",
+  // });
 
-  // const SteerZapperBase = await deploy("SteerZapperBase", [
-  //   governance,
-  //   [VaultSteerSushiWethUsdc.address, VaultSteerSushiWethSushi.address],
-  // ]);
+  const SteerZapperBase = await deploy({
+    name: "SteerZapperBase",
+    args: [
+      governance,
+      [
+        "0x3fB6C1C5b7319Af78608570F97b920a553aB0Ed3",
+        "0xe41586C416D8fAb3ee01e8a29DaD6f3a8655097d",
+        "0xc9464b7Fb1952AA4E26B54B6E1015038f11ab10d",
+        "0x9EfA1F99c86F6Ff0Fa0886775B436281b99e3f26",
+      ],
+      poolFees.map((e) => e.token0),
+      poolFees.map((e) => e.token1),
+      poolFees.map((e) => e.poolFee),
+    ],
+    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
+  });
 }
 
 main()
