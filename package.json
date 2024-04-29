@@ -19,6 +19,7 @@
     "hardhat": "^2.22.2"
   },
   "dependencies": {
+    "@cryptoalgebra/v1-core": "^1.0.0",
     "@openzeppelin/contracts-upgradeable": "^5.0.2",
     "@uniswap/v3-core": "^1.0.1",
     "@uniswap/v3-periphery": "^1.4.3",
@@ -26,4 +27,3 @@
     "slot20": "^0.0.3"
   }
 }
-

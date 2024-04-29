@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-interface ISteerPeriphery {
+import "./IMultiPositionManager.sol";
+
+interface ISteerPeriphery is IMultiPositionManager {
   /**
     @param _vaultAddress	address	The address of the vault to deposit to
     @param amount0Desired	uint256	Max amount of token0 to deposit
@@ -19,4 +21,7 @@ interface ISteerPeriphery {
     uint256 amount1Min,
     address to
   ) external;
+
+  
+  function vaultDetailsByAddress(address vault) external view returns (struct IMultiPositionManager.VaultDetails details)
 }

@@ -98,7 +98,7 @@ contract ContraxSavvyAdapterForSushi is ITokenAdapter, Initializable, Ownable2St
     uint256 OneEthPriceInUsdc = (usdcReserves * 10 ** 12) / wethReserves;
     
     //Note:We don't need usdc price as we know it is 1
-    return LpPrice = (wethReserves * OneEthPriceInUsdc + (usdcReserves * 10 ** 12)) / EthUsdcPair.totalSupply(); 
+    return (wethReserves * OneEthPriceInUsdc + (usdcReserves * 10 ** 12)) / EthUsdcPair.totalSupply(); 
 
   }
 }
