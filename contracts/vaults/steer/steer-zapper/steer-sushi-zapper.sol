@@ -6,15 +6,15 @@ import "../../../lib/erc20.sol";
 import "../../../lib/square-root.sol";
 import "../../../interfaces/weth.sol";
 import "../../../interfaces/IVaultSteerBase.sol";
-import "../../../interfaces/uniswapv3.sol";
+import "../../../interfaces/uniswapv2.sol";
 
-contract SteerZapperBase {
+contract SteerSushiZapperBase {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
   using SafeERC20 for IVaultSteerBase;
 
-  address public router = 0xE592427A0AEce92De3Edee1F18E0157C05861564; // uniswap V3 router
+  address public router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // sushi v2 router
   address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
   address public governance;
 
@@ -25,32 +25,11 @@ contract SteerZapperBase {
 
   uint256 public constant minimumAmount = 1000;
 
-  constructor(
-    address _governance,
-    address[] memory _vaults,
-    address[] memory _token0,
-    address[] memory _token1,
-    uint24[] memory _poolFee
-  ) {
+  constructor(address _governance) {
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
     governance = _governance;
-
-    require(
-      _token0.length == _poolFee.length && _token1.length == _poolFee.length,
-      "token and pool fee length must be equal"
-    );
-
-    for (uint i = 0; i < _vaults.length; i++) {
-      whitelistedVaults[_vaults[i]] = true;
-    }
-
-    for (uint i = 0; i < _poolFee.length; i++) {
-      poolFees[_token0[i]][_token1[i]] = _poolFee[i];
-      // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
-      poolFees[_token1[i]][_token0[i]] = _poolFee[i];
-    }
   }
 
   receive() external payable {
@@ -71,24 +50,9 @@ contract SteerZapperBase {
     _;
   }
 
-  function getPoolFee(address token0, address token1) public view returns (uint24) {
-    uint24 fee = poolFees[token0][token1];
-    require(fee > 0, "pool fee is not set");
-    return fee;
-  }
-
   // Function to add a vault to the whitelist
   function addToWhitelist(address _vault) external onlyGovernance {
     whitelistedVaults[_vault] = true;
-  }
-
-  function setPoolFees(address _token0, address _token1, uint24 _poolFee) external onlyGovernance {
-    require(_poolFee > 0, "pool fee must be greater than 0");
-    require(_token0 != address(0) && _token1 != address(0), "invalid address");
-
-    poolFees[_token0][_token1] = _poolFee;
-    // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
-    poolFees[_token1][_token0] = _poolFee;
   }
 
   // Function to remove a vault from the whitelist
@@ -147,20 +111,10 @@ contract SteerZapperBase {
     address[] memory path = new address[](2);
     path[0] = tokenIn;
     path[1] = tokenOut;
-
+  
     _approveTokenIfNeeded(path[0], address(router));
-    ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-      tokenIn: path[0],
-      tokenOut: path[1],
-      fee: getPoolFee(tokenIn, tokenOut),
-      recipient: address(this),
-      deadline: block.timestamp,
-      amountIn: amountIn,
-      amountOutMinimum: 0,
-      sqrtPriceLimitX96: 0 
-    });
-
-    ISwapRouter(address(router)).exactInputSingle(params);
+    
+    UniswapRouterV2(router).swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp);
   }
 
   function zapInETH(

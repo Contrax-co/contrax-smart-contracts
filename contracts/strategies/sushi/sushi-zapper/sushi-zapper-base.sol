@@ -159,7 +159,7 @@ abstract contract SushiZapperBase {
         require(amount0 >= minimumAmount, "Router: INSUFFICIENT_A_AMOUNT");
         require(amount1 >= minimumAmount, "Router: INSUFFICIENT_B_AMOUNT");
     }
-
+ 
     function _getVaultPair(address vault_addr) internal view returns (IVault vault, IUniswapV2Pair pair){
         vault = IVault(vault_addr);
         pair = IUniswapV2Pair(vault.token());
