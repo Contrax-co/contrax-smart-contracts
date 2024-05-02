@@ -3,9 +3,9 @@ pragma solidity 0.8.4;
 
 import "./peapods-farm-bases/peapods-farm-base.sol";
 
-contract StrategyPeapodsGmx is StrategyPeapodsFarmBase {
+contract StrategyPeapodsPeas is StrategyPeapodsFarmBase {
 
-  address public apGmx = 0x8CB10B11Fad33cfE4758Dc9977d74CE7D2fB4609;
+  address public apPeas = 0x6a02F704890F507f13d002F2785ca7Ba5BFcc8F7;
 
   constructor(
     address _governance,
@@ -14,7 +14,7 @@ contract StrategyPeapodsGmx is StrategyPeapodsFarmBase {
     address _timelock
   )
   StrategyPeapodsFarmBase(
-      apGmx,
+      apPeas,
       _governance,
       _strategist,
       _controller,
@@ -23,7 +23,7 @@ contract StrategyPeapodsGmx is StrategyPeapodsFarmBase {
   {}
 
   function getName() external override pure returns (string memory) {
-      return "StrategyPeapodsGmx";
+      return "StrategyPeapodsPeas";
   }
 
 }

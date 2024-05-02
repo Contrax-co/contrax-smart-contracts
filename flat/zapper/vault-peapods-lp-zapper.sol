@@ -788,6 +788,256 @@ library SafeERC20 {
 }
 
 
+// File contracts/lib/square-root.sol
+
+// File: @uniswap/lib/contracts/libraries/Babylonian.sol
+
+pragma solidity 0.8.4;
+
+// computes square roots using the babylonian method
+// https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method
+library Babylonian {
+    // credit for this implementation goes to
+    // https://github.com/abdk-consulting/abdk-libraries-solidity/blob/master/ABDKMath64x64.sol#L687
+    function sqrt(uint256 x) internal pure returns (uint256) {
+        if (x == 0) return 0;
+        // this block is equivalent to r = uint256(1) << (BitMath.mostSignificantBit(x) / 2);
+        // however that code costs significantly more gas
+        uint256 xx = x;
+        uint256 r = 1;
+        if (xx >= 0x100000000000000000000000000000000) {
+            xx >>= 128;
+            r <<= 64;
+        }
+        if (xx >= 0x10000000000000000) {
+            xx >>= 64;
+            r <<= 32;
+        }
+        if (xx >= 0x100000000) {
+            xx >>= 32;
+            r <<= 16;
+        }
+        if (xx >= 0x10000) {
+            xx >>= 16;
+            r <<= 8;
+        }
+        if (xx >= 0x100) {
+            xx >>= 8;
+            r <<= 4;
+        }
+        if (xx >= 0x10) {
+            xx >>= 4;
+            r <<= 2;
+        }
+        if (xx >= 0x8) {
+            r <<= 1;
+        }
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1; // Seven iterations should be enough
+        uint256 r1 = x / r;
+        return (r < r1 ? r : r1);
+    }
+}
+
+
+// File contracts/interfaces/weth.sol
+
+
+
+pragma solidity 0.8.4;
+
+interface WETH {
+    function name() external view returns (string memory);
+
+    function approve(address guy, uint256 wad) external returns (bool);
+
+    function totalSupply() external view returns (uint256);
+
+    function transferFrom(
+        address src,
+        address dst,
+        uint256 wad
+    ) external returns (bool);
+
+    function withdraw(uint256 wad) external;
+
+    function withdrawTo(address account, uint256 amount) external; 
+
+    function decimals() external view returns (uint8);
+
+    function balanceOf(address) external view returns (uint256);
+
+    function symbol() external view returns (string memory);
+
+    function transfer(address dst, uint256 wad) external returns (bool);
+
+    function deposit() external payable;
+
+    function allowance(address, address) external view returns (uint256);
+}
+
+
+// File contracts/interfaces/vault.sol
+
+
+pragma solidity 0.8.4;
+
+interface IVault is IERC20 {
+    function token() external view returns (address);
+    
+    function reward() external view returns (address);
+
+    function claimInsurance() external; // NOTE: Only yDelegatedVault implements this
+
+    function getRatio() external view returns (uint256);
+
+    function depositAll() external;
+    
+    function balance() external view returns (uint256);
+
+    function deposit(uint256) external;
+
+    function withdrawAll() external;
+
+    function withdraw(uint256) external;
+
+    function earn() external;
+
+    function decimals() external view returns (uint8);
+}
+
+
+// File contracts/interfaces/uniswapv3.sol
+
+pragma solidity 0.8.4;
+
+interface ISwapRouter{
+   struct ExactInputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    /// @notice Swaps `amountIn` of one token for as much as possible of another token
+    /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
+
+    struct ExactInputParams {
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+    }
+
+    /// @notice Swaps `amountIn` of one token for as much as possible of another along the specified path
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut);
+
+    struct ExactOutputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    /// @notice Swaps as little as possible of one token for `amountOut` of another token
+    /// @param params The parameters necessary for the swap, encoded as `ExactOutputSingleParams` in calldata
+    /// @return amountIn The amount of the input token
+    function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn);
+
+    struct ExactOutputParams {
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+    }
+
+    /// @notice Swaps as little as possible of one token for `amountOut` of another along the specified path (reversed)
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata
+    /// @return amountIn The amount of the input token
+    function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);
+
+}
+
+interface ICamelotRouter2{
+   struct ExactInputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    /// @notice Swaps `amountIn` of one token for as much as possible of another token
+    /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
+
+    struct ExactInputParams {
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+    }
+
+    /// @notice Swaps `amountIn` of one token for as much as possible of another along the specified path
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut);
+
+    struct ExactOutputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    /// @notice Swaps as little as possible of one token for `amountOut` of another token
+    /// @param params The parameters necessary for the swap, encoded as `ExactOutputSingleParams` in calldata
+    /// @return amountIn The amount of the input token
+    function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn);
+
+    struct ExactOutputParams {
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+    }
+
+    /// @notice Swaps as little as possible of one token for `amountOut` of another along the specified path (reversed)
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata
+    /// @return amountIn The amount of the input token
+    function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);
+
+}
+
+
 // File contracts/interfaces/uniswapv2.sol
 
 
@@ -1025,163 +1275,6 @@ interface IUniswapV2Factory {
 }
 
 
-// File contracts/interfaces/staking-rewards.sol
-
-
-pragma solidity 0.8.4;
-
-interface IStakingRewards {
-    function balanceOf(address account) external view returns (uint256);
-
-    function balances(address account) external view returns (uint256);
-
-    function earned(address account) external view returns (uint256);
-
-    function exit() external;
-
-    function getReward() external;
-
-    function getRewardForDuration() external view returns (uint256);
-
-    function lastTimeRewardApplicable() external view returns (uint256);
-
-    function lastUpdateTime() external view returns (uint256);
-
-    function notifyRewardAmount(uint256 reward) external;
-
-    function periodFinish() external view returns (uint256);
-
-    function rewardPerToken() external view returns (uint256);
-
-    function rewardPerTokenStored() external view returns (uint256);
-
-    function rewardRate() external view returns (uint256);
-
-    function rewards(address) external view returns (uint256);
-
-    function rewardsDistribution() external view returns (address);
-
-    function rewardsDuration() external view returns (uint256);
-
-    function rewardsToken() external view returns (address);
-
-    function stake(uint256 amount) external;
-
-    function deposit(uint256 amount) external;
-
-    function stakeWithPermit(
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
-
-    function stakingToken() external view returns (address);
-
-    function totalSupply() external view returns (uint256);
-
-    function userRewardPerTokenPaid(address) external view returns (uint256);
-
-    function withdraw(uint256 amount) external;
-}
-
-interface IStakingRewardsFactory {
-    function deploy(address stakingToken, uint256 rewardAmount) external;
-
-    function isOwner() external view returns (bool);
-
-    function notifyRewardAmount(address stakingToken) external;
-
-    function notifyRewardAmounts() external;
-
-    function owner() external view returns (address);
-
-    function renounceOwnership() external;
-
-    function rewardsToken() external view returns (address);
-
-    function stakingRewardsGenesis() external view returns (uint256);
-
-    function stakingRewardsInfoByStakingToken(address)
-        external
-        view
-        returns (address stakingRewards, uint256 rewardAmount);
-
-    function stakingTokens(uint256) external view returns (address);
-
-    function transferOwnership(address newOwner) external;
-}
-
-
-// File contracts/interfaces/vault.sol
-
-
-pragma solidity 0.8.4;
-
-interface IVault is IERC20 {
-    function token() external view returns (address);
-    
-    function reward() external view returns (address);
-
-    function claimInsurance() external; // NOTE: Only yDelegatedVault implements this
-
-    function getRatio() external view returns (uint256);
-
-    function depositAll() external;
-    
-    function balance() external view returns (uint256);
-
-    function deposit(uint256) external;
-
-    function withdrawAll() external;
-
-    function withdraw(uint256) external;
-
-    function earn() external;
-
-    function decimals() external view returns (uint8);
-}
-
-
-// File contracts/interfaces/controller.sol
-
-
-pragma solidity 0.8.4;
-
-interface IController {
-    function vaults(address) external view returns (address);
-
-    function rewards() external view returns (address);
-
-    function devfund() external view returns (address);
-
-    function treasury() external view returns (address);
-
-    function balanceOf(address) external view returns (uint256);
-
-    function withdraw(address, uint256) external;
-
-    function earn(address, uint256) external;
-
-    // For Big Green Button:
-
-    function setVault(address _token, address _vault) external;
-
-    function approveStrategy(address _token, address _strategy) external;
-
-    function revokeStrategy(address _token, address _strategy) external;
-
-    function setStrategy(address _token, address _strategy) external;
-
-    function setStrategist(address _strategist) external;
-
-    function setGovernance(address _governance) external;
-
-    function setTimelock(address _timelock) external;
-}
-
-
 // File contracts/interfaces/camelot.sol
 
 
@@ -1206,7 +1299,7 @@ interface ICamelotRouter {
     uint amountBMin,
     address to,
     uint deadline
-  ) external;
+  ) external returns (uint amountA, uint amountB, uint liquidity);
 
   function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
 }
@@ -1218,409 +1311,6 @@ interface ICamelotPair {
   function token1() external view returns (address);
   function getAmountOut(uint amountIn, address tokenIn) external view returns (uint);
   function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint16 token0feePercent, uint16 token1FeePercent);
-}
-
-
-// File contracts/strategies/strategy-base.sol
-
-	
-pragma solidity 0.8.4;
-
-
-
-
-
-
-/**
- * The is the Strategy Base that most LPs will inherit 
- */
-abstract contract StrategyBase {
-    using SafeERC20 for IERC20;
-    using Address for address;
-    using SafeMath for uint256;
-
-    // Tokens
-    address public want;
-    address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
-    address public constant uni = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
-    address public constant zero = 0x0000000000000000000000000000000000000000;
-
-    // Dex
-    address public univ2Router2 = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106;
-    address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
-
-    // Perfomance fees - start with 10%
-    uint256 public performanceTreasuryFee = 1000;
-    uint256 public constant performanceTreasuryMax = 10000;
-
-    uint256 public performanceDevFee = 0;
-    uint256 public constant performanceDevMax = 10000;
-
-    // Withdrawal fee 0%
-    // - 0% to treasury
-    // - 0% to dev fund
-    uint256 public withdrawalTreasuryFee = 0;
-    uint256 public constant withdrawalTreasuryMax = 100000;
-
-    uint256 public withdrawalDevFundFee = 0;
-    uint256 public constant withdrawalDevFundMax = 100000;
-
-    // User accounts
-    address public governance;
-    address public controller;
-    address public strategist;
-    address public timelock;
-
-    // Dex 
-    address public sushiRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
-    address public camelotRouter = 0xc873fEcbd354f5A56E00E710B90EF4201db2448d;
-
-    mapping(address => bool) public harvesters;
-
-    constructor(
-        address _want,
-        address _governance,
-        address _strategist,
-        address _controller,
-        address _timelock
-    ) {
-        require(_want != address(0));
-        require(_governance != address(0));
-        require(_strategist != address(0));
-        require(_controller != address(0));
-        require(_timelock != address(0));
-
-        want = _want;
-        governance = _governance;
-        strategist = _strategist;
-        controller = _controller;
-        timelock = _timelock;
-    }
-
-    // **** Modifiers **** //
-
-    modifier onlyBenevolent {
-        require(
-            harvesters[msg.sender] ||
-                msg.sender == governance ||
-                msg.sender == strategist
-        );
-        _;
-    }
-
-    // **** Views **** //
-
-    function balanceOfWant() public view returns (uint256) {
-        return IERC20(want).balanceOf(address(this));
-    }
-
-    function balanceOfPool() public virtual view returns (uint256);
-
-    function balanceOf() public view returns (uint256) {
-        return balanceOfWant().add(balanceOfPool());
-    }
-
-    function getName() external virtual pure returns (string memory);
-
-    // **** Setters **** //
-
-    function whitelistHarvester(address _harvester) external {
-        require(msg.sender == governance ||
-             msg.sender == strategist || harvesters[msg.sender], "not authorized");
-        harvesters[_harvester] = true;
-    }
-
-    function revokeHarvester(address _harvester) external {
-        require(msg.sender == governance ||
-             msg.sender == strategist, "not authorized");
-        harvesters[_harvester] = false;
-    }
-
-    function setFeeDistributor(address _feeDistributor) external {
-        require(msg.sender == governance, "not authorized");
-        feeDistributor = _feeDistributor;
-    }
-
-    function setWithdrawalDevFundFee(uint256 _withdrawalDevFundFee) external {
-        require(msg.sender == timelock, "!timelock");
-        withdrawalDevFundFee = _withdrawalDevFundFee;
-    }
-
-    function setWithdrawalTreasuryFee(uint256 _withdrawalTreasuryFee) external {
-        require(msg.sender == timelock, "!timelock");
-        withdrawalTreasuryFee = _withdrawalTreasuryFee;
-    }
-
-    function setPerformanceDevFee(uint256 _performanceDevFee) external {
-        require(msg.sender == timelock, "!timelock");
-        performanceDevFee = _performanceDevFee;
-    }
-
-    function setPerformanceTreasuryFee(uint256 _performanceTreasuryFee)
-        external
-    {
-        require(msg.sender == timelock, "!timelock");
-        performanceTreasuryFee = _performanceTreasuryFee;
-    }
-
-    function setStrategist(address _strategist) external {
-        require(msg.sender == governance, "!governance");
-        strategist = _strategist;
-    }
-
-    function setGovernance(address _governance) external {
-        require(msg.sender == governance, "!governance");
-        governance = _governance;
-    }
-
-    function setTimelock(address _timelock) external {
-        require(msg.sender == timelock, "!timelock");
-        timelock = _timelock;
-    }
-
-    function setController(address _controller) external {
-        require(msg.sender == timelock, "!timelock");
-        controller = _controller;
-    }
-
-    // **** State mutations **** //
-    function deposit() public virtual;
-
-    // Controller only function for creating additional rewards from dust
-    function withdraw(IERC20 _asset) external returns (uint256 balance) {
-        require(msg.sender == controller, "!controller");
-        require(want != address(_asset), "want");
-        balance = _asset.balanceOf(address(this));
-        _asset.safeTransfer(controller, balance);
-    }
-
-    // Withdraw partial funds, normally used with a vault withdrawal
-    function withdraw(uint256 _amount) external {
-        require(msg.sender == controller, "!controller");
-        uint256 _balance = IERC20(want).balanceOf(address(this));
-        if (_balance < _amount) {
-            _amount = _withdrawSome(_amount.sub(_balance));
-            _amount = _amount.add(_balance);
-        }
-
-        uint256 _feeDev = _amount.mul(withdrawalDevFundFee).div(
-            withdrawalDevFundMax
-        );
-        IERC20(want).safeTransfer(IController(controller).devfund(), _feeDev);
-
-        uint256 _feeTreasury = _amount.mul(withdrawalTreasuryFee).div(
-            withdrawalTreasuryMax
-        );
-        IERC20(want).safeTransfer(
-            IController(controller).treasury(),
-            _feeTreasury
-        );
-
-        address _vault = IController(controller).vaults(address(want));
-        require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-
-        IERC20(want).safeTransfer(_vault, _amount.sub(_feeDev).sub(_feeTreasury));
-    }
-
-    // Withdraw funds, used to swap between strategies
-    function withdrawForSwap(uint256 _amount)
-        external
-        returns (uint256 balance)
-    {
-        require(msg.sender == controller, "!controller");
-        _withdrawSome(_amount);
-
-        balance = IERC20(want).balanceOf(address(this));
-
-        address _vault = IController(controller).vaults(address(want));
-        require(_vault != address(0), "!vault");
-        IERC20(want).safeTransfer(_vault, balance);
-    }
-
-    // Withdraw all funds, normally used when migrating strategies
-    function withdrawAll() external returns (uint256 balance) {
-        require(msg.sender == controller, "!controller");
-        _withdrawAll();
-
-        balance = IERC20(want).balanceOf(address(this));
-
-        address _vault = IController(controller).vaults(address(want));
-        require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-        IERC20(want).safeTransfer(_vault, balance);
-    }
-
-    function _withdrawAll() internal {
-        _withdrawSome(balanceOfPool());
-    }
-
-    function _withdrawSome(uint256 _amount) internal virtual returns (uint256);
-
-    function harvest() public virtual;
-
-    // **** Emergency functions ****
-
-    function execute(address _target, bytes memory _data)
-        public
-        payable
-        returns (bytes memory response)
-    {
-        require(msg.sender == timelock, "!timelock");
-        require(_target != address(0), "!target");
-
-        // call contract in current context
-        assembly {
-            let succeeded := delegatecall(
-                sub(gas(), 5000),
-                _target,
-                add(_data, 0x20),
-                mload(_data),
-                0,
-                0
-            )
-            let size := returndatasize()
-
-            response := mload(0x40)
-            mstore(
-                0x40,
-                add(response, and(add(add(size, 0x20), 0x1f), not(0x1f)))
-            )
-            mstore(response, size)
-            returndatacopy(add(response, 0x20), 0, size)
-
-            switch iszero(succeeded)
-                case 1 {
-                    // throw if delegatecall failed
-                    revert(add(response, 0x20), size)
-                }
-        }
-    }
-
-    // **** Internal functions ****
-    function _swapSushiswap(
-        address _from,
-        address _to,
-        uint256 _amount
-    ) internal {
-        require(_to != address(0));
-
-        address[] memory path;
-
-        if (_from == weth || _to == weth) {
-            path = new address[](2);
-            path[0] = _from;
-            path[1] = _to;
-        } else {
-            path = new address[](3);
-            path[0] = _from;
-            path[1] = weth;
-            path[2] = _to;
-        }
-        
-        IERC20(_from).safeApprove(sushiRouter, 0);
-        IERC20(_from).safeApprove(sushiRouter, _amount);
-        UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
-            _amount,
-            0,
-            path,
-            address(this),
-            block.timestamp.add(60)
-        );
-    }
-
-    function _swapSushiswapWithPath(
-        address[] memory path,
-        uint256 _amount
-    ) internal {
-        require(path[1] != address(0));
-
-        IERC20(path[0]).safeApprove(sushiRouter, 0);
-        IERC20(path[0]).safeApprove(sushiRouter, _amount);
-        UniswapRouterV2(sushiRouter).swapExactTokensForTokens(
-            _amount,
-            0,
-            path,
-            address(this),
-            block.timestamp.add(60)
-        );
-    }
-
-    function _swapCamelot(
-        address _from,
-        address _to,
-        uint256 _amount
-    ) internal {
-        require(_to != address(0));
-
-        address[] memory path;
-
-        if (_from == weth || _to == weth) {
-            path = new address[](2);
-            path[0] = _from;
-            path[1] = _to;
-        } else {
-            path = new address[](3);
-            path[0] = _from;
-            path[1] = weth;
-            path[2] = _to;
-        }
-
-        IERC20(_from).safeApprove(camelotRouter, 0);
-        IERC20(_from).safeApprove(camelotRouter, _amount);
-        ICamelotRouter(camelotRouter).swapExactTokensForTokensSupportingFeeOnTransferTokens(
-            _amount,
-            0,
-            path,
-            _to,
-            zero,
-            block.timestamp.add(60)
-        );
-
-    }
-
-    function _distributePerformanceFeesAndDeposit() internal {
-        uint256 _want = IERC20(want).balanceOf(address(this));
-
-        if (_want > 0) {
-            // Treasury fees
-            IERC20(want).safeTransfer(
-                IController(controller).treasury(),
-                _want.mul(performanceTreasuryFee).div(performanceTreasuryMax)
-            );
-
-            // Performance fee
-            IERC20(want).safeTransfer(
-                IController(controller).devfund(),
-                _want.mul(performanceDevFee).div(performanceDevMax)
-            );
-
-            deposit();
-        }
-    }
-
-    function _distributePerformanceFeesBasedAmountAndDeposit(uint256 _amount) internal {
-        uint256 _want = IERC20(want).balanceOf(address(this));
-
-        if (_amount > _want) {
-            _amount = _want;
-        }
-
-        if (_amount > 0) {
-            // Treasury fees
-            IERC20(want).safeTransfer(
-                IController(controller).treasury(),
-                _amount.mul(performanceTreasuryFee).div(performanceTreasuryMax)
-            );
-
-            // Performance fee
-            IERC20(want).safeTransfer(
-                IController(controller).devfund(),
-                _amount.mul(performanceDevFee).div(performanceDevMax)
-            );
-
-            deposit();
-        }
-    }
-
 }
 
 
@@ -1686,117 +1376,534 @@ interface ITokenRewards {
 }
 
 
-// File contracts/strategies/peapods/peapods-farm-bases/peapods-farm-base.sol
+// File contracts/strategies/peapods/peapods-zapper/peapods-lp-zapper-base.sol
 
 
 pragma solidity 0.8.4;
 
 
-abstract contract StrategyPeapodsFarmBase is StrategyBase {
-  using SafeERC20 for IERC20;
-  using Address for address;
-  using SafeMath for uint256;
 
-  address public constant indexUtils = 0x5c5c288f5EF3559Aaf961c5cCA0e77Ac3565f0C0;
 
-  address rewardToken;
 
-  // How much tokens to keep?
-  uint256 public keep = 1000;
-  uint256 public keepReward = 1000;
-  uint256 public constant keepMax = 10000;
 
-  constructor(
-    address _apToken,
-    address _governance,
-    address _strategist,
-    address _controller,
-    address _timelock
-  )
-    StrategyBase(_apToken, _governance, _strategist, _controller, _timelock)
-  {
-  }
 
-  function balanceOfPool() public view override returns (uint256) {
-    (uint256 amount) = WeightedIndex(want).balanceOf(
-      address(this)
-    );
-    return amount;
-  }
 
-  function getHarvestable() external view returns (uint256) {
-   
-  }
 
-  // **** Setters ****
-  function deposit() public override {
-  }
+abstract contract PeapodsLPZapperBase {
+    using SafeERC20 for IERC20;
+    using Address for address;
+    using SafeMath for uint256;
+    using SafeERC20 for IVault;
 
-  function _withdrawSome(uint256 _amount)
-    internal
-    override
-    returns (uint256)
-  {
-    return _amount;
-  }
+    address public router;
 
-  // **** Setters ****
+    address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address public governance;
+    address constant ohm = 0xf0cb2dc0db5e6c66B9a70Ac27B06b878da017028;
+    address constant peas = 0x02f92800F57BCD74066F5709F1Daa1A4302Df875;
+    address public constant indexUtils = 0x5c5c288f5EF3559Aaf961c5cCA0e77Ac3565f0C0;
+  
+    address public constant zero = 0x0000000000000000000000000000000000000000;
 
-  function setKeep(uint256 _keep) external {
-    require(msg.sender == timelock, "!timelock");
-    keep = _keep;
-  }
 
-  function setKeepReward(uint256 _keepReward) external {
-    require(msg.sender == timelock, "!timelock");
-    keepReward = _keepReward;
-}
+    // Define a mapping to store whether an address is whitelisted or not
+    mapping(address => bool) public whitelistedVaults;
+    mapping(address => address) public apToken; 
+    mapping(address => address) public baseToken; 
 
-  function setRewardToken(address _rewardToken) external {
-    require(
-      msg.sender == timelock || msg.sender == strategist,
-      "!timelock"
-    );
-    rewardToken = _rewardToken;
-  }
+    uint256 public constant minimumAmount = 1000;
 
-  // **** State Mutations ****
+    // For this example, we will set the pool fee to 0.3%.
+    uint24 public constant poolFee = 3000;
 
-  // Declare a Harvest Event
-  event Harvest(uint _timestamp, uint _value); 
+    constructor(
+        address _router,
+        address _governance
+    ) {
+        // Safety checks to ensure WETH token address
+        WETH(weth).deposit{value: 0}();
+        WETH(weth).withdraw(0);
+        router = _router;
+        governance = _governance;
+    }
 
-  function harvest() public override onlyBenevolent {
+    receive() external payable {
+        assert(msg.sender == weth);
+    }
+
+    // **** Modifiers **** //
+
+    // Modifier to restrict access to whitelisted vaults only
+    modifier onlyWhitelistedVaults(address vault) {
+        require(whitelistedVaults[vault], "Vault is not whitelisted");
+        _;
+    }
+
+    // Modifier to restrict access to governance only
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "Caller is not the governance");
+        _;
+    }
+
+    function setApTokens(address _apToken, address _baseToken) external onlyGovernance {
+        apToken[_baseToken] = _apToken;
+    }
+
+    function setBaseTokens(address _apToken, address _baseToken) external onlyGovernance {
+        baseToken[_apToken] = _baseToken;
+    }
+
+    function _getSwapAmount(uint256 investmentA, uint256 reserveA, uint256 reserveB) public view virtual returns (uint256 swapAmount);
     
-  }
+    // Function to add a vault to the whitelist
+    function addToWhitelist(address _vault) external onlyGovernance {
+        whitelistedVaults[_vault] = true;
+    }
+
+    // Function to remove a vault from the whitelist
+    function removeFromWhitelist(address _vault) external onlyGovernance {
+        whitelistedVaults[_vault] = false;
+    }
+
+    function _swapCamelot(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal returns (uint256 amountOut){
+
+        IERC20(_from).safeApprove(router, 0);
+        IERC20(_from).safeApprove(router, _amount);
+
+        ICamelotRouter2.ExactInputSingleParams memory params =
+        ICamelotRouter2.ExactInputSingleParams({
+            tokenIn: _from,
+            tokenOut: _to,
+            recipient: address(this),
+            deadline: block.timestamp,
+            amountIn: _amount,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+        });
+
+        // The call to `exactInputSingle` executes the swap.
+        amountOut = ICamelotRouter2(router).exactInputSingle(params);
+    }
+
+
+    //returns DUST
+    function _returnAssets(address[] memory tokens) internal {
+        uint256 balance;
+        for (uint256 i; i < tokens.length; i++) {
+            balance = IERC20(tokens[i]).balanceOf(address(this));
+            if (balance > 0) {
+                if (tokens[i] == weth) {
+                    WETH(weth).withdraw(balance);
+                    (bool success, ) = msg.sender.call{value: balance}(
+                        new bytes(0)
+                    );
+                    require(success, "ETH transfer failed");
+                } else {
+                    IERC20(tokens[i]).safeTransfer(msg.sender, balance);
+                }
+            }
+        }
+    }
+
+    function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual;
+
+    function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable onlyWhitelistedVaults(vault){
+        require(msg.value >= minimumAmount, "Insignificant input amount");
+
+        WETH(weth).deposit{value: msg.value}();
+
+        // allows us to zapIn if eth isn't part of the original pair
+        if (tokenIn != weth){
+            uint256 _amount = IERC20(weth).balanceOf(address(this));
+
+            (, ICamelotPair pair) = _getVaultPair(vault);
+
+            (uint256 reserveA, uint256 reserveB, ,) = pair.getReserves();
+            require(reserveA > minimumAmount && reserveB > minimumAmount, "Liquidity pair reserves too low");
+
+            bool isInputA = pair.token0() == apToken[tokenIn];
+            require(isInputA || pair.token1() == apToken[tokenIn], "Input token not present in liquidity pair");
+
+            address[] memory path = new address[](2);
+            path[0] = weth;
+            path[1] = tokenIn;
+          
+            _approveTokenIfNeeded(path[0], address(router));
+            _swapCamelot(path[0], path[1], _amount);
+        
+          
+            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+          } else{
+            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+        }
+    }
+
+
+    // transfers tokens from msg.sender to this contract 
+    function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external onlyWhitelistedVaults(vault){
+        require(tokenInAmount >= minimumAmount, "Insignificant input amount");
+        require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
+
+        // transfer token 
+        IERC20(tokenIn).safeTransferFrom(
+            msg.sender,
+            address(this),
+            tokenInAmount
+        );
+
+        (, ICamelotPair pair) = _getVaultPair(vault);
+        if(apToken[tokenIn] != pair.token0() && apToken[tokenIn] != pair.token1()){
+            (address desiredToken) = baseToken[pair.token0()];
+
+            if(tokenIn != weth && desiredToken != weth){
+                // execute swap from tokenin to desired token
+                uint256 _amount = IERC20(tokenIn).balanceOf(address(this));
+
+                address[] memory path = new address[](3);
+                path[0] = tokenIn;
+                path[1] = weth;
+                path[2] = desiredToken;
+        
+                _approveTokenIfNeeded(path[0], address(router));
+                _swapCamelot(path[0], path[1], _amount);
+
+                _approveTokenIfNeeded(path[1], address(router));
+                _swapCamelot(path[1], path[2], IERC20(path[1]).balanceOf(address(this)));
+            
+            }else {
+                // execute swap from tokenin to desired token
+                uint256 _amount = IERC20(tokenIn).balanceOf(address(this));
+
+                address[] memory path = new address[](2);
+                path[0] = tokenIn;
+                path[1] = desiredToken;
+        
+                _approveTokenIfNeeded(path[0], address(router));
+                _swapCamelot(path[0], path[1], _amount);
+              
+            }
+            _swapAndStake(vault, tokenAmountOutMin, desiredToken);
+        }else{
+            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+        }    
+    }
+
+    function zapOutAndSwap(address vault, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public virtual;
+
+    function zapOutAndSwapEth(address vault, uint256 withdrawAmount, uint256 desiredTokenOutMin) public virtual;
+
+    function _removeLiquidity(address pair, address to) internal {
+        IERC20(pair).safeTransfer(pair, IERC20(pair).balanceOf(address(this)));
+        (uint256 amount0, uint256 amount1) = ICamelotPair(pair).burn(to);
+
+        require(amount0 >= minimumAmount, "Router: INSUFFICIENT_A_AMOUNT");
+        require(amount1 >= minimumAmount, "Router: INSUFFICIENT_B_AMOUNT");
+    }
+
+
+    function _getVaultPair(address vault_addr) internal view returns (IVault vault, ICamelotPair pair){
+        vault = IVault(vault_addr);
+        pair = ICamelotPair(vault.token());
+
+        //require(pair.factory() == ICamelotPair(router).factory(), "Incompatible liquidity pair factory");
+    }
+
+    function _approveTokenIfNeeded(address token, address spender) internal {
+        if (IERC20(token).allowance(address(this), spender) == 0) {
+            IERC20(token).safeApprove(spender, type(uint256).max);
+        }
+    }
+
+    function zapOut(address vault_addr, uint256 withdrawAmount) external onlyWhitelistedVaults(vault_addr){
+        (IVault vault, ICamelotPair token) = _getVaultPair(vault_addr);
+
+        IERC20(vault_addr).safeTransferFrom(msg.sender, address(this), withdrawAmount);
+        vault.withdraw(withdrawAmount);
+
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(token);
+        tokens[1] = address(vault.token());
+
+        _returnAssets(tokens);
+    }
 }
 
 
-// File contracts/strategies/peapods/strategy-peapods-ohm.sol
+// File contracts/strategies/peapods/peapods-zapper/peapods-lp-vault-zapper.sol
 
 
 pragma solidity 0.8.4;
 
-contract StrategyPeapodsOhm is StrategyPeapodsFarmBase {
+contract VaultLPZapperPeapods is PeapodsLPZapperBase {
+    using SafeERC20 for IERC20;
+    using Address for address;
+    using SafeMath for uint256;
+    using SafeERC20 for IVault;
 
-  address public apOhm = 0xEb1A8f8Ea373536600082BA9aE2DB97327513F7d;
+    constructor()
+        PeapodsLPZapperBase(0x1F721E2E82F6676FCE4eA07A5958cF098D339e18, 0xCb410A689A03E06de0a6247b13C13D14237DecC8){}
 
-  constructor(
-    address _governance,
-    address _strategist,
-    address _controller,
-    address _timelock
-  )
-  StrategyPeapodsFarmBase(
-      apOhm,
-      _governance,
-      _strategist,
-      _controller,
-      _timelock
-  )
-  {}
+    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
+        (IVault vault, ICamelotPair pair) = _getVaultPair(vault_addr);
+        address token0 = pair.token0();
+        address token1 = pair.token1();
 
-  function getName() external override pure returns (string memory) {
-      return "StrategyPeapodsOhm";
-  }
+        vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
+        vault.withdraw(withdrawAmount);
+        _removeLiquidity(address(pair), address(this));
 
+        if(baseToken[token0] != desiredToken){
+            // unbond from apToken get base token
+            address[] memory path;
+            path = new address[](1);
+            path[0] = baseToken[token0];
+
+            uint8[] memory percent;
+            percent = new uint8[](1);
+            percent[0] = 100;
+
+            WeightedIndex(token0).debond(IERC20(token0).balanceOf(address(this)), path, percent);
+
+          if(baseToken[token0] != weth && desiredToken != weth){
+            // convert baseToken to desiredToken 
+            address[] memory path1 = new address[](3);
+            path1[0] = baseToken[token0];
+            path1[1] = weth;
+            path1[2] = desiredToken;
+
+            _approveTokenIfNeeded(path1[0], address(router));
+            _swapCamelot(path1[0], path1[1], IERC20(path1[0]).balanceOf(address(this)));
+
+            _approveTokenIfNeeded(path1[1], address(router));
+            _swapCamelot(path1[1], path1[2], IERC20(path1[1]).balanceOf(address(this)));
+
+          } else {
+              address[] memory path1 = new address[](2);
+              path1[0] = baseToken[token0];
+              path1[1] = desiredToken;
+
+              _approveTokenIfNeeded(path1[0], address(router));
+              _swapCamelot(path1[0], path1[1], IERC20(path1[0]).balanceOf(address(this)));
+          }
+         
+        }
+
+        if(baseToken[token1] != desiredToken){
+            // unbond from apToken get base token
+            address[] memory path;
+            path = new address[](1);
+            path[0] = baseToken[token1];
+
+            uint8[] memory percent;
+            percent = new uint8[](1);
+            percent[0] = 100;
+
+            WeightedIndex(token1).debond(IERC20(token1).balanceOf(address(this)), path, percent);
+
+          if(baseToken[token1] != weth && desiredToken != weth){
+              address[] memory path1 = new address[](3);
+              path1[0] = baseToken[token1];
+              path1[1] = weth;
+              path1[2] = desiredToken;
+
+              _approveTokenIfNeeded(path1[0], address(router));
+              _swapCamelot(path1[0], path1[1], IERC20(path1[0]).balanceOf(address(this)));
+
+              _approveTokenIfNeeded(path1[1], address(router));
+              _swapCamelot(path1[1], path1[2], IERC20(path1[1]).balanceOf(address(this)));
+
+          } else {
+              address[] memory path1 = new address[](2);
+              path1[0] = baseToken[token1];
+              path1[1] = desiredToken;
+
+              _approveTokenIfNeeded(path1[0], address(router));
+              _swapCamelot(path1[0], path1[1], IERC20(path1[0]).balanceOf(address(this)));
+
+          }
+        
+        }
+
+        address[] memory path2 = new address[](6);
+        path2[0] = token0; 
+        path2[1] = token1;
+        path2[2] = weth; 
+        path2[3] = desiredToken;
+        path2[4] = baseToken[token0];
+        path2[5] = baseToken[token1];
+
+        _returnAssets(path2);    
+    }
+
+    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
+        (IVault vault, ICamelotPair pair) = _getVaultPair(vault_addr);
+        address token0 = pair.token0();
+        address token1 = pair.token1();
+
+        vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
+        vault.withdraw(withdrawAmount);
+        _removeLiquidity(address(pair), address(this));
+
+        if(baseToken[token0] != weth){
+            // unbond from apToken get base token
+            address[] memory path;
+            path = new address[](1);
+            path[0] = baseToken[token0];
+
+            uint8[] memory percent;
+            percent = new uint8[](1);
+            percent[0] = 100;
+
+            WeightedIndex(token0).debond(IERC20(token0).balanceOf(address(this)), path, percent);
+
+
+            address[] memory path1 = new address[](2);
+            path1[0] = baseToken[token0];
+            path1[1] = weth;
+        
+            _approveTokenIfNeeded(path1[0], address(router));
+            _swapCamelot(path1[0], path1[1], IERC20(path1[0]).balanceOf(address(this)));
+        }
+
+        if(baseToken[token1] != weth){
+            // unbond from apToken get base token
+            address[] memory path;
+            path = new address[](1);
+            path[0] = baseToken[token1];
+
+            uint8[] memory percent;
+            percent = new uint8[](1);
+            percent[0] = 100;
+
+            WeightedIndex(token1).debond(IERC20(token1).balanceOf(address(this)), path, percent);
+
+            address[] memory path1 = new address[](2);
+            path1[0] = baseToken[token1];
+            path1[1] = weth;
+      
+            _approveTokenIfNeeded(path1[0], address(router));
+            _swapCamelot(path1[0], path1[1], IERC20(path1[0]).balanceOf(address(this)));
+        }
+
+        address[] memory path2 = new address[](5);
+        path2[0] = token0;
+        path2[1] = token1;
+        path2[2] = weth; 
+        path2[3] = baseToken[token0];
+        path2[4] = baseToken[token1];
+
+        _returnAssets(path2);
+    }
+
+    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override onlyWhitelistedVaults(vault_addr){
+      (IVault vault, ICamelotPair pair) = _getVaultPair(vault_addr);
+
+      (uint256 reserveA, uint256 reserveB, , ) = pair.getReserves();
+      require(reserveA > minimumAmount && reserveB > minimumAmount, "Liquidity pair reserves too low");
+
+      bool isInputA = pair.token0() == apToken[tokenIn];
+      require(isInputA || pair.token1() == apToken[tokenIn], "Input token not present in liquidity pair");
+
+      address[] memory path = new address[](2);
+      path[0] = tokenIn;
+      path[1] = isInputA ? baseToken[pair.token1()] : baseToken[pair.token0()];
+
+      uint256 fullInvestment = IERC20(path[0]).balanceOf(address(this));
+
+      if(tokenIn != weth && path[1] != weth){
+          address[] memory path1 = new address[](3);
+          path1[0] = path[0];
+          path1[1] = weth;
+          path1[2] = path[1];
+          _approveTokenIfNeeded(path1[0], address(router));
+          _swapCamelot(path1[0], path1[1], fullInvestment.div(2));
+
+          _approveTokenIfNeeded(path1[1], address(router));
+          _swapCamelot(path1[1], path1[2], IERC20(path1[1]).balanceOf(address(this)));
+
+      } else{
+          _approveTokenIfNeeded(path[0], address(router));
+          _swapCamelot(path[0], path[1], fullInvestment.div(2));
+      }
+
+        // swap for apToken version 
+        uint256 _want0 = IERC20(path[0]).balanceOf(address(this));
+        uint256 _want1 = IERC20(path[1]).balanceOf(address(this));
+
+        IERC20(path[0]).safeApprove(indexUtils, 0);
+        IERC20(path[0]).safeApprove(indexUtils, _want0);
+        IDecentralizedIndex(indexUtils).bond(apToken[path[0]], path[0], _want0, 0);
+
+        IERC20(path[1]).safeApprove(indexUtils, 0);
+        IERC20(path[1]).safeApprove(indexUtils, _want1);
+        IDecentralizedIndex(indexUtils).bond(apToken[path[1]], path[1], _want1, 0);
+
+
+        _approveTokenIfNeeded(apToken[path[0]], address(router));
+        _approveTokenIfNeeded(apToken[path[1]], address(router));
+        ICamelotRouter(router).addLiquidity(
+            apToken[path[0]],
+            apToken[path[1]],
+            IERC20(apToken[path[0]]).balanceOf(address(this)),
+            IERC20(apToken[path[1]]).balanceOf(address(this)),
+            1,
+            1,
+            address(this),
+            block.timestamp
+        );
+
+      _approveTokenIfNeeded(address(pair), address(vault));
+      vault.deposit(IERC20(address(pair)).balanceOf(address(this)));
+
+      //add to guage if possible instead of returning to user, and so no receipt token
+      vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
+
+      //taking receipt token and sending back to user
+      vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
+
+      _returnAssets(path);
+
+    }
+
+
+    function _getSwapAmount(uint256 investmentA, uint256 reserveA, uint256 reserveB) public view override returns (uint256 swapAmount) {
+      uint256 halfInvestment = investmentA.div(2);
+      uint256 nominator = UniswapRouterV2(router).getAmountOut(
+          halfInvestment,
+          reserveA,
+          reserveB
+      );
+      uint256 denominator = ICamelotRouter(router).quote(
+          halfInvestment,
+          reserveA.add(halfInvestment),
+          reserveB.sub(nominator)
+      );
+      swapAmount = investmentA.sub(
+          Babylonian.sqrt(
+              (halfInvestment * halfInvestment * nominator) / denominator
+          )
+      );
+    }
+
+    function estimateSwap(address vault_addr, address tokenIn, uint256 fullInvestmentIn) public view returns (uint256 swapAmountIn, uint256 swapAmountOut, address swapTokenOut){
+      (, ICamelotPair pair) = _getVaultPair(vault_addr);
+
+      bool isInputA = pair.token0() == apToken[tokenIn];
+      require(isInputA || pair.token1() == apToken[tokenIn], "Input token not present in liquidity pair");
+
+      (uint256 reserveA, uint256 reserveB, , ) = pair.getReserves();
+      (reserveA, reserveB) = isInputA ? (reserveA, reserveB) : (reserveB, reserveA);
+
+      swapAmountIn = _getSwapAmount(fullInvestmentIn, reserveA, reserveB);
+      swapAmountOut = ICamelotPair(address(pair)).getAmountOut(
+          swapAmountIn,
+          apToken[tokenIn]
+      );
+      swapTokenOut = isInputA ? pair.token1() : pair.token0();
+    }
+    
 }

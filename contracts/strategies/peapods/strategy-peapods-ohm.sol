@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "./peapods-farm-bases/peapods-base.sol";
+import "./peapods-farm-bases/peapods-farm-base.sol";
 
 contract StrategyPeapodsOhm is StrategyPeapodsFarmBase {
 
-  address public ohm = 0xf0cb2dc0db5e6c66B9a70Ac27B06b878da017028;
   address public apOhm = 0xEb1A8f8Ea373536600082BA9aE2DB97327513F7d;
 
   constructor(
@@ -16,7 +15,6 @@ contract StrategyPeapodsOhm is StrategyPeapodsFarmBase {
   )
   StrategyPeapodsFarmBase(
       apOhm,
-      ohm,
       _governance,
       _strategist,
       _controller,

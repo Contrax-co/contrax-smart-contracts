@@ -2,15 +2,32 @@ import { doStrategyTest } from "../strategy-test.test";
 import { TestableStrategy, LPTestDefault } from "../strategy-test-case";
 
 const tests = [
+  // {
+  //   name: "PeapodsGmx",
+  //   controller: "peapods",
+  //   slot: 5
+  // },
+  // {
+  //   name: "PeapodsOhm",
+  //   controller: "peapods",
+  // },
+  // {
+  //   name: "PeapodsPeas",
+  //   controller: "peapods",
+  // },
   {
-    name: "PeapodsGmx",
-    controller: "peapods",
-    slot: 5
+    name: "PeapodsGmxOhm",
+    controller: "sushi",
+    slot: 1
   },
-  {
-    name: "PeapodsOhm",
-    controller: "peapods",
-  },
+  // {
+  //   name: "PeapodsSavvyOhm",
+  //   controller: "peapods",
+  // },
+  // {
+  //   name: "PeapodsPeasOhm",
+  //   controller: "peapods",
+  // },
 
 ];
 

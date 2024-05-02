@@ -3,7 +3,6 @@
 // File contracts/interfaces/controller.sol
 
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.4;
 
 interface IController {
@@ -41,7 +40,7 @@ interface IController {
 
 // File contracts/lib/safe-math.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -204,7 +203,7 @@ library SafeMath {
 
 // File contracts/lib/context.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -234,7 +233,7 @@ abstract contract Context {
 
 // File: contracts/GSN/Context.sol
 
-
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
 
@@ -830,7 +829,7 @@ library SafeERC20 {
 // File contracts/vaults/peapods/vault-peapods-gmx.sol
 
 // https://github.com/iearn-finance/vaults/blob/master/contracts/vaults/yVault.sol
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 

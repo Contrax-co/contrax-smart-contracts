@@ -1182,10 +1182,50 @@ interface IController {
 }
 
 
+// File contracts/interfaces/camelot.sol
+
+
+pragma solidity 0.8.4;
+
+interface ICamelotRouter {
+  function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+    uint amountIn,
+    uint amountOutMin,
+    address[] calldata path,
+    address to,
+    address referrer,
+    uint deadline
+  ) external;
+
+  function addLiquidity(
+    address tokenA,
+    address tokenB,
+    uint amountADesired,
+    uint amountBDesired,
+    uint amountAMin,
+    uint amountBMin,
+    address to,
+    uint deadline
+  ) external;
+
+  function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
+}
+
+interface ICamelotPair {
+  function burn(address to) external returns (uint amount0, uint amount1);
+  function factory() external view returns (address);
+  function token0() external view returns (address);
+  function token1() external view returns (address);
+  function getAmountOut(uint amountIn, address tokenIn) external view returns (uint);
+  function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint16 token0feePercent, uint16 token1FeePercent);
+}
+
+
 // File contracts/strategies/strategy-base.sol
 
 	
 pragma solidity 0.8.4;
+
 
 
 
@@ -1203,6 +1243,7 @@ abstract contract StrategyBase {
     address public want;
     address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
     address public constant uni = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
+    address public constant zero = 0x0000000000000000000000000000000000000000;
 
     // Dex
     address public univ2Router2 = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106;
@@ -1232,6 +1273,7 @@ abstract contract StrategyBase {
 
     // Dex 
     address public sushiRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
+    address public camelotRouter = 0xc873fEcbd354f5A56E00E710B90EF4201db2448d;
 
     mapping(address => bool) public harvesters;
 
@@ -1502,6 +1544,39 @@ abstract contract StrategyBase {
         );
     }
 
+    function _swapCamelot(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal {
+        require(_to != address(0));
+
+        address[] memory path;
+
+        if (_from == weth || _to == weth) {
+            path = new address[](2);
+            path[0] = _from;
+            path[1] = _to;
+        } else {
+            path = new address[](3);
+            path[0] = _from;
+            path[1] = weth;
+            path[2] = _to;
+        }
+
+        IERC20(_from).safeApprove(camelotRouter, 0);
+        IERC20(_from).safeApprove(camelotRouter, _amount);
+        ICamelotRouter(camelotRouter).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            _amount,
+            0,
+            path,
+            _to,
+            zero,
+            block.timestamp.add(60)
+        );
+
+    }
+
     function _distributePerformanceFeesAndDeposit() internal {
         uint256 _want = IERC20(want).balanceOf(address(this));
 
@@ -1562,6 +1637,21 @@ interface IDecentralizedIndex {
     uint256 _amount,
     uint256 _amountMintMin
   ) external;
+
+  function unstakeAndRemoveLP(
+    address _indexFund,
+    uint256 _amountStakedTokens,
+    uint256 _minLPTokens,
+    uint256 _minPairedLpToken,
+    uint256 _deadline
+  ) external;
+
+   function addLiquidityV2(
+    uint256 _idxLPTokens,
+    uint256 _pairedLPTokens,
+    uint256 _slippage,
+    uint256 _deadline
+  ) external;
 }
 
 interface WeightedIndex {
@@ -1574,8 +1664,29 @@ interface WeightedIndex {
   ) external;
 }
 
+interface IStakingPoolToken {
+  function balanceOf(address account) external view returns (uint256); 
+  function claimReward(address _wallet) external; 
+  function getUnpaid(
+    address _token,
+    address _wallet
+  ) external view returns (uint256);
 
-// File contracts/strategies/peapods/peapods-farm-bases/peapods-base.sol
+  function stake(address user, uint256 amount) external;
+  function unstake(uint256 amount) external;
+}
+
+interface ITokenRewards {
+   function getUnpaid(
+    address _token,
+    address _wallet
+  ) external view returns (uint256);
+
+  function claimReward(address wallet) external;
+}
+
+
+// File contracts/strategies/peapods/peapods-farm-bases/peapods-farm-base.sol
 
 
 pragma solidity 0.8.4;
@@ -1588,7 +1699,6 @@ abstract contract StrategyPeapodsFarmBase is StrategyBase {
 
   address public constant indexUtils = 0x5c5c288f5EF3559Aaf961c5cCA0e77Ac3565f0C0;
 
-  address public apToken;
   address rewardToken;
 
   // How much tokens to keep?
@@ -1598,19 +1708,17 @@ abstract contract StrategyPeapodsFarmBase is StrategyBase {
 
   constructor(
     address _apToken,
-    address _lp,
     address _governance,
     address _strategist,
     address _controller,
     address _timelock
   )
-    StrategyBase(_lp, _governance, _strategist, _controller, _timelock)
+    StrategyBase(_apToken, _governance, _strategist, _controller, _timelock)
   {
-    apToken = _apToken;
   }
 
   function balanceOfPool() public view override returns (uint256) {
-    (uint256 amount) = WeightedIndex(apToken).balanceOf(
+    (uint256 amount) = WeightedIndex(want).balanceOf(
       address(this)
     );
     return amount;
@@ -1622,12 +1730,6 @@ abstract contract StrategyPeapodsFarmBase is StrategyBase {
 
   // **** Setters ****
   function deposit() public override {
-      uint256 _want = IERC20(want).balanceOf(address(this));
-      if (_want > 0) {
-        IERC20(want).safeApprove(indexUtils, 0);
-        IERC20(want).safeApprove(indexUtils, _want);
-        IDecentralizedIndex(indexUtils).bond(apToken ,want, _want, 0);
-      }
   }
 
   function _withdrawSome(uint256 _amount)
@@ -1635,15 +1737,6 @@ abstract contract StrategyPeapodsFarmBase is StrategyBase {
     override
     returns (uint256)
   {
-    address[] memory path;
-    path = new address[](1);
-    path[0] = want;
-
-    uint8[] memory percent;
-    percent = new uint8[](1);
-    percent[0] = 100;
-
-    WeightedIndex(apToken).debond(_amount, path, percent);
     return _amount;
   }
 
@@ -1685,7 +1778,6 @@ pragma solidity 0.8.4;
 
 contract StrategyPeapodsGmx is StrategyPeapodsFarmBase {
 
-  address public gmx = 0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a;
   address public apGmx = 0x8CB10B11Fad33cfE4758Dc9977d74CE7D2fB4609;
 
   constructor(
@@ -1696,7 +1788,6 @@ contract StrategyPeapodsGmx is StrategyPeapodsFarmBase {
   )
   StrategyPeapodsFarmBase(
       apGmx,
-      gmx,
       _governance,
       _strategist,
       _controller,

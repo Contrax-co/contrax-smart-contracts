@@ -1771,14 +1771,14 @@ abstract contract StrategyPeapodsFarmBase is StrategyBase {
 }
 
 
-// File contracts/strategies/peapods/strategy-peapods-ohm.sol
+// File contracts/strategies/peapods/strategy-peapods-peas.sol
 
 
 pragma solidity 0.8.4;
 
-contract StrategyPeapodsOhm is StrategyPeapodsFarmBase {
+contract StrategyPeapodsPeas is StrategyPeapodsFarmBase {
 
-  address public apOhm = 0xEb1A8f8Ea373536600082BA9aE2DB97327513F7d;
+  address public apPeas = 0x6a02F704890F507f13d002F2785ca7Ba5BFcc8F7;
 
   constructor(
     address _governance,
@@ -1787,7 +1787,7 @@ contract StrategyPeapodsOhm is StrategyPeapodsFarmBase {
     address _timelock
   )
   StrategyPeapodsFarmBase(
-      apOhm,
+      apPeas,
       _governance,
       _strategist,
       _controller,
@@ -1796,7 +1796,7 @@ contract StrategyPeapodsOhm is StrategyPeapodsFarmBase {
   {}
 
   function getName() external override pure returns (string memory) {
-      return "StrategyPeapodsOhm";
+      return "StrategyPeapodsPeas";
   }
 
 }

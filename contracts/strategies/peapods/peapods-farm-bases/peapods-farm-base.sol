@@ -12,7 +12,6 @@ abstract contract StrategyPeapodsFarmBase is StrategyBase {
 
   address public constant indexUtils = 0x5c5c288f5EF3559Aaf961c5cCA0e77Ac3565f0C0;
 
-  address public apToken;
   address rewardToken;
 
   // How much tokens to keep?
@@ -22,19 +21,17 @@ abstract contract StrategyPeapodsFarmBase is StrategyBase {
 
   constructor(
     address _apToken,
-    address _lp,
     address _governance,
     address _strategist,
     address _controller,
     address _timelock
   )
-    StrategyBase(_lp, _governance, _strategist, _controller, _timelock)
+    StrategyBase(_apToken, _governance, _strategist, _controller, _timelock)
   {
-    apToken = _apToken;
   }
 
   function balanceOfPool() public view override returns (uint256) {
-    (uint256 amount) = WeightedIndex(apToken).balanceOf(
+    (uint256 amount) = WeightedIndex(want).balanceOf(
       address(this)
     );
     return amount;
@@ -46,12 +43,6 @@ abstract contract StrategyPeapodsFarmBase is StrategyBase {
 
   // **** Setters ****
   function deposit() public override {
-      uint256 _want = IERC20(want).balanceOf(address(this));
-      if (_want > 0) {
-        IERC20(want).safeApprove(indexUtils, 0);
-        IERC20(want).safeApprove(indexUtils, _want);
-        IDecentralizedIndex(indexUtils).bond(apToken ,want, _want, 0);
-      }
   }
 
   function _withdrawSome(uint256 _amount)
@@ -59,15 +50,6 @@ abstract contract StrategyPeapodsFarmBase is StrategyBase {
     override
     returns (uint256)
   {
-    address[] memory path;
-    path = new address[](1);
-    path[0] = want;
-
-    uint8[] memory percent;
-    percent = new uint8[](1);
-    percent[0] = 100;
-
-    WeightedIndex(apToken).debond(_amount, path, percent);
     return _amount;
   }
 
