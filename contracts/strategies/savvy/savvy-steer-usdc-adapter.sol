@@ -6,11 +6,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 import "../../interfaces/savvy.sol";
-import "../../interfaces/uniswapv2.sol";
 import "../../lib/TokenUtils.sol";
 import "../../lib/Checker.sol";
 import "../../interfaces/vault.sol";
 import "../../base/Errors.sol";
+import "../../interfaces/ISteerPeriphery.sol";
 
 contract ContraxSavvyAdapterForSteer is ITokenAdapter, Initializable, Ownable2StepUpgradeable {
   string public constant override version = "1.0.0";
@@ -21,8 +21,8 @@ contract ContraxSavvyAdapterForSteer is ITokenAdapter, Initializable, Ownable2St
   address public override token;
   address public override baseToken;
 
-  //Steer
   address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
+  //Steer vault for USDC
   address public steerVault = 0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65;
 
   uint256 private baseTokenDecimals;
@@ -42,7 +42,7 @@ contract ContraxSavvyAdapterForSteer is ITokenAdapter, Initializable, Ownable2St
 
   //Get vault token price in usdc
   function price() external view override returns (uint256) {
-    return IVault(token).getRatio() * calculateLpPriceInUsdc();
+    return calculateLpPriceInUsdc();
   }
 
   /// @inheritdoc ITokenAdapter
@@ -93,21 +93,43 @@ contract ContraxSavvyAdapterForSteer is ITokenAdapter, Initializable, Ownable2St
     return receivedBaseTokens;
   }
 
+  // Helper function to adjust token amounts to a common decimal place
+  function adjustForDecimals(uint256 amount, uint8 decimals) public pure returns (uint256) {
+    if (decimals < 18) {
+      return amount * 10 ** (18 - decimals);
+    } else if (decimals > 18) {
+      return amount / 10 ** (decimals - 18);
+    }
+    return amount;
+  }
+
   function getTokensFromLpToken(
     uint256 lpTokenAmount,
     uint256 lpTokenSupply,
+    uint256 vaultToken0Balance,
     uint256 vaultToken1Balance,
-    uint256 vaultToken2Balance
-  ) public view returns (uint256 token0Val, uint256 token1Val) {
-    token0Val = lpTokenSupply > 0 ? (lpTokenAmount * vaultToken0Balance) / lpTokenSupply : 0;
-    token1Val = lpTokenSupply > 0 ? (lpTokenAmount * vaultToken1Balance) / lpTokenSupply : 0;
+    uint8 token0Decimals,
+    uint8 token1Decimals
+  ) public pure returns (uint256 token0Val, uint256 token1Val) {
+    uint256 adjustedToken0Balance = adjustForDecimals(vaultToken0Balance, token0Decimals);
+    uint256 adjustedToken1Balance = adjustForDecimals(vaultToken1Balance, token1Decimals);
+
+    token0Val = lpTokenSupply > 0 ? (lpTokenAmount * adjustedToken0Balance) / lpTokenSupply : 0;
+    token1Val = lpTokenSupply > 0 ? (lpTokenAmount * adjustedToken1Balance) / lpTokenSupply : 0;
   }
 
-  function calculateLpPriceInUsdc() public view returns (uint256) {
-    ISteerPeriphery(steerPeriphery).VaultDetails memory details= ISteerPeriphery(steerPeriphery).vaultDetailsByAddress(steerVault);
-    (uint256 token0Val, uint256 token1Val ) = getTokensFromLpToken(
-        
-    )
+  function calculateLpPriceInUsdc() public pure returns (uint256) {
+    VaultDetails memory details = ISteerPeriphery(steerPeriphery).vaultDetailsByAddress(steerVault);
+
+    (uint256 token0Val, uint256 token1Val) = getTokensFromLpToken(
+      1, // Amount of LP tokens to calculate price for
+      details.totalLPTokensIssued,
+      details.token0Balance,
+      details.token1Balance,
+      details.token0Decimals,
+      details.token1Decimals
+    );
+    // Not considering token0 and token1 price as both tokens are priced at 1 USDC
+    return token0Val + token1Val; 
   }
-  
 }

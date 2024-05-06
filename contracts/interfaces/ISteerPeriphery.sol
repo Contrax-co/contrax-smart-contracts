@@ -23,5 +23,5 @@ interface ISteerPeriphery is IMultiPositionManager {
   ) external;
 
   
-  function vaultDetailsByAddress(address vault) external view returns (struct IMultiPositionManager.VaultDetails details)
+  function vaultDetailsByAddress(address vault) external view returns (VaultDetails memory);
 }
