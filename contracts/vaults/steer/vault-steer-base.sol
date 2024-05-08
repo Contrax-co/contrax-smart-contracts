@@ -94,7 +94,7 @@ contract VaultSteerBase is ERC20, IVaultSteerBase {
     tokens[1] = token1;
     _returnAssets(tokens);
 
-    emit Deposit(tx.origin, block.timestamp, amount0, amount1);
+    emit Deposit(tx.origin, block.timestamp, shares, shares);
   }
 
   function withdraw(uint256 _shares) external override returns (uint256 amount0, uint256 amount1) {
