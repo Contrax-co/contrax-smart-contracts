@@ -16,6 +16,7 @@ contract SteerSushiZapperBase {
 
   address public router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // sushi v2 router
   address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+  address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
   address public governance;
 
   // Define a mapping to store whether an address is whitelisted or not
@@ -25,11 +26,15 @@ contract SteerSushiZapperBase {
 
   uint256 public constant minimumAmount = 1000;
 
-  constructor(address _governance) {
+  constructor(address _governance, address[] memory _vaults) {
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
     governance = _governance;
+
+    for (uint i = 0; i < _vaults.length; i++) {
+      whitelistedVaults[_vaults[i]] = true;
+    }
   }
 
   receive() external payable {
@@ -108,12 +113,24 @@ contract SteerSushiZapperBase {
   }
 
   function _swap(address tokenIn, address tokenOut, uint256 amountIn) private {
-    address[] memory path = new address[](2);
-    path[0] = tokenIn;
-    path[1] = tokenOut;
-  
+    address[] memory path;
+
+    // sushi only has liquidity with eth, so always route with weth to swap sushi
+    if (tokenIn != weth && tokenOut != weth && (tokenIn == sushi || tokenOut == sushi)) {
+      path = new address[](3);
+      path[0] = tokenIn;
+      path[1] = weth;
+      path[2] = tokenOut;
+
+      _approveTokenIfNeeded(weth, address(router));
+    } else {
+      path = new address[](2);
+      path[0] = tokenIn;
+      path[1] = tokenOut;
+    }
+
     _approveTokenIfNeeded(path[0], address(router));
-    
+
     UniswapRouterV2(router).swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp);
   }
 
