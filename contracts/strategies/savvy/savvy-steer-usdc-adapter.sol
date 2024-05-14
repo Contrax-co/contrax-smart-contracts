@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
@@ -11,6 +10,7 @@ import "../../lib/Checker.sol";
 import "../../interfaces/vault.sol";
 import "../../base/Errors.sol";
 import "../../interfaces/ISteerPeriphery.sol";
+import "../../Utils/PriceCalculator.sol";
 
 contract ContraxSavvyAdapterForSteer is ITokenAdapter, Initializable, Ownable2StepUpgradeable {
   string public constant override version = "1.0.0";
@@ -130,6 +130,15 @@ contract ContraxSavvyAdapterForSteer is ITokenAdapter, Initializable, Ownable2St
       details.token1Decimals
     );
     // Not considering token0 and token1 price as both tokens are priced at 1 USDC
-    return token0Val + token1Val; 
+    return token0Val + token1Val;
+  }
+
+  function steerVaultTokens() public view override returns (address, address) {
+    return (steerVault.token0(), steerVault.token1());
+  }
+
+  function TokenSpliterSteer(uint256 amount) internal returns (uint256 token0, uint256 token1) {
+    (address token0, address token1) = steerVaultTokens();
+    (uint256 token0Amount, uint256 token1Amount) = steerVault.getTotalAmounts(); 
   }
 }
