@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "../../lib/erc20.sol";
 import "../../lib/safe-math.sol";
+import "../../interfaces/controller.sol";
 import "../../interfaces/ISushiMultiPositionLiquidityManager.sol";
 import "../../interfaces/ISteerPeriphery.sol";
 import "../../interfaces/IVaultSteerBase.sol";
@@ -17,6 +18,7 @@ contract VaultSteerBase is ERC20, IVaultSteerBase {
 
   address public governance;
   address public timelock;
+  address public controller;
 
   // Declare a Deposit Event
   event Deposit(address indexed _from, uint _timestamp, uint _value, uint _shares);
@@ -27,7 +29,8 @@ contract VaultSteerBase is ERC20, IVaultSteerBase {
   constructor(
     address _steerVault,
     address _governance,
-    address _timelock
+    address _timelock,
+    address _controller
   )
     ERC20(
       string(abi.encodePacked("freezing ", ERC20(_steerVault).name())),
@@ -38,6 +41,7 @@ contract VaultSteerBase is ERC20, IVaultSteerBase {
     governance = _governance;
     timelock = _timelock;
     steerVault = ISushiMultiPositionLiquidityManager(_steerVault);
+    controller = _controller;
   }
 
   function steerVaultTokens() public view override returns (address, address) {
@@ -45,12 +49,17 @@ contract VaultSteerBase is ERC20, IVaultSteerBase {
   }
 
   function balance() public view returns (uint256) {
-    return steerVault.balanceOf(address(this));
+    return steerVault.balanceOf(address(this)).add(IController(controller).balanceOf(address(steerVault)));
   }
 
   function setGovernance(address _governance) public {
     require(msg.sender == governance, "!governance");
     governance = _governance;
+  }
+
+  function setController(address _controller) public {
+    require(msg.sender == timelock, "!timelock");
+    controller = _controller;
   }
 
   function setTimelock(address _timelock) public {
@@ -84,7 +93,14 @@ contract VaultSteerBase is ERC20, IVaultSteerBase {
     uint256 afterBal = steerVault.balanceOf(address(this));
 
     // calculate shares to mint
-    uint256 shares = afterBal.sub(beforeBal);
+    uint256 _amount = afterBal.sub(beforeBal);
+
+    uint256 shares = 0;
+    if (totalSupply() == 0) {
+      shares = _amount;
+    } else {
+      shares = (_amount.mul(totalSupply())).div(balance());
+    }
 
     // mint local vault shares to msg.sender
     _mint(msg.sender, shares);
@@ -94,20 +110,35 @@ contract VaultSteerBase is ERC20, IVaultSteerBase {
     tokens[1] = token1;
     _returnAssets(tokens);
 
-    emit Deposit(tx.origin, block.timestamp, shares, shares);
+    emit Deposit(tx.origin, block.timestamp, _amount, shares);
   }
 
   function withdraw(uint256 _shares) external override returns (uint256 amount0, uint256 amount1) {
     //Check if caller has enough shares
     require(balanceOf(msg.sender) >= _shares, "Not enough shares");
 
-    //Withdraw lp token from steer vault
-    (amount0, amount1) = steerVault.withdraw(_shares, 0, 0, msg.sender);
+    uint256 ratio = (balance().mul(_shares)).div(totalSupply());
 
     //burn user shares
     _burn(msg.sender, _shares);
 
-    emit Withdraw(tx.origin, block.timestamp, _shares, _shares);
+    // Check vault balance
+    uint256 bal = steerVault.balanceOf(address(this));
+
+    if (bal < ratio) {
+      uint256 _withdraw = ratio.sub(bal);
+      IController(controller).withdraw(address(steerVault), _withdraw);
+      uint256 _after = steerVault.balanceOf(address(this));
+      uint256 _diff = _after.sub(bal);
+      if (_diff < _withdraw) {
+        ratio = bal.add(_diff);
+      }
+    }
+
+    //Withdraw lp token from steer vault
+    (amount0, amount1) = steerVault.withdraw(ratio, 0, 0, msg.sender);
+
+    emit Withdraw(tx.origin, block.timestamp, ratio, _shares);
   }
 
   function _approveTokenIfNeeded(address token, address spender) internal {
