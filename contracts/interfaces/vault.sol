@@ -20,9 +20,9 @@ interface IVault is IERC20 {
 
     function withdrawAll() external;
 
-    function withdraw(uint256) external;
+    function withdraw(uint256) external; 
 
     function earn() external;
 
-    function decimals() external view returns (uint8);
+    function decimals() external override view returns (uint8);
 }

@@ -114,9 +114,6 @@ contract VaultSteerBase is ERC20, IVaultSteerBase {
   }
 
   function withdraw(uint256 _shares) external override returns (uint256 amount0, uint256 amount1) {
-    //Check if caller has enough shares
-    require(balanceOf(msg.sender) >= _shares, "Not enough shares");
-
     uint256 ratio = (balance().mul(_shares)).div(totalSupply());
 
     //burn user shares
@@ -154,5 +151,9 @@ contract VaultSteerBase is ERC20, IVaultSteerBase {
   function inCaseTokensGetStuck(address _token, uint256 _amount) public {
     require(msg.sender == governance || msg.sender == timelock, "!governance");
     IERC20(_token).safeTransfer(msg.sender, _amount);
+  }
+
+  function getRatio() public view override returns (uint256) {
+    return balance().mul(1e18).div(totalSupply());
   }
 }

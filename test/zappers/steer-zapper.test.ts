@@ -2,10 +2,14 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { Contract, Signer, BigNumber } from "ethers";
-import { overwriteTokenAmount, returnSigner } from "../utils/helpers";
+import { overwriteTokenAmount, returnSigner, setStrategy } from "../utils/helpers";
+import { setupSigners } from "../utils/static";
 
 let zapInUsdcAmount: string = "2500000000000";
 let zapInEthAmount: string = "15000000000000000000";
+//15k steer vault tokens
+let strategySteerVaultAmount: string = "15000000000000000000000";
+let timelockIsStrategist = false;
 
 const walletAddress = process.env.WALLET_ADDR === undefined ? "" : process.env["WALLET_ADDR"];
 
@@ -14,13 +18,22 @@ let snapshotId: string;
 let usdcContract: Contract;
 let zapperContract: Contract;
 let vaultContract: Contract;
+let controllerContract: Contract;
+let startegyContract: Contract;
 
 let walletSigner: Signer;
+let governanceSigner: Signer;
+let strategistSigner: Signer;
+let timelockSigner: Signer;
 
 let wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 let usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 
+const steerVaultAddrress = "0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65";
+
 const vaultName = "VaultSteerSushiUsdcUsdce";
+const strategyName = "StrategySteerUsdcUsdce";
+
 const poolFees = [
   {
     poolFee: 100,
@@ -78,10 +91,49 @@ describe("Steer Zapper Test", async () => {
 
     walletSigner = await returnSigner(walletAddress);
 
+    [timelockSigner, strategistSigner, governanceSigner] = await setupSigners(timelockIsStrategist);
+
+    const controllerFactory = await ethers.getContractFactory("SteerController");
+    controllerContract = await controllerFactory
+      .connect(walletSigner)
+      .deploy(
+        governanceSigner.getAddress(),
+        strategistSigner.getAddress(),
+        timelockSigner.getAddress(),
+        walletSigner.getAddress(),
+        walletSigner.getAddress()
+      );
+    let controllerAdd = controllerContract.address;
     const vaultFactory = await ethers.getContractFactory(vaultName);
     vaultContract = await vaultFactory
       .connect(walletSigner)
-      .deploy(walletSigner.getAddress(), walletSigner.getAddress());
+      .deploy(walletSigner.getAddress(), walletSigner.getAddress(), controllerAdd);
+
+    const stratFactory = await ethers.getContractFactory(strategyName);
+
+    // Now we can deploy the new strategy
+    startegyContract = await stratFactory
+      .connect(walletSigner)
+      .deploy(
+        steerVaultAddrress,
+        governanceSigner.getAddress(),
+        strategistSigner.getAddress(),
+        controllerAdd,
+        timelockSigner.getAddress()
+      );
+
+    const approveStrategy = await controllerContract
+      .connect(timelockSigner)
+      .approveStrategy(steerVaultAddrress, startegyContract.address);
+    const tx_approveStrategy = await approveStrategy.wait(1);
+
+    if (!tx_approveStrategy.status) {
+      console.error(`Error approving the strategy for: ${strategyName}`);
+      return startegyContract;
+    }
+    console.log(`Approved Strategy in the Controller for: ${strategyName}\n`);
+
+    await setStrategy(strategyName, controllerContract, timelockSigner, steerVaultAddrress, startegyContract.address);
 
     const zapperFactory = await ethers.getContractFactory("SteerZapperBase");
     zapperContract = await zapperFactory.connect(walletSigner).deploy(
@@ -94,13 +146,15 @@ describe("Steer Zapper Test", async () => {
 
     usdcContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", usdcAddress, walletSigner);
     await overwriteTokenAmount(usdcAddress, walletAddress, zapInUsdcAmount, 9);
+
+    // await overwriteTokenAmount(steerVaultAddrress, startegyContract.address, strategySteerVaultAmount, 9);
   });
 
   const zapInETH = async () => {
     let _vaultBalanceBefore: BigNumber = await vaultContract
       .connect(walletSigner)
       .balanceOf(await walletSigner.getAddress());
-
+    const amountToSend = BigNumber.from(zapInEthAmount).div(2);
     const tokenInAmount0 = BigNumber.from(zapInEthAmount).div(2);
     const tokenInAmount1 = BigNumber.from(zapInEthAmount).sub(tokenInAmount0);
 
@@ -149,6 +203,7 @@ describe("Steer Zapper Test", async () => {
     expect(usdcBalance.toNumber()).to.be.gt(0);
     expect(usdcBalance.toString()).to.be.equals(zapInUsdcAmount);
   });
+
 
   it("Should ZapIn with Eth", async function () {
     let [_vaultBefore, _vaultAfter] = await zapInETH();

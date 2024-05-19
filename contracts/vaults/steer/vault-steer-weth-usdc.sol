@@ -9,6 +9,7 @@ import "./vault-steer-base.sol";
 contract VaultSteerSushiWethUsdc is VaultSteerBase {
   constructor(
     address _governance,
-    address _timelock
-  ) VaultSteerBase(0x01476fcCa94502267008119B83Cea234dc3fA7D7, _governance, _timelock) {}
+    address _timelock,
+    address _controller
+  ) VaultSteerBase(0x01476fcCa94502267008119B83Cea234dc3fA7D7, _governance, _timelock, _controller) {}
 }

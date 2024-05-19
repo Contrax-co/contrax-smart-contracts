@@ -14,7 +14,7 @@ import "../interfaces/onesplit.sol";
 import "../interfaces/strategy.sol";
 import "../interfaces/converter.sol";
 
-contract SushiController {
+contract SteerController {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -41,7 +41,7 @@ contract SushiController {
     devfund = _devfund;
     treasury = _treasury;
   }
-
+ 
   function setDevFund(address _devfund) public {
     require(msg.sender == governance, "!governance");
     devfund = _devfund;
@@ -105,7 +105,7 @@ contract SushiController {
     strategies[_token] = _strategy;
   }
 
-
+ 
   function balanceOf(address _token) external view returns (uint256) {
     return IStrategy(strategies[_token]).balanceOf();
   }

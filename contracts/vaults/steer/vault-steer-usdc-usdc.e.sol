@@ -9,6 +9,7 @@ import "./vault-steer-base.sol";
 contract VaultSteerSushiUsdcUsdce is VaultSteerBase {
   constructor(
     address _governance,
-    address _timelock
-  ) VaultSteerBase(0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65, _governance, _timelock) {}
+    address _timelock,
+    address _controller
+  ) VaultSteerBase(0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65, _governance, _timelock, _controller) {}
 }

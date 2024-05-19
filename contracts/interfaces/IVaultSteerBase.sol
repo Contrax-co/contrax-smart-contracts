@@ -9,6 +9,9 @@ interface IVaultSteerBase is IERC20 {
   function getTotalAmounts() external view returns (uint256, uint256);
 
   function deposit(uint256 amount0, uint256 amount1) external;
+  
+  function getRatio() external view returns (uint256);
 
   function withdraw(uint256 _shares) external returns (uint256 amount0, uint256 amount1);
+
 }

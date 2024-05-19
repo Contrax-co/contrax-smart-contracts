@@ -1,0 +1,128 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.4;
+
+import "../lib/erc20.sol";
+
+import "../interfaces/uniswapv2.sol";
+
+contract PriceCalculator {
+  
+  using SafeERC20 for IERC20;
+  address public governance;
+
+  uint256 public constant PRECISION = 1_000_000;
+
+  address public weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+  address public weth_Usdc_Pair = 0x905dfCD5649217c42684f23958568e533C711Aa3;
+
+  // Array of stable tokens
+  address[] private stableTokens = [
+    0xaf88d065e77c8cC2239327C5EDb3A432268e5831,
+    0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9,
+    0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8
+  ];
+
+  modifier onlyGovernance() {
+    require(msg.sender == governance);
+    _;
+  }
+
+  constructor(address _governance) {
+    require(_governance != address(0));
+    governance = _governance;
+  }
+
+  // set func to add stable tokens address in the array
+  function setStableTokens(address _stableTokens) external onlyGovernance {
+    stableTokens.push(_stableTokens);
+  }
+
+  // function calculateTokenPriceInUsdc(address _token,address _pairAddress) public view returns (uint256) {
+  //     IUniswapV2Pair _pair = IUniswapV2Pair(_pairAddress);
+  //     (uint112 _reserve0, uint112 _reserve1,)  = _pair.getReserves();
+  //     address token0 = _pair.token0();
+  //     address token1 = _pair.token1();
+
+  //     //get token decimals for both tokens
+  //     uint8 token0Decimals = IERC20(token0).decimals();
+  //     uint8 token1Decimals = IERC20(token1).decimals();
+
+  //     if(_token == token0){
+  //         return _reserve0 * 10**18 / _reserve1;
+  //     }else if (_token == token1){
+  //         return _reserve1 * 10**18 / _reserve0;
+  //     }
+  //     return 0;
+
+  // }
+
+  function calculateTokenPriceInUsdc(address _token, address _pairAddress) public view returns (uint256) {
+    IUniswapV2Pair _pair = IUniswapV2Pair(_pairAddress);
+    (uint112 _reserve0, uint112 _reserve1, ) = _pair.getReserves();
+    address token0 = _pair.token0();
+    address token1 = _pair.token1();
+    // Get token decimals
+    uint8 token0Decimals = IERC20(token0).decimals();
+    uint8 token1Decimals = IERC20(token1).decimals();
+
+    // Check if the token of interest is token0 or token1 and calculate price accordingly
+    if (_token == token0) {
+      //check if token1 is in stable tokens array
+      for (uint256 i = 0; i < stableTokens.length; i++) {
+        if (stableTokens[i] == token1) {
+          return _getPrice(_reserve0, _reserve1, token0Decimals, token1Decimals);
+        }
+      }
+    } else if (_token == token1) {
+      //check if token0 is in stable tokens array
+      for (uint256 i = 0; i < stableTokens.length; i++) {
+        if (stableTokens[i] == token0) {
+          return _getPrice(_reserve1, _reserve0, token1Decimals, token0Decimals);
+        }
+      }
+    }
+    return 0;
+  }
+
+  // pair should be of WEth/LpToken
+  function calculateLpPriceInUsdc(address _lpToken, address _pairAddress) public view returns (uint256) {
+    IUniswapV2Pair _pair = IUniswapV2Pair(_pairAddress);
+    (uint112 _reserve0, uint112 _reserve1, ) = _pair.getReserves();
+    address token0 = _pair.token0();
+    address token1 = _pair.token1();
+    uint8 token0Decimals = IERC20(token0).decimals();
+    uint8 token1Decimals = IERC20(token1).decimals();
+    //Calculate price of eth in usdc
+    uint256 priceOfEthInUsdc = calculateTokenPriceInUsdc(weth, weth_Usdc_Pair);
+
+    //remove Precision from eth price
+    priceOfEthInUsdc = priceOfEthInUsdc / PRECISION;
+    //Get price of lp in Eth
+    uint256 lpPriceInEth;
+    if (_lpToken == token0) {
+      lpPriceInEth = _getPrice(_reserve0, _reserve1, token0Decimals, token1Decimals);
+    } else {
+      lpPriceInEth = _getPrice(_reserve1, _reserve0, token1Decimals, token0Decimals);
+    }
+
+    return (priceOfEthInUsdc * lpPriceInEth) / PRECISION;
+  }
+
+  function _getPrice(
+    uint112 tokenReserve,
+    uint112 priceInTokenReserve,
+    uint8 tokenDecimals,
+    uint8 priceInTokenDecimals
+  ) private pure returns (uint256) {
+    if (tokenDecimals > priceInTokenDecimals) {
+      uint256 factor = 10 ** (tokenDecimals - priceInTokenDecimals);
+      return ((priceInTokenReserve * factor) * PRECISION) / tokenReserve;
+    } else if (tokenDecimals < priceInTokenDecimals) {
+      uint256 factor = 10 ** (priceInTokenDecimals - tokenDecimals);
+      return ((priceInTokenReserve) * PRECISION) / (tokenReserve * factor);
+    } else {
+      return ((priceInTokenReserve) * PRECISION) / tokenReserve;
+    }
+  }
+}

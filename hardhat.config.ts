@@ -21,7 +21,8 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 42161,
       forking: {
-        url: "https://arb1.arbitrum.io/rpc",
+        url: "https://arb1.arbitrum.io/rpc", //"https://arb1.arbitrum.io/rpc",
+        blockNumber: 210889162,
       },
     },
     arbitrum: {
