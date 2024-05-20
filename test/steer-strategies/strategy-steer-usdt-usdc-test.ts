@@ -2,8 +2,8 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { Contract, Signer, BigNumber } from "ethers";
-import { overwriteTokenAmount, returnSigner, setStrategy } from "./utils/helpers";
-import { setupSigners } from "./utils/static";
+import { overwriteTokenAmount, returnSigner, setStrategy } from "../utils/helpers";
+import { setupSigners } from "../utils/static";
 
 const walletAddress = process.env.WALLET_ADDR === undefined ? "" : process.env["WALLET_ADDR"];
 
@@ -28,10 +28,10 @@ let wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 let usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 let arbAddress = "0x912CE59144191C1204E64559FE8253a0e49E6548";
 
-const steerVaultAddrress = "0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65";
+const steerVaultAddrress = "0x5DbAD371890C3A89f634e377c1e8Df987F61fB64";
 
-const vaultName = "VaultSteerSushiUsdcUsdce";
-const strategyName = "StrategySteerUsdcUsdce";
+const vaultName = "VaultSteerSushiUsdtUsdc";
+const strategyName = "StrategySteerUsdcUsdt";
 const poolFees = [
   {
     poolFee: 100,
@@ -47,7 +47,7 @@ const poolFees = [
     poolFee: 100,
     token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
     token1: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-  }, // usdc-usdt
+  }, // usdt-usdce
   {
     poolFee: 500,
     token0: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
@@ -112,13 +112,7 @@ describe("Strategy Steer Test", async () => {
     // Now we can deploy the new strategy
     strategyContract = await stratFactory
       .connect(walletSigner)
-      .deploy(
-        steerVaultAddrress,
-        governanceSigner.getAddress(),
-        strategistSigner.getAddress(),
-        controllerAdd,
-        timelockSigner.getAddress()
-      );
+      .deploy(governanceSigner.getAddress(), strategistSigner.getAddress(), controllerAdd, timelockSigner.getAddress());
 
     const approveStrategy = await controllerContract
       .connect(timelockSigner)
@@ -138,11 +132,18 @@ describe("Strategy Steer Test", async () => {
 
     await strategyContract.connect(timelockSigner).setRewardToken(usdcAddress);
 
+    //Set pool fees for Usdc/Usdt
+    const setPoolFees = await strategyContract
+      .connect(governanceSigner)
+      .setPoolFees("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8", 100);
 
-    //Set pool fees for Usdc/Usdce
-    await strategyContract
-      .connect(timelockSigner)
-      .setPoolFees("0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8", 100);
+      const tx_setPoolFees = await setPoolFees.wait(1);
+
+      if (!tx_setPoolFees.status) {
+        console.error(`Error setting pool fees in the strategy for: ${strategyName}`);
+        return strategyContract;
+      }
+      console.log(`Set Pool Fees in Strategy: ${strategyName}\n`);
   });
 
   it("Strategy Should contains Usdc balance", async function () {
@@ -152,6 +153,8 @@ describe("Strategy Steer Test", async () => {
   });
 
   it("Should exchange strategy usdc to steerVault token", async function () {
+    
+
     let usdcBalBefore: BigNumber = await usdcContract.balanceOf(strategyContract.address);
     let txRes = await strategyContract.connect(governanceSigner).harvest();
     let usdcBalAfter: BigNumber = await usdcContract.balanceOf(strategyContract.address);
@@ -160,6 +163,6 @@ describe("Strategy Steer Test", async () => {
 
     expect(usdcBalAfter.toNumber()).to.be.lt(usdcBalBefore.toNumber());
     // Now you can check for the event
-    expect(txReceipt.events?.some((event: { event: string }) => event.event === "Harvested")).to.be.true;
+    expect(txReceipt.events?.some((event: { event: string }) => event.event === "Harvest")).to.be.true;
   });
 });

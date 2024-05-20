@@ -72,7 +72,7 @@ contract VaultSushiWethDai is ERC20 {
     function available() public view returns (uint256) {
         return token.balanceOf(address(this)).mul(min).div(max);
     }
-
+ 
     function earn() public {
         uint256 _bal = available();
         token.safeTransfer(controller, _bal);

@@ -144,14 +144,14 @@ contract SushiController {
         address _strategy = strategies[_token];
         address _want = IStrategy(_strategy).want();
         if (_want != _token) {
-            address converter = converters[_token][_want];
+            address converter = converters[_token][_want]; 
             IERC20(_token).safeTransfer(converter, _amount);
             _amount = Converter(converter).convert(_strategy);
             IERC20(_want).safeTransfer(_strategy, _amount);
         } else {
             IERC20(_token).safeTransfer(_strategy, _amount);
         }
-        IStrategy(_strategy).deposit();
+        IStrategy(_strategy).deposit(); 
     }
 
     function balanceOf(address _token) external view returns (uint256) {

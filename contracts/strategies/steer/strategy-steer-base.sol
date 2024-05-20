@@ -23,7 +23,7 @@ abstract contract StrategySteerBase is PriceCalculator {
   // tokenIn => tokenOut => poolFee
   mapping(address => mapping(address => uint24)) public poolFees;
   // Tokens
-  address public steerVaultAddress;
+  address public want;
   address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
 
   address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
@@ -60,20 +60,20 @@ abstract contract StrategySteerBase is PriceCalculator {
 
   mapping(address => bool) public harvesters;
 
-  constructor(address _steerVaultAdd, address _governance, address _strategist, address _controller, address _timelock) PriceCalculator(_governance) {
-    require(_steerVaultAdd != address(0));
+  constructor(address _want, address _governance, address _strategist, address _controller, address _timelock) PriceCalculator(_governance) {
+    require(_want != address(0));
     require(_governance != address(0));
     require(_strategist != address(0));
     require(_controller != address(0));
     require(_timelock != address(0));
 
-    steerVaultAddress = _steerVaultAdd;
+    want = _want;
     governance = _governance;
     strategist = _strategist;
     controller = _controller;
     timelock = _timelock;
     
-    steerVault = ISushiMultiPositionLiquidityManager(steerVaultAddress);
+    steerVault = ISushiMultiPositionLiquidityManager(want);
 
   }
 
@@ -85,7 +85,7 @@ abstract contract StrategySteerBase is PriceCalculator {
   }
 
   function balanceOf() public view returns (uint256) {
-    return IERC20(steerVaultAddress).balanceOf(address(this));
+    return IERC20(want).balanceOf(address(this));
   }
   
 
@@ -181,7 +181,7 @@ abstract contract StrategySteerBase is PriceCalculator {
   // Controller only function for creating additional rewards from dust
   function withdraw(IERC20 _asset) external returns (uint256 balance) {
     require(msg.sender == controller, "!controller");
-    require(steerVaultAddress != address(_asset), "steerVaultAddress");
+    require(want != address(_asset), "want");
     balance = _asset.balanceOf(address(this));
     _asset.safeTransfer(controller, balance);
   }
@@ -193,15 +193,15 @@ abstract contract StrategySteerBase is PriceCalculator {
     require(balanceOf() >= _amount, "!balance");
 
     uint256 _feeDev = _amount.mul(withdrawalDevFundFee).div(withdrawalDevFundMax);
-    IERC20(steerVaultAddress).safeTransfer(IController(controller).devfund(), _feeDev);
+    IERC20(want).safeTransfer(IController(controller).devfund(), _feeDev);
 
     uint256 _feeTreasury = _amount.mul(withdrawalTreasuryFee).div(withdrawalTreasuryMax);
-    IERC20(steerVaultAddress).safeTransfer(IController(controller).treasury(), _feeTreasury);
+    IERC20(want).safeTransfer(IController(controller).treasury(), _feeTreasury);
 
-    address _vault = IController(controller).vaults(address(steerVaultAddress));
+    address _vault = IController(controller).vaults(address(want));
     require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
 
-    IERC20(steerVaultAddress).safeTransfer(_vault, _amount.sub(_feeDev).sub(_feeTreasury));
+    IERC20(want).safeTransfer(_vault, _amount.sub(_feeDev).sub(_feeTreasury));
   }
 
   // Withdraw funds, used to swap between strategies
@@ -210,18 +210,18 @@ abstract contract StrategySteerBase is PriceCalculator {
     balance = balanceOf();
     require(balance >= _amount, "!balance");
 
-    address _vault = IController(controller).vaults(address(steerVaultAddress));
+    address _vault = IController(controller).vaults(address(want));
     require(_vault != address(0), "!vault");
-    IERC20(steerVaultAddress).safeTransfer(_vault, _amount);
+    IERC20(want).safeTransfer(_vault, _amount);
   }
 
   // Withdraw all funds, normally used when migrating strategies
   function withdrawAll() external returns (uint256 balance) {
     require(msg.sender == controller, "!controller");
     balance = balanceOf();
-    address _vault = IController(controller).vaults(address(steerVaultAddress));
+    address _vault = IController(controller).vaults(address(want));
     require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-    IERC20(steerVaultAddress).safeTransfer(_vault, balance);
+    IERC20(want).safeTransfer(_vault, balance);
   }
 
   function harvest() public virtual;
@@ -305,22 +305,22 @@ abstract contract StrategySteerBase is PriceCalculator {
   }
 
   function _distributePerformanceFeesAndDeposit() internal {
-    uint256 _want = IERC20(steerVaultAddress).balanceOf(address(this));
+    uint256 _want = IERC20(want).balanceOf(address(this));
 
     if (_want > 0) {
       // Treasury fees
-      IERC20(steerVaultAddress).safeTransfer(
+      IERC20(want).safeTransfer(
         IController(controller).treasury(),
         _want.mul(performanceTreasuryFee).div(performanceTreasuryMax)
       );
 
       // Performance fee
-      IERC20(steerVaultAddress).safeTransfer(IController(controller).devfund(), _want.mul(performanceDevFee).div(performanceDevMax));
+      IERC20(want).safeTransfer(IController(controller).devfund(), _want.mul(performanceDevFee).div(performanceDevMax));
     }
   }
 
   function _distributePerformanceFeesBasedAmountAndDeposit(uint256 _amount) internal {
-    uint256 _want = IERC20(steerVaultAddress).balanceOf(address(this));
+    uint256 _want = IERC20(want).balanceOf(address(this));
 
     if (_amount > _want) {
       _amount = _want;
@@ -328,13 +328,13 @@ abstract contract StrategySteerBase is PriceCalculator {
 
     if (_amount > 0) {
       // Treasury fees
-      IERC20(steerVaultAddress).safeTransfer(
+      IERC20(want).safeTransfer(
         IController(controller).treasury(),
         _amount.mul(performanceTreasuryFee).div(performanceTreasuryMax)
       );
 
       // Performance fee
-      IERC20(steerVaultAddress).safeTransfer(
+      IERC20(want).safeTransfer(
         IController(controller).devfund(),
         _amount.mul(performanceDevFee).div(performanceDevMax)
       );

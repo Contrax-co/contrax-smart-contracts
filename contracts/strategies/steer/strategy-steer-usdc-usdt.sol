@@ -4,12 +4,12 @@ pragma solidity 0.8.4;
 import "./strategy-steer-base.sol";
 import "../../interfaces/ISteerPeriphery.sol";
 
+import "hardhat/console.sol";
 
-// Vault address for steer sushi USDC-USDC.e pool
-//0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65
+// Vault address for steer sushi USDT-USDC pool
+//0x5DbAD371890C3A89f634e377c1e8Df987F61fB64
 
-
-contract StrategySteerUsdcUsdce is StrategySteerBase {
+contract StrategySteerUsdcUsdt is StrategySteerBase {
   using SafeMath for uint256;
   using SafeERC20 for IERC20;
 
@@ -18,14 +18,12 @@ contract StrategySteerUsdcUsdce is StrategySteerBase {
     address _strategist,
     address _controller,
     address _timelock
-  ) StrategySteerBase(0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65, _governance, _strategist, _controller, _timelock) {}
+  ) StrategySteerBase(0x5DbAD371890C3A89f634e377c1e8Df987F61fB64, _governance, _strategist, _controller, _timelock) {}
 
-  
   // Declare a Harvest Event
   event Harvest(uint _timestamp, uint _value);
 
-
-  function harvest() public override onlyBenevolent { 
+  function harvest() public override onlyBenevolent {
     require(rewardToken != address(0), "!rewardToken");
     uint256 _reward = IERC20(rewardToken).balanceOf(address(this));
     require(_reward > 0, "!reward");
@@ -37,41 +35,42 @@ contract StrategySteerUsdcUsdce is StrategySteerBase {
     //get strategy steer vault tokens before balances
     uint256 beforeBal = IERC20(want).balanceOf(address(this));
 
-    (address Usdc, address Usdce) = steerVaultTokens();
+    (address Usdt, address Usdce) = steerVaultTokens();
 
-    (uint256 UsdcAmount, uint256 UsdceAmount) = getTotalAmounts();
+    console.log("Usdt: ", Usdt, " Usdce: ", Usdce);
+
+    (uint256 UsdtAmount, uint256 UsdceAmount) = getTotalAmounts();
 
     // Get token decimals
-    uint8 usdcDecimals = IERC20(Usdc).decimals();
+    uint8 usdtDecimals = IERC20(Usdt).decimals();
     uint8 usdceDecimals = IERC20(Usdce).decimals();
 
-    //For Usdc and Usdce price will be 1$ so we don't consider the price
-    uint256 totalUsdcStaked = UsdcAmount.div(10 ** usdcDecimals);
-    uint256 totalUsdceStaked = UsdceAmount.div(10 ** usdceDecimals);
+    //For Usdt and Usdce price will be 1$ so we don't consider the price
+    uint256 totalUsdtStaked = UsdtAmount.div(10 ** usdtDecimals);
+    uint256 totalUsdcStaked = UsdceAmount.div(10 ** usdceDecimals);
 
-    uint256 usdcAmounttoDeposit = ((_reward *
-      ((((totalUsdcStaked * PRECISION) / (totalUsdcStaked + totalUsdceStaked)) * 10 ** 12))) / 10 ** 12) / PRECISION;
+    uint256 usdtAmounttoDeposit = ((_reward *
+      ((((totalUsdtStaked * PRECISION) / (totalUsdtStaked + totalUsdcStaked)) * 10 ** 12))) / 10 ** 12) / PRECISION;
 
-    uint256 usdceAmounttoDeposit = _reward.sub(usdcAmounttoDeposit);
+    uint256 usdcAmounttoDeposit = _reward.sub(usdtAmounttoDeposit);
 
-
-    if (rewardToken != Usdc && rewardToken != Usdce) {
-      _swap(rewardToken, Usdc, usdcAmounttoDeposit);
-      _swap(rewardToken, Usdce, usdceAmounttoDeposit);
+    if (rewardToken != Usdt && rewardToken != Usdce) {
+      _swap(rewardToken, Usdt, usdtAmounttoDeposit);
+      _swap(rewardToken, Usdce, usdcAmounttoDeposit);
     } else {
-      address tokenOut = Usdc;
-      uint256 amountToSwap = usdcAmounttoDeposit;
-      if (rewardToken == Usdc) {
+      address tokenOut = Usdt;
+      uint256 amountToSwap = usdtAmounttoDeposit;
+      if (rewardToken == Usdt) {
         tokenOut = Usdce;
-        amountToSwap = usdceAmounttoDeposit;
+        amountToSwap = usdcAmounttoDeposit;
       }
       _swap(rewardToken, tokenOut, amountToSwap);
     }
 
-    depositToSteerVault(IERC20(Usdc).balanceOf(address(this)), IERC20(Usdce).balanceOf(address(this)));
+    depositToSteerVault(IERC20(Usdt).balanceOf(address(this)), IERC20(Usdce).balanceOf(address(this)));
 
     address[] memory tokens = new address[](2);
-    tokens[0] = Usdc;
+    tokens[0] = Usdt;
     tokens[1] = Usdce;
 
     _returnAssets(tokens);
@@ -79,16 +78,15 @@ contract StrategySteerUsdcUsdce is StrategySteerBase {
     //get strategy steer vault tokens after balances
     uint256 afterBal = IERC20(want).balanceOf(address(this));
 
-    
     emit Harvest(block.timestamp, afterBal.sub(beforeBal));
   }
 
   function depositToSteerVault(uint256 _amount0, uint256 _amount1) public override {
-    (address usdc, address usdce) = steerVaultTokens();
+    (address usdt, address usdc) = steerVaultTokens();
 
     //approve both tokens to Steer Periphery contract
+    _approveTokenIfNeeded(usdt, steerPeriphery);
     _approveTokenIfNeeded(usdc, steerPeriphery);
-    _approveTokenIfNeeded(usdce, steerPeriphery);
 
     //deposit to Steer Periphery contract
     ISteerPeriphery(steerPeriphery).deposit(want, _amount0, _amount1, 0, 0, address(this));

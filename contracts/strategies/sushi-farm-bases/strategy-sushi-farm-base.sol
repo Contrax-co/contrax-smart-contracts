@@ -54,7 +54,7 @@ abstract contract StrategySushiFarmBase is StrategyBase {
     function getHarvestable() external view returns (uint256) {
         uint256 _pendingSushi = IMiniChefV2(miniChef).pendingSushi(
             poolId,
-            address(this)
+            address(this) 
         );
         return (_pendingSushi);
     }

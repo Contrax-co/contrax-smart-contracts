@@ -33,7 +33,6 @@ contract SteerController {
   mapping(address => mapping(address => bool)) public approvedStrategies;
   mapping(address => bool) public approvedVaultConverters;
 
-
   constructor(address _governance, address _strategist, address _timelock, address _devfund, address _treasury) {
     governance = _governance;
     strategist = _strategist;
@@ -41,7 +40,7 @@ contract SteerController {
     devfund = _devfund;
     treasury = _treasury;
   }
- 
+
   function setDevFund(address _devfund) public {
     require(msg.sender == governance, "!governance");
     devfund = _devfund;
@@ -105,9 +104,13 @@ contract SteerController {
     strategies[_token] = _strategy;
   }
 
- 
   function balanceOf(address _token) external view returns (uint256) {
     return IStrategy(strategies[_token]).balanceOf();
+  }
+
+  function earn(address _token, uint256 _amount) public {
+    address _strategy = strategies[_token];
+    IERC20(_token).safeTransfer(_strategy, _amount);
   }
 
   function withdrawAll(address _token) public {
