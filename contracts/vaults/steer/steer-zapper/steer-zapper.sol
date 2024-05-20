@@ -9,17 +9,16 @@ import "../../../interfaces/vault.sol";
 import "../../../interfaces/uniswapv3.sol";
 import "../../../interfaces/ISteerPeriphery.sol";
 import "../../../interfaces/ISushiMultiPositionLiquidityManager.sol";
+import "../../../Utils/PriceCalculator.sol";
 
-contract SteerZapperBase {
+contract SteerZapperBase is PriceCalculator {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
   using SafeERC20 for IVault;
 
   address public router = 0xE592427A0AEce92De3Edee1F18E0157C05861564; // uniswap V3 router
-  address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
   address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
-  address public governance;
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
@@ -37,7 +36,7 @@ contract SteerZapperBase {
     address[] memory _token0,
     address[] memory _token1,
     uint24[] memory _poolFee
-  ) {
+  ) PriceCalculator(_governance) {
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
@@ -71,11 +70,6 @@ contract SteerZapperBase {
     _;
   }
 
-  // Modifier to restrict access to governance only
-  modifier onlyGovernance() {
-    require(msg.sender == governance, "Caller is not the governance");
-    _;
-  }
 
   function getPoolFee(address token0, address token1) public view returns (uint24) {
     uint24 fee = poolFees[token0][token1];
@@ -192,13 +186,45 @@ contract SteerZapperBase {
     uint256 tokenInAmount0,
     uint256 tokenInAmount1
   ) external payable onlyWhitelistedVaults(address(vault)) {
+    //get tokenAmount
+
+    ISushiMultiPositionLiquidityManager steerVault = ISushiMultiPositionLiquidityManager(steerVaults[address(vault)]);
+
+    (address token0, address token1) = steerVaultTokens(address(vault));
+
+    (uint256 amount0, uint256 amount1) = getTotalAmounts(address(vault));
+
+    uint8 token0Decimals = IERC20(token0).decimals();
+    uint8 token1Decimals = IERC20(token1).decimals();
+
+    uint256 token0Price;
+    uint256 token1Price;
+
+    //check if token0 and token1 are stableTokens
+    //check if token1 is in stable tokens array
+    for (uint256 i = 0; i < stableTokens.length; i++) {
+      if (stableTokens[i] == token0 && stableTokens[i] == token1) {
+        token0Price = 1;
+        token1Price = 1;
+      } else if (stableTokens[i] == token0) {
+        token0Price = 1;
+        //Needed to fetch token1 price
+      } else if (stableTokens[i] == token1) {
+        token1Price = 1;
+        //Needed to fetch token0 price
+      } else if (stableTokens[i] != token0 && stableTokens[i] != token1) {
+        //Needed to fetch both tokens prices
+      }
+    }
+
+    uint256 token0Stacked = token0Price * amount0.div(10 ** token0Decimals);
+    uint256 token1Stacked = token1Price * amount1.div(10 ** token1Decimals);
+
     uint256 tokenInAmount = tokenInAmount0 + tokenInAmount1;
     require(msg.value >= minimumAmount, "Insignificant input amount");
     require(msg.value >= tokenInAmount, "Insignificant token in amounts");
 
     WETH(weth).deposit{value: msg.value}();
-
-    (address token0, address token1) = steerVaultTokens(address(vault));
 
     if (tokenIn != token0 && tokenIn != token1) {
       _swap(weth, token0, tokenInAmount0);
@@ -299,7 +325,7 @@ contract SteerZapperBase {
     uint256 steerVaultTokenBal = steerVault.balanceOf(address(this));
 
     (uint256 amount0, uint256 amount1) = steerVault.withdraw(steerVaultTokenBal, 0, 0, address(this));
-    
+
     (address token0, address token1) = steerVaultTokens(address(vault));
 
     // Swapping

@@ -13,18 +13,19 @@ contract PriceCalculator {
 
   uint256 public constant PRECISION = 1_000_000;
 
-  address public weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+  address public weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
   address public weth_Usdc_Pair = 0x905dfCD5649217c42684f23958568e533C711Aa3;
 
   // Array of stable tokens
-  address[] private stableTokens = [
+  address[] public stableTokens = [
     0xaf88d065e77c8cC2239327C5EDb3A432268e5831,
     0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9,
     0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8
   ];
 
+    // Modifier to restrict access to governance only
   modifier onlyGovernance() {
-    require(msg.sender == governance);
+    require(msg.sender == governance, "Caller is not the governance");
     _;
   }
 
