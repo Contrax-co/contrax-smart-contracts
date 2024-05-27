@@ -1,343 +1,144 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../../lib/erc20.sol";
-import "../../interfaces/controller.sol";
-import "../../lib/safe-math.sol";
-import "../../interfaces/ISushiMultiPositionLiquidityManager.sol";
-import "../../interfaces/IVaultSteerBase.sol";
-import "../../Utils/PriceCalculator.sol";
-import "../../interfaces/uniswapv3.sol";
-import "../../interfaces/weth.sol";
+import "./strategy-steer.sol";
+import "../../interfaces/ISteerPeriphery.sol";
+import "../../interfaces/vault.sol";
+// Vault address for steer sushi USDC-USDC.e pool
+//0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65
 
-// import hardhat console log
-import "hardhat/console.sol";
-
-abstract contract StrategySteerBase is PriceCalculator {
-  using SafeERC20 for IERC20;
-  using Address for address;
+abstract contract StrategySteerBase is StrategySteer {
   using SafeMath for uint256;
+  using SafeERC20 for IERC20;
+  using SafeERC20 for IVault;
 
+  address public sushiFactory = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
+  uint256 public constant minimumAmount = 1000;
 
-  
-  // tokenIn => tokenOut => poolFee
-  mapping(address => mapping(address => uint24)) public poolFees;
-  // Tokens
-  address public want;
-  address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
+  constructor(
+    address _want,
+    address _governance,
+    address _strategist,
+    address _controller,
+    address _timelock
+  ) StrategySteer(_want, _governance, _strategist, _controller, _timelock) {}
 
-  address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
-  ISushiMultiPositionLiquidityManager public steerVault;
+  // Declare a Harvest Event
+  event Harvest(uint _timestamp, uint _value);
 
-  // Perfomance fees - start with 10%
-  uint256 public performanceTreasuryFee = 1000;
-  uint256 public constant performanceTreasuryMax = 10000;
+  function _swap(address, address, uint256) internal virtual;
 
-  uint256 public performanceDevFee = 0;
-  uint256 public constant performanceDevMax = 10000;
+  function harvest() public override onlyBenevolent {
+    require(rewardToken != address(0), "!rewardToken");
+    uint256 _reward = IERC20(rewardToken).balanceOf(address(this));
+    require(_reward > 0, "!reward");
+    uint256 _keepReward = _reward.mul(keepReward).div(keepMax);
+    IERC20(rewardToken).safeTransfer(IController(controller).treasury(), _keepReward);
 
-  // Withdrawal fee 0%
-  // - 0% to treasury
-  // - 0% to dev fund
-  uint256 public withdrawalTreasuryFee = 0;
-  uint256 public constant withdrawalTreasuryMax = 100000;
+    _reward = IERC20(rewardToken).balanceOf(address(this));
 
-  uint256 public withdrawalDevFundFee = 0;
-  uint256 public constant withdrawalDevFundMax = 100000;
+    //get strategy steer vault tokens before balances
+    uint256 beforeBal = IERC20(want).balanceOf(address(this));
 
-  // How much tokens to keep? 10%
-  uint256 public keep = 1000;
-  uint256 public keepReward = 1000;
-  uint256 public constant keepMax = 10000;
+    (address token0, address token1) = steerVaultTokens();
 
-  address public controller;
-  address public strategist;
-  address public timelock;
-  address public rewardToken;
+    (uint256 tokenInAmount0, uint256 tokenInAmount1) = calculateSteerVaultTokensRatio(_reward);
 
-  // Dex
-  address public uniRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    uint256 tokenInAmount = tokenInAmount0 + tokenInAmount1;
+    require(_reward >= minimumAmount, "Insignificant input amount");
+    require(_reward >= tokenInAmount, "Insignificant token in amounts");
 
-  mapping(address => bool) public harvesters;
-
-  constructor(address _want, address _governance, address _strategist, address _controller, address _timelock) PriceCalculator(_governance) {
-    require(_want != address(0));
-    require(_governance != address(0));
-    require(_strategist != address(0));
-    require(_controller != address(0));
-    require(_timelock != address(0));
-
-    want = _want;
-    governance = _governance;
-    strategist = _strategist;
-    controller = _controller;
-    timelock = _timelock;
-    
-    steerVault = ISushiMultiPositionLiquidityManager(want);
-
-  }
-
-  // **** Modifiers **** //
-
-  modifier onlyBenevolent() {
-    require(harvesters[msg.sender] || msg.sender == governance || msg.sender == strategist);
-    _;
-  }
-
-  function balanceOf() public view returns (uint256) {
-    return IERC20(want).balanceOf(address(this));
-  }
-  
-
-  // **** Setters **** //
-
-  function whitelistHarvester(address _harvester) external {
-    require(msg.sender == governance || msg.sender == strategist || harvesters[msg.sender], "not authorized");
-    harvesters[_harvester] = true;
-  }
-
-  function revokeHarvester(address _harvester) external {
-    require(msg.sender == governance || msg.sender == strategist, "not authorized");
-    harvesters[_harvester] = false;
-  }
-
-  // **** Setters ****
-
-  function setKeep(uint256 _keep) external {
-    require(msg.sender == timelock, "!timelock");
-    keep = _keep;
-  }
-
-  function setKeepReward(uint256 _keepReward) external {
-    require(msg.sender == timelock, "!timelock");
-    keepReward = _keepReward;
-  }
-
-  function setRewardToken(address _rewardToken) external {
-    require(msg.sender == timelock || msg.sender == strategist, "!timelock");
-    rewardToken = _rewardToken;
-  }
-
-  function setFeeDistributor(address _feeDistributor) external {
-    require(msg.sender == governance, "not authorized");
-    feeDistributor = _feeDistributor;
-  }
-
-  function setWithdrawalDevFundFee(uint256 _withdrawalDevFundFee) external {
-    require(msg.sender == timelock, "!timelock");
-    withdrawalDevFundFee = _withdrawalDevFundFee;
-  }
-
-  function setWithdrawalTreasuryFee(uint256 _withdrawalTreasuryFee) external {
-    require(msg.sender == timelock, "!timelock");
-    withdrawalTreasuryFee = _withdrawalTreasuryFee;
-  }
-
-  function setPerformanceDevFee(uint256 _performanceDevFee) external {
-    require(msg.sender == timelock, "!timelock");
-    performanceDevFee = _performanceDevFee;
-  }
-
-  function setPerformanceTreasuryFee(uint256 _performanceTreasuryFee) external {
-    require(msg.sender == timelock, "!timelock");
-    performanceTreasuryFee = _performanceTreasuryFee;
-  }
-
-  function setStrategist(address _strategist) external {
-    require(msg.sender == governance, "!governance");
-    strategist = _strategist;
-  }
-
-  function setGovernance(address _governance) external {
-    require(msg.sender == governance, "!governance");
-    governance = _governance;
-  }
-
-  function setTimelock(address _timelock) external {
-    require(msg.sender == timelock, "!timelock");
-    timelock = _timelock;
-  }
-
-  function setController(address _controller) external {
-    require(msg.sender == timelock, "!timelock");
-    controller = _controller;
-  }
-
-  function getPoolFee(address token0, address token1) public view returns (uint24) {
-    uint24 fee = poolFees[token0][token1];
-    require(fee > 0, "pool fee is not set");
-    return fee;
-  }
-
-  function setPoolFees(address _token0, address _token1, uint24 _poolFee) external onlyGovernance {
-    require(_poolFee > 0, "pool fee must be greater than 0");
-    require(_token0 != address(0) && _token1 != address(0), "invalid address");
-
-    poolFees[_token0][_token1] = _poolFee;
-    // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
-    poolFees[_token1][_token0] = _poolFee;
-  }
-
-  // Controller only function for creating additional rewards from dust
-  function withdraw(IERC20 _asset) external returns (uint256 balance) {
-    require(msg.sender == controller, "!controller");
-    require(want != address(_asset), "want");
-    balance = _asset.balanceOf(address(this));
-    _asset.safeTransfer(controller, balance);
-  }
-
-  // Withdraw partial funds, normally used with a vault withdrawal
-
-  function withdraw(uint256 _amount) external {
-    require(msg.sender == controller, "!controller");
-    require(balanceOf() >= _amount, "!balance");
-
-    uint256 _feeDev = _amount.mul(withdrawalDevFundFee).div(withdrawalDevFundMax);
-    IERC20(want).safeTransfer(IController(controller).devfund(), _feeDev);
-
-    uint256 _feeTreasury = _amount.mul(withdrawalTreasuryFee).div(withdrawalTreasuryMax);
-    IERC20(want).safeTransfer(IController(controller).treasury(), _feeTreasury);
-
-    address _vault = IController(controller).vaults(address(want));
-    require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-
-    IERC20(want).safeTransfer(_vault, _amount.sub(_feeDev).sub(_feeTreasury));
-  }
-
-  // Withdraw funds, used to swap between strategies
-  function withdrawForSwap(uint256 _amount) external returns (uint256 balance) {
-    require(msg.sender == controller, "!controller");
-    balance = balanceOf();
-    require(balance >= _amount, "!balance");
-
-    address _vault = IController(controller).vaults(address(want));
-    require(_vault != address(0), "!vault");
-    IERC20(want).safeTransfer(_vault, _amount);
-  }
-
-  // Withdraw all funds, normally used when migrating strategies
-  function withdrawAll() external returns (uint256 balance) {
-    require(msg.sender == controller, "!controller");
-    balance = balanceOf();
-    address _vault = IController(controller).vaults(address(want));
-    require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-    IERC20(want).safeTransfer(_vault, balance);
-  }
-
-  function harvest() public virtual;
-
-  function depositToSteerVault(uint256 _amount0, uint256 _amount1) public virtual;
-
-  function getTotalAmounts() public view returns (uint256, uint256) {
-    return steerVault.getTotalAmounts();
-  }
-
-  function steerVaultTokens() public view  returns (address, address) {
-    return (steerVault.token0(), steerVault.token1());
-  }
-
-  //returns DUST
-  function _returnAssets(address[] memory tokens) internal {
-    uint256 balance;
-    for (uint256 i; i < tokens.length; i++) {
-      balance = IERC20(tokens[i]).balanceOf(address(this));
-      if (balance > 0) {
-        if (tokens[i] == weth) {
-          WETH(weth).withdraw(balance);
-          (bool success, ) = msg.sender.call{value: balance}(new bytes(0));
-          require(success, "ETH transfer failed");
-        } else {
-          IERC20(tokens[i]).safeTransfer(msg.sender, balance);
-        }
+    if (rewardToken != token0 && rewardToken != token1) {
+      _swap(rewardToken, token0, tokenInAmount0);
+      _swap(rewardToken, token1, tokenInAmount1);
+    } else {
+      address tokenOut = token0;
+      uint256 amountToSwap = tokenInAmount0;
+      if (rewardToken == token0) {
+        tokenOut = token1;
+        amountToSwap = tokenInAmount1;
       }
+      _swap(rewardToken, tokenOut, amountToSwap);
+    }
+
+    depositToSteerVault(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+
+    //get strategy steer vault tokens after balances
+    uint256 afterBal = IERC20(want).balanceOf(address(this));
+
+    emit Harvest(block.timestamp, afterBal.sub(beforeBal));
+  }
+
+  function depositToSteerVault(uint256 _amount0, uint256 _amount1) public override {
+    (address token0, address token1) = steerVaultTokens();
+
+    //approve both tokens to Steer Periphery contract
+    _approveTokenIfNeeded(token0, steerPeriphery);
+    _approveTokenIfNeeded(token1, steerPeriphery);
+
+    //deposit to Steer Periphery contract
+    ISteerPeriphery(steerPeriphery).deposit(want, _amount0, _amount1, 0, 0, address(this));
+
+    address[] memory tokens = new address[](2);
+    tokens[0] = token0;
+    tokens[1] = token1;
+
+    _returnAssets(tokens);
+  }
+
+  function calculateSteerVaultTokensPrices() internal view returns (uint256 token0Price, uint256 token1Price) {
+    (address token0, address token1) = steerVaultTokens();
+
+    bool isToken0Stable = isStableToken(token0);
+    bool isToken1Stable = isStableToken(token1);
+
+    if (isToken0Stable) token0Price = 1 * PRECISION;
+    if (isToken1Stable) token1Price = 1 * PRECISION;
+
+    if (!isToken0Stable) {
+      token0Price = getPrice(token0);
+    }
+
+    if (!isToken1Stable) {
+      token1Price = getPrice(token1);
+    }
+
+    return (token0Price, token1Price);
+  }
+
+  function isStableToken(address token) internal view returns (bool) {
+    for (uint256 i = 0; i < stableTokens.length; i++) {
+      if (stableTokens[i] == token) return true;
+    }
+    return false;
+  }
+
+  function getPrice(address token) internal view returns (uint256) {
+    if (token == weth) {
+      return calculateTokenPriceInUsdc(weth, weth_Usdc_Pair);
+    } else {
+      (address token0, address token1) = steerVaultTokens();
+      // get pair address from factory contract
+      address pair = IUniswapV2Factory(sushiFactory).getPair(token0, token1);
+
+      if (token == token0) return calculateLpPriceInUsdc(token0, pair);
+
+      return calculateLpPriceInUsdc(token1, pair);
     }
   }
 
+  function calculateSteerVaultTokensRatio(uint256 _amountIn) internal view returns (uint256, uint256) {
+    (address token0, address token1) = steerVaultTokens();
+    (uint256 amount0, uint256 amount1) = getTotalAmounts();
+    (uint256 token0Price, uint256 token1Price) = calculateSteerVaultTokensPrices();
 
-  function _swap(address tokenIn, address tokenOut, uint256 amountIn) internal {
-    address[] memory path = new address[](2);
-    path[0] = tokenIn;
-    path[1] = tokenOut;
+    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals()))) / PRECISION;
+    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals()))) / PRECISION;
 
-    _approveTokenIfNeeded(path[0], address(uniRouter));
-    ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-      tokenIn: path[0],
-      tokenOut: path[1],
-      fee: getPoolFee(tokenIn, tokenOut),
-      recipient: address(this),
-      deadline: block.timestamp,
-      amountIn: amountIn,
-      amountOutMinimum: 0,
-      sqrtPriceLimitX96: 0
-    });
+    uint256 totalValue = token0Value + token1Value;
+    uint256 token0Amount = (_amountIn * token0Value) / totalValue;
+    uint256 token1Amount = _amountIn - token0Amount;
 
-    ISwapRouter(address(uniRouter)).exactInputSingle(params);
-  }
-
-  function _approveTokenIfNeeded(address token, address spender) internal {
-    if (IERC20(token).allowance(address(this), spender) == 0) {
-      IERC20(token).safeApprove(spender, type(uint256).max);
-    }
-  }
-
-  // **** Emergency functions ****
-
-  function execute(address _target, bytes memory _data) public payable returns (bytes memory response) {
-    require(msg.sender == timelock, "!timelock");
-    require(_target != address(0), "!target");
-
-    // call contract in current context
-    assembly {
-      let succeeded := delegatecall(sub(gas(), 5000), _target, add(_data, 0x20), mload(_data), 0, 0)
-      let size := returndatasize()
-
-      response := mload(0x40)
-      mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-      mstore(response, size)
-      returndatacopy(add(response, 0x20), 0, size)
-
-      switch iszero(succeeded)
-      case 1 {
-        // throw if delegatecall failed
-        revert(add(response, 0x20), size)
-      }
-    }
-  }
-
-  function _distributePerformanceFeesAndDeposit() internal {
-    uint256 _want = IERC20(want).balanceOf(address(this));
-
-    if (_want > 0) {
-      // Treasury fees
-      IERC20(want).safeTransfer(
-        IController(controller).treasury(),
-        _want.mul(performanceTreasuryFee).div(performanceTreasuryMax)
-      );
-
-      // Performance fee
-      IERC20(want).safeTransfer(IController(controller).devfund(), _want.mul(performanceDevFee).div(performanceDevMax));
-    }
-  }
-
-  function _distributePerformanceFeesBasedAmountAndDeposit(uint256 _amount) internal {
-    uint256 _want = IERC20(want).balanceOf(address(this));
-
-    if (_amount > _want) {
-      _amount = _want;
-    }
-
-    if (_amount > 0) {
-      // Treasury fees
-      IERC20(want).safeTransfer(
-        IController(controller).treasury(),
-        _amount.mul(performanceTreasuryFee).div(performanceTreasuryMax)
-      );
-
-      // Performance fee
-      IERC20(want).safeTransfer(
-        IController(controller).devfund(),
-        _amount.mul(performanceDevFee).div(performanceDevMax)
-      );
-    }
+    return (token0Amount, token1Amount);
   }
 }

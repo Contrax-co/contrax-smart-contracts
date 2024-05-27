@@ -3,16 +3,17 @@ pragma solidity 0.8.4;
 
 import "./strategy-steer-base.sol";
 import "../../interfaces/uniswapv3.sol";
-// Vault address for steer sushi USDC-USDC.e pool
-//0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65
 
-contract StrategySteerUsdcUsdce is StrategySteerBase {
+// Vault address for steer sushi WETH-USDC pool
+// 0x01476fcCa94502267008119B83Cea234dc3fA7D7
+
+contract StrategySteerUsdcWeth is StrategySteerBase {
   constructor(
     address _governance,
     address _strategist,
     address _controller,
     address _timelock
-  ) StrategySteerBase(0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65, _governance, _strategist, _controller, _timelock) {}
+  ) StrategySteerBase(0x01476fcCa94502267008119B83Cea234dc3fA7D7, _governance, _strategist, _controller, _timelock) {}
 
   
   // Dex
