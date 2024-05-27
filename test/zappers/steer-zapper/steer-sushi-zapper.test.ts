@@ -2,10 +2,14 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { Contract, Signer, BigNumber } from "ethers";
-import { overwriteTokenAmount, returnSigner } from "../utils/helpers";
+import { overwriteTokenAmount, returnSigner, setStrategy } from "../../utils/helpers";
+import { setupSigners } from "../../utils/static";
 
-let zapInUsdcAmount: string = "2500000000000";
-let zapInEthAmount: string = "15000000000000000000";
+let zapInUsdcAmount: string = "2500000000";
+let zapInEthAmount: string = "100000000000000000";
+
+let timelockIsStrategist = false;
+
 
 const walletAddress = process.env.WALLET_ADDR === undefined ? "" : process.env["WALLET_ADDR"];
 
@@ -14,16 +18,23 @@ let snapshotId: string;
 let usdcContract: Contract;
 let zapperContract: Contract;
 let vaultContract: Contract;
-
+let controllerContract: Contract;
+let startegyContract: Contract;
+ 
 let walletSigner: Signer;
+let governanceSigner: Signer;
+let strategistSigner: Signer;
+let timelockSigner: Signer;
 
 let wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 let usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+const steerVaultAddrressWethSushi = "0x6723b8E1B28E924857C02F96f7B23041758AfA98";
 
 const vaultName = "VaultSteerSushiWethSushi";
+const strategyName = "StrategySteerWethSushi";
 
 
-describe("Steer Zapper Test", async () => {
+describe("Steer Zapper Test", async () => { 
   // These reset the state after each test is executed
   beforeEach(async () => {
     snapshotId = await ethers.provider.send("evm_snapshot", []);
@@ -47,10 +58,50 @@ describe("Steer Zapper Test", async () => {
 
     walletSigner = await returnSigner(walletAddress);
 
+    
+    [timelockSigner, strategistSigner, governanceSigner] = await setupSigners(timelockIsStrategist);
+
+    const controllerFactory = await ethers.getContractFactory("SteerController");
+    controllerContract = await controllerFactory
+      .connect(walletSigner)
+      .deploy(
+        governanceSigner.getAddress(),
+        strategistSigner.getAddress(),
+        timelockSigner.getAddress(),
+        walletSigner.getAddress(),
+        walletSigner.getAddress()
+      );
+    let controllerAdd = controllerContract.address;
     const vaultFactory = await ethers.getContractFactory(vaultName);
     vaultContract = await vaultFactory
       .connect(walletSigner)
-      .deploy(walletSigner.getAddress(), walletSigner.getAddress());
+      .deploy(walletSigner.getAddress(), walletSigner.getAddress(), controllerAdd);
+
+    const stratFactory = await ethers.getContractFactory(strategyName);
+
+    // Now we can deploy the new strategy
+    startegyContract = await stratFactory
+      .connect(walletSigner)
+      .deploy(governanceSigner.getAddress(), strategistSigner.getAddress(), controllerAdd, timelockSigner.getAddress());
+
+    const approveStrategy = await controllerContract
+      .connect(timelockSigner)
+      .approveStrategy(steerVaultAddrressWethSushi, startegyContract.address);
+    const tx_approveStrategy = await approveStrategy.wait(1);
+
+    if (!tx_approveStrategy.status) {
+      console.error(`Error approving the strategy for: ${strategyName}`);
+      return startegyContract;
+    }
+    console.log(`Approved Strategy in the Controller for: ${strategyName}\n`);
+
+    await setStrategy(
+      strategyName,
+      controllerContract,
+      timelockSigner,
+      steerVaultAddrressWethSushi,
+      startegyContract.address
+    );
 
     const zapperFactory = await ethers.getContractFactory("SteerSushiZapperBase");
     zapperContract = await zapperFactory.connect(walletSigner).deploy(
@@ -61,17 +112,15 @@ describe("Steer Zapper Test", async () => {
     await overwriteTokenAmount(usdcAddress, walletAddress, zapInUsdcAmount, 9);
   });
 
+ 
   const zapInETH = async () => {
     let _vaultBalanceBefore: BigNumber = await vaultContract
       .connect(walletSigner)
       .balanceOf(await walletSigner.getAddress());
 
-    const tokenInAmount0 = BigNumber.from(zapInEthAmount).div(2);
-    const tokenInAmount1 = BigNumber.from(zapInEthAmount).sub(tokenInAmount0);
-
     await zapperContract
       .connect(walletSigner)
-      .zapInETH(vaultContract.address, 0, wethAddress, tokenInAmount0.toString(), tokenInAmount1.toString(), {
+      .zapInETH(vaultContract.address, 0, wethAddress, {
         value: zapInEthAmount,
       });
 
@@ -92,11 +141,9 @@ describe("Steer Zapper Test", async () => {
 
     await usdcContract.connect(walletSigner).approve(zapperContract.address, zapInUsdcAmount);
 
-    const tokenInAmount0 = BigNumber.from(zapInUsdcAmount).div(2);
-    const tokenInAmount1 = BigNumber.from(zapInUsdcAmount).sub(tokenInAmount0);
     await zapperContract
       .connect(walletSigner)
-      .zapIn(vaultContract.address, 0, usdcAddress, tokenInAmount0.toString(), tokenInAmount1.toString());
+      .zapIn(vaultContract.address, 0, usdcAddress, zapInUsdcAmount);
 
     let _vaultBalanceAfter: BigNumber = await vaultContract
       .connect(walletSigner)
@@ -114,7 +161,7 @@ describe("Steer Zapper Test", async () => {
     expect(usdcBalance.toNumber()).to.be.gt(0);
     expect(usdcBalance.toString()).to.be.equals(zapInUsdcAmount);
   });
-
+ 
   it("Should ZapIn with Eth", async function () {
     let [_vaultBefore, _vaultAfter] = await zapInETH();
     expect(_vaultAfter).to.be.gt(_vaultBefore);

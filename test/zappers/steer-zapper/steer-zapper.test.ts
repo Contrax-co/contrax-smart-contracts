@@ -2,13 +2,12 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { Contract, Signer, BigNumber } from "ethers";
-import { overwriteTokenAmount, returnSigner, setStrategy } from "../utils/helpers";
-import { setupSigners } from "../utils/static";
+import { overwriteTokenAmount, returnSigner, setStrategy } from "../../utils/helpers";
+import { setupSigners } from "../../utils/static";
 
-let zapInUsdcAmount: string = "2500000000000";
-let zapInEthAmount: string = "15000000000000000000";
-//15k steer vault tokens
-let strategySteerVaultAmount: string = "15000000000000000000000";
+let zapInUsdcAmount: string = "2500000000";
+let zapInEthAmount: string = "100000000000000000";
+
 let timelockIsStrategist = false;
 
 const walletAddress = process.env.WALLET_ADDR === undefined ? "" : process.env["WALLET_ADDR"];
@@ -28,10 +27,9 @@ let timelockSigner: Signer;
 
 let wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 let usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+const steerVaultAddrressUsdcWeth = "0x01476fcCa94502267008119B83Cea234dc3fA7D7";
 
-const steerVaultAddrressUsdcUsdce = "0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65";
-
-const vaultName = "VaultSteerSushiUsdcUsdce";
+const vaultName = "VaultSteerSushiWethUsdc";
 const strategyName = "StrategySteerUsdcUsdce";
 
 const poolFees = [
@@ -65,6 +63,7 @@ const poolFees = [
   //   token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
   //   token1: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
   // },// usdc-usdt
+  // weth-sushi
 ];
 
 describe("Steer Zapper Test", async () => {
@@ -89,7 +88,7 @@ describe("Steer Zapper Test", async () => {
     let ethBalance = await ethers.provider.getBalance(walletAddress);
     console.log(`User's balance of ether is ${ethBalance}`);
 
-    walletSigner = await returnSigner(walletAddress);
+    walletSigner = await returnSigner(walletAddress); 
 
     [timelockSigner, strategistSigner, governanceSigner] = await setupSigners(timelockIsStrategist);
 
@@ -118,7 +117,7 @@ describe("Steer Zapper Test", async () => {
 
     const approveStrategy = await controllerContract
       .connect(timelockSigner)
-      .approveStrategy(steerVaultAddrressUsdcUsdce, startegyContract.address);
+      .approveStrategy(steerVaultAddrressUsdcWeth, startegyContract.address);
     const tx_approveStrategy = await approveStrategy.wait(1);
 
     if (!tx_approveStrategy.status) {
@@ -131,7 +130,7 @@ describe("Steer Zapper Test", async () => {
       strategyName,
       controllerContract,
       timelockSigner,
-      steerVaultAddrressUsdcUsdce,
+      steerVaultAddrressUsdcWeth,
       startegyContract.address
     );
 
@@ -144,25 +143,20 @@ describe("Steer Zapper Test", async () => {
       poolFees.map((e) => e.poolFee)
     );
 
-    //set steerVault token
-    await zapperContract.connect(walletSigner).setSteerVaults(vaultContract.address, steerVaultAddrressUsdcUsdce);
     usdcContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", usdcAddress, walletSigner);
     await overwriteTokenAmount(usdcAddress, walletAddress, zapInUsdcAmount, 9);
 
-    // await overwriteTokenAmount(steerVaultAddrressUsdcUsdce, startegyContract.address, strategySteerVaultAmount, 9);
+    // await overwriteTokenAmount(steerVaultAddrressUsdcWeth, startegyContract.address, strategySteerVaultAmount, 9);
   });
 
   const zapInETH = async () => {
     let _vaultBalanceBefore: BigNumber = await vaultContract
       .connect(walletSigner)
       .balanceOf(await walletSigner.getAddress());
-    const amountToSend = BigNumber.from(zapInEthAmount).div(2);
-    const tokenInAmount0 = BigNumber.from(zapInEthAmount).div(2);
-    const tokenInAmount1 = BigNumber.from(zapInEthAmount).sub(tokenInAmount0);
 
     await zapperContract
       .connect(walletSigner)
-      .zapInETH(vaultContract.address, 0, wethAddress, tokenInAmount0.toString(), tokenInAmount1.toString(), {
+      .zapInETH(vaultContract.address, 0, wethAddress, {
         value: zapInEthAmount,
       });
 
@@ -183,11 +177,9 @@ describe("Steer Zapper Test", async () => {
 
     await usdcContract.connect(walletSigner).approve(zapperContract.address, zapInUsdcAmount);
 
-    const tokenInAmount0 = BigNumber.from(zapInUsdcAmount).div(2);
-    const tokenInAmount1 = BigNumber.from(zapInUsdcAmount).sub(tokenInAmount0);
     await zapperContract
       .connect(walletSigner)
-      .zapIn(vaultContract.address, 0, usdcAddress, tokenInAmount0.toString(), tokenInAmount1.toString());
+      .zapIn(vaultContract.address, 0, usdcAddress, zapInUsdcAmount);
 
     let _vaultBalanceAfter: BigNumber = await vaultContract
       .connect(walletSigner)
@@ -205,7 +197,7 @@ describe("Steer Zapper Test", async () => {
     expect(usdcBalance.toNumber()).to.be.gt(0);
     expect(usdcBalance.toString()).to.be.equals(zapInUsdcAmount);
   });
-
+ 
   it("Should ZapIn with Eth", async function () {
     let [_vaultBefore, _vaultAfter] = await zapInETH();
     expect(_vaultAfter).to.be.gt(_vaultBefore);

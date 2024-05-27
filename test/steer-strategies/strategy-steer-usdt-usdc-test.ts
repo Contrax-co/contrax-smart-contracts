@@ -131,19 +131,16 @@ describe("Strategy Steer Test", async () => {
     await overwriteTokenAmount(usdcAddress, strategyContract.address, zapInUsdcAmount, 9);
 
     await strategyContract.connect(timelockSigner).setRewardToken(usdcAddress);
-
+    
+    
     //Set pool fees for Usdc/Usdt
-    const setPoolFees = await strategyContract
+    await strategyContract
       .connect(governanceSigner)
-      .setPoolFees("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8", 100);
+      .setPoolFees("0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8", 100);
 
-      const tx_setPoolFees = await setPoolFees.wait(1);
-
-      if (!tx_setPoolFees.status) {
-        console.error(`Error setting pool fees in the strategy for: ${strategyName}`);
-        return strategyContract;
-      }
-      console.log(`Set Pool Fees in Strategy: ${strategyName}\n`);
+      await strategyContract
+      .connect(governanceSigner)
+      .setPoolFees("0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", 100);
   });
 
   it("Strategy Should contains Usdc balance", async function () {
@@ -154,7 +151,6 @@ describe("Strategy Steer Test", async () => {
 
   it("Should exchange strategy usdc to steerVault token", async function () {
     
-
     let usdcBalBefore: BigNumber = await usdcContract.balanceOf(strategyContract.address);
     let txRes = await strategyContract.connect(governanceSigner).harvest();
     let usdcBalAfter: BigNumber = await usdcContract.balanceOf(strategyContract.address);

@@ -29,8 +29,8 @@ let arbAddress = "0x912CE59144191C1204E64559FE8253a0e49E6548";
 
 const steerVaultAddrress = "0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65";
 
-const vaultName = "VaultSteerSushiUsdcUsdce";
-const strategyName = "StrategySteerUsdcUsdce";
+const vaultName = "VaultSteerSushiWethSushi";
+const strategyName = "StrategySteerWethSushi";
 const poolFees = [
   {
     poolFee: 100,
@@ -136,11 +136,6 @@ describe("Strategy Steer Test", async () => {
 
     await strategyContract.connect(timelockSigner).setRewardToken(usdcAddress);
 
-
-    //Set pool fees for Usdc/Usdce
-    await strategyContract
-      .connect(timelockSigner)
-      .setPoolFees("0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8", 100);
   });
 
   it("Strategy Should contains Usdc balance", async function () {
@@ -151,7 +146,7 @@ describe("Strategy Steer Test", async () => {
 
   it("Should exchange strategy usdc to steerVault token", async function () {
     let usdcBalBefore: BigNumber = await usdcContract.balanceOf(strategyContract.address);
-    let txRes = await strategyContract.connect(governanceSigner).harvest();
+    let txRes = await strategyContract.connect(strategistSigner).harvest();
     let usdcBalAfter: BigNumber = await usdcContract.balanceOf(strategyContract.address);
 
     const txReceipt = await txRes.wait();
