@@ -19,15 +19,15 @@ contract SteerZapperBase is PriceCalculator {
 
   address public router = 0xE592427A0AEce92De3Edee1F18E0157C05861564; // uniswap V3 router
   address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
+  address public sushiFactory = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
   // tokenIn => tokenOut => poolFee
   mapping(address => mapping(address => uint24)) public poolFees;
 
-  //hold steer vault address againts our local vault
-  mapping(address => address) public steerVaults;
-
+  // token => pairAddress eg weth/sushi pair
+  mapping(address => address) public tokenPairs;
   uint256 public constant minimumAmount = 1000;
 
   constructor(
@@ -70,22 +70,20 @@ contract SteerZapperBase is PriceCalculator {
     _;
   }
 
-
   function getPoolFee(address token0, address token1) public view returns (uint24) {
     uint24 fee = poolFees[token0][token1];
     require(fee > 0, "pool fee is not set");
     return fee;
   }
 
-  function setSteerVaults(address _localVault, address _steerVault) external onlyGovernance {
-    require(_steerVault != address(0), "invalid address");
-    require(_localVault != address(0), "invalid address");
-    steerVaults[_localVault] = _steerVault;
-  }
-
   // Function to add a vault to the whitelist
   function addToWhitelist(address _vault) external onlyGovernance {
     whitelistedVaults[_vault] = true;
+  }
+
+  function setTokenPair(address _token, address _pair) external onlyGovernance {
+    require(_token != address(0) && _pair != address(0), "invalid address");
+    tokenPairs[_token] = _pair;
   }
 
   function setPoolFees(address _token0, address _token1, uint24 _poolFee) external onlyGovernance {
@@ -125,7 +123,7 @@ contract SteerZapperBase is PriceCalculator {
     uint256 amount1,
     uint256 amountOutMin
   ) public onlyWhitelistedVaults(address(vault)) {
-    (address token0, address token1) = steerVaultTokens(address(vault));
+    (address token0, address token1) = steerVaultTokens(vault);
 
     //Deposit tokens to steer vault tokens
     //approve both tokens to Steer Periphery contract
@@ -133,7 +131,7 @@ contract SteerZapperBase is PriceCalculator {
     _approveTokenIfNeeded(token1, steerPeriphery);
 
     //get steer vault from local vault
-    address _steerVault = steerVaults[address(vault)];
+    address _steerVault = vault.token();
     //deposit to Steer Periphery contract
     ISteerPeriphery(steerPeriphery).deposit(_steerVault, amount0, amount1, 0, 0, address(this));
 
@@ -179,52 +177,81 @@ contract SteerZapperBase is PriceCalculator {
     ISwapRouter(address(router)).exactInputSingle(params);
   }
 
+  function calculateSteerVaultTokensPrices(
+    IVault vault
+  ) internal view returns (uint256 token0Price, uint256 token1Price) {
+    (address token0, address token1) = steerVaultTokens(vault);
+
+    bool isToken0Stable = isStableToken(token0);
+    bool isToken1Stable = isStableToken(token1);
+
+    if (isToken0Stable) token0Price = 1 * PRECISION;
+    if (isToken1Stable) token1Price = 1 * PRECISION;
+
+    if (!isToken0Stable) {
+      token0Price = getPrice(token0, vault);
+    }
+
+    if (!isToken1Stable) {
+      token1Price = getPrice(token1, vault);
+    }
+
+    return (token0Price, token1Price);
+  }
+
+  function isStableToken(address token) internal view returns (bool) {
+    for (uint256 i = 0; i < stableTokens.length; i++) {
+      if (stableTokens[i] == token) return true;
+    }
+    return false;
+  }
+
+  function getPrice(address token, IVault vault) internal view returns (uint256) {
+    if (token == weth) {
+      return calculateTokenPriceInUsdc(weth, weth_Usdc_Pair);
+    } else {
+      (address token0, address token1) = steerVaultTokens(vault);
+      // get pair address from factory contract
+      address pair = IUniswapV2Factory(sushiFactory).getPair(token0, token1);
+
+      if (token == token0) return calculateLpPriceInUsdc(token0, pair);
+
+      return calculateLpPriceInUsdc(token1, pair);
+    }
+  }
+
+  function calculateSteerVaultTokensRatio(IVault vault, uint256 _amountIn) internal view returns (uint256, uint256) {
+    (address token0, address token1) = steerVaultTokens(vault);
+    (uint256 amount0, uint256 amount1) = getTotalAmounts(vault);
+    (uint256 token0Price, uint256 token1Price) = calculateSteerVaultTokensPrices(vault);
+
+
+    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals()))) / PRECISION;
+    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals()))) / PRECISION;
+
+    uint256 totalValue = token0Value + token1Value;
+    uint256 token0Amount = (_amountIn * token0Value) / totalValue;
+    uint256 token1Amount = _amountIn - token0Amount;
+
+    return (token0Amount, token1Amount);
+  }
+
   function zapInETH(
     IVault vault,
     uint256 tokenAmountOutMin,
-    address tokenIn,
-    uint256 tokenInAmount0,
-    uint256 tokenInAmount1
+    address tokenIn
   ) external payable onlyWhitelistedVaults(address(vault)) {
     //get tokenAmount
 
-    ISushiMultiPositionLiquidityManager steerVault = ISushiMultiPositionLiquidityManager(steerVaults[address(vault)]);
+    WETH(weth).deposit{value: msg.value}();
+    uint256 _amountIn = IERC20(weth).balanceOf(address(this));
+    (address token0, address token1) = steerVaultTokens(vault);
 
-    (address token0, address token1) = steerVaultTokens(address(vault));
-
-    (uint256 amount0, uint256 amount1) = getTotalAmounts(address(vault));
-
-    uint8 token0Decimals = IERC20(token0).decimals();
-    uint8 token1Decimals = IERC20(token1).decimals();
-
-    uint256 token0Price;
-    uint256 token1Price;
-
-    //check if token0 and token1 are stableTokens
-    //check if token1 is in stable tokens array
-    for (uint256 i = 0; i < stableTokens.length; i++) {
-      if (stableTokens[i] == token0 && stableTokens[i] == token1) {
-        token0Price = 1;
-        token1Price = 1;
-      } else if (stableTokens[i] == token0) {
-        token0Price = 1;
-        //Needed to fetch token1 price
-      } else if (stableTokens[i] == token1) {
-        token1Price = 1;
-        //Needed to fetch token0 price
-      } else if (stableTokens[i] != token0 && stableTokens[i] != token1) {
-        //Needed to fetch both tokens prices
-      }
-    }
-
-    uint256 token0Stacked = token0Price * amount0.div(10 ** token0Decimals);
-    uint256 token1Stacked = token1Price * amount1.div(10 ** token1Decimals);
+    (uint256 tokenInAmount0, uint256 tokenInAmount1) = calculateSteerVaultTokensRatio(vault, _amountIn);
 
     uint256 tokenInAmount = tokenInAmount0 + tokenInAmount1;
-    require(msg.value >= minimumAmount, "Insignificant input amount");
-    require(msg.value >= tokenInAmount, "Insignificant token in amounts");
-
-    WETH(weth).deposit{value: msg.value}();
+    require(_amountIn >= minimumAmount, "Insignificant input amount");
+    require(_amountIn >= tokenInAmount, "Insignificant token in amounts");
 
     if (tokenIn != token0 && tokenIn != token1) {
       _swap(weth, token0, tokenInAmount0);
@@ -246,17 +273,17 @@ contract SteerZapperBase is PriceCalculator {
     IVault vault,
     uint256 tokenAmountOutMin,
     address tokenIn,
-    uint256 tokenInAmount0,
-    uint256 tokenInAmount1
+    uint256 tokenInAmount
   ) external onlyWhitelistedVaults(address(vault)) {
-    uint256 tokenInAmount = tokenInAmount0 + tokenInAmount1;
     require(tokenInAmount >= minimumAmount, "Insignificant input amount");
     require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
+
+    (uint256 tokenInAmount0, uint256 tokenInAmount1) = calculateSteerVaultTokensRatio(vault, tokenInAmount);
 
     // transfer token
     IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), tokenInAmount);
 
-    (address token0, address token1) = steerVaultTokens(address(vault));
+    (address token0, address token1) = steerVaultTokens(vault);
 
     //Note : tokenIn pair must exist withsteerVaultTokens
     if (token0 != tokenIn && token1 != tokenIn) {
@@ -283,14 +310,14 @@ contract SteerZapperBase is PriceCalculator {
   ) public onlyWhitelistedVaults(address(vault)) {
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
 
-    ISushiMultiPositionLiquidityManager steerVault = ISushiMultiPositionLiquidityManager(steerVaults[address(vault)]);
+    ISushiMultiPositionLiquidityManager steerVault = ISushiMultiPositionLiquidityManager(vault.token());
 
     vault.withdraw(withdrawAmount);
     //get steer vault tokens
     uint256 steerVaultTokenBal = steerVault.balanceOf(address(this));
 
     (uint256 amount0, uint256 amount1) = steerVault.withdraw(steerVaultTokenBal, 0, 0, address(this));
-    (address token0, address token1) = steerVaultTokens(address(vault));
+    (address token0, address token1) = steerVaultTokens(vault);
 
     // Swapping
     if (token0 != desiredToken) {
@@ -318,7 +345,7 @@ contract SteerZapperBase is PriceCalculator {
   ) public onlyWhitelistedVaults(address(vault)) {
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
 
-    ISushiMultiPositionLiquidityManager steerVault = ISushiMultiPositionLiquidityManager(steerVaults[address(vault)]);
+    ISushiMultiPositionLiquidityManager steerVault = ISushiMultiPositionLiquidityManager(vault.token());
 
     vault.withdraw(withdrawAmount);
     //get steer vault tokens
@@ -326,7 +353,7 @@ contract SteerZapperBase is PriceCalculator {
 
     (uint256 amount0, uint256 amount1) = steerVault.withdraw(steerVaultTokenBal, 0, 0, address(this));
 
-    (address token0, address token1) = steerVaultTokens(address(vault));
+    (address token0, address token1) = steerVaultTokens(vault);
 
     // Swapping
     if (token0 != weth) {
@@ -347,14 +374,14 @@ contract SteerZapperBase is PriceCalculator {
     _returnAssets(path);
   }
 
-  function getTotalAmounts(address _localVaultAdd) public view returns (uint256, uint256) {
-    return ISushiMultiPositionLiquidityManager(steerVaults[_localVaultAdd]).getTotalAmounts();
+  function getTotalAmounts(IVault _localVault) public view returns (uint256, uint256) {
+    return ISushiMultiPositionLiquidityManager(_localVault.token()).getTotalAmounts();
   }
 
-  function steerVaultTokens(address _localVaultAdd) public view returns (address, address) {
+  function steerVaultTokens(IVault _localVault) public view returns (address, address) {
     return (
-      ISushiMultiPositionLiquidityManager(steerVaults[_localVaultAdd]).token0(),
-      ISushiMultiPositionLiquidityManager(steerVaults[_localVaultAdd]).token1()
+      ISushiMultiPositionLiquidityManager(_localVault.token()).token0(),
+      ISushiMultiPositionLiquidityManager(_localVault.token()).token1()
     );
   }
 

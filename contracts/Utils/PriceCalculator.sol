@@ -7,13 +7,13 @@ import "../lib/erc20.sol";
 import "../interfaces/uniswapv2.sol";
 
 contract PriceCalculator {
-  
   using SafeERC20 for IERC20;
   address public governance;
 
-  uint256 public constant PRECISION = 1_000_000;
+  uint256 public constant PRECISION = 10_000_000;
 
   address public weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+  //For arb weth/usdc
   address public weth_Usdc_Pair = 0x905dfCD5649217c42684f23958568e533C711Aa3;
 
   // Array of stable tokens
@@ -23,7 +23,7 @@ contract PriceCalculator {
     0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8
   ];
 
-    // Modifier to restrict access to governance only
+  // Modifier to restrict access to governance only
   modifier onlyGovernance() {
     require(msg.sender == governance, "Caller is not the governance");
     _;
@@ -39,25 +39,6 @@ contract PriceCalculator {
     stableTokens.push(_stableTokens);
   }
 
-  // function calculateTokenPriceInUsdc(address _token,address _pairAddress) public view returns (uint256) {
-  //     IUniswapV2Pair _pair = IUniswapV2Pair(_pairAddress);
-  //     (uint112 _reserve0, uint112 _reserve1,)  = _pair.getReserves();
-  //     address token0 = _pair.token0();
-  //     address token1 = _pair.token1();
-
-  //     //get token decimals for both tokens
-  //     uint8 token0Decimals = IERC20(token0).decimals();
-  //     uint8 token1Decimals = IERC20(token1).decimals();
-
-  //     if(_token == token0){
-  //         return _reserve0 * 10**18 / _reserve1;
-  //     }else if (_token == token1){
-  //         return _reserve1 * 10**18 / _reserve0;
-  //     }
-  //     return 0;
-
-  // }
-
   function calculateTokenPriceInUsdc(address _token, address _pairAddress) public view returns (uint256) {
     IUniswapV2Pair _pair = IUniswapV2Pair(_pairAddress);
     (uint112 _reserve0, uint112 _reserve1, ) = _pair.getReserves();
@@ -72,21 +53,23 @@ contract PriceCalculator {
       //check if token1 is in stable tokens array
       for (uint256 i = 0; i < stableTokens.length; i++) {
         if (stableTokens[i] == token1) {
-          return _getPrice(_reserve0, _reserve1, token0Decimals, token1Decimals);
+          uint256 assetPrice = _getPrice(_reserve0, _reserve1, token0Decimals, token1Decimals);
+          return assetPrice;
         }
       }
     } else if (_token == token1) {
       //check if token0 is in stable tokens array
       for (uint256 i = 0; i < stableTokens.length; i++) {
         if (stableTokens[i] == token0) {
-          return _getPrice(_reserve1, _reserve0, token1Decimals, token0Decimals);
+          uint256 assetPrice = _getPrice(_reserve1, _reserve0, token1Decimals, token0Decimals);
+          return assetPrice;
         }
       }
     }
     return 0;
   }
 
-  // pair should be of WEth/LpToken
+  // pair should be of WEth/LpToken eg weth/Sushi
   function calculateLpPriceInUsdc(address _lpToken, address _pairAddress) public view returns (uint256) {
     IUniswapV2Pair _pair = IUniswapV2Pair(_pairAddress);
     (uint112 _reserve0, uint112 _reserve1, ) = _pair.getReserves();
@@ -97,8 +80,6 @@ contract PriceCalculator {
     //Calculate price of eth in usdc
     uint256 priceOfEthInUsdc = calculateTokenPriceInUsdc(weth, weth_Usdc_Pair);
 
-    //remove Precision from eth price
-    priceOfEthInUsdc = priceOfEthInUsdc / PRECISION;
     //Get price of lp in Eth
     uint256 lpPriceInEth;
     if (_lpToken == token0) {
