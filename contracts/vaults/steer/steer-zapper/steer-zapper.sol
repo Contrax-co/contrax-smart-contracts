@@ -26,8 +26,6 @@ contract SteerZapperBase is PriceCalculator {
   // tokenIn => tokenOut => poolFee
   mapping(address => mapping(address => uint24)) public poolFees;
 
-  // token => pairAddress eg weth/sushi pair
-  mapping(address => address) public tokenPairs;
   uint256 public constant minimumAmount = 1000;
 
   constructor(
@@ -79,11 +77,6 @@ contract SteerZapperBase is PriceCalculator {
   // Function to add a vault to the whitelist
   function addToWhitelist(address _vault) external onlyGovernance {
     whitelistedVaults[_vault] = true;
-  }
-
-  function setTokenPair(address _token, address _pair) external onlyGovernance {
-    require(_token != address(0) && _pair != address(0), "invalid address");
-    tokenPairs[_token] = _pair;
   }
 
   function setPoolFees(address _token0, address _token1, uint24 _poolFee) external onlyGovernance {
@@ -211,29 +204,16 @@ contract SteerZapperBase is PriceCalculator {
       return calculateTokenPriceInUsdc(weth, weth_Usdc_Pair);
     } else {
       (address token0, address token1) = steerVaultTokens(vault);
-      // get pair address from factory contract
-      address pair = IUniswapV2Factory(sushiFactory).getPair(token0, token1);
-
-      if (token == token0) return calculateLpPriceInUsdc(token0, pair);
-
+      
+      // get pair address from factory contract for weth and desired token
+      address pair;
+      if (token == token0) {
+        pair = IUniswapV2Factory(sushiFactory).getPair(token0, weth);
+        return calculateLpPriceInUsdc(token0, pair);
+      }
+      pair = IUniswapV2Factory(sushiFactory).getPair(token1, weth);
       return calculateLpPriceInUsdc(token1, pair);
     }
-  }
-
-  function calculateSteerVaultTokensRatio(IVault vault, uint256 _amountIn) internal view returns (uint256, uint256) {
-    (address token0, address token1) = steerVaultTokens(vault);
-    (uint256 amount0, uint256 amount1) = getTotalAmounts(vault);
-    (uint256 token0Price, uint256 token1Price) = calculateSteerVaultTokensPrices(vault);
-
-
-    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals()))) / PRECISION;
-    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals()))) / PRECISION;
-
-    uint256 totalValue = token0Value + token1Value;
-    uint256 token0Amount = (_amountIn * token0Value) / totalValue;
-    uint256 token1Amount = _amountIn - token0Amount;
-
-    return (token0Amount, token1Amount);
   }
 
   function zapInETH(
@@ -372,6 +352,21 @@ contract SteerZapperBase is PriceCalculator {
     require(IERC20(weth).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
     _returnAssets(path);
+  }
+
+  function calculateSteerVaultTokensRatio(IVault vault, uint256 _amountIn) internal view returns (uint256, uint256) {
+    (address token0, address token1) = steerVaultTokens(vault);
+    (uint256 amount0, uint256 amount1) = getTotalAmounts(vault);
+    (uint256 token0Price, uint256 token1Price) = calculateSteerVaultTokensPrices(vault);
+
+    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals()))) / PRECISION;
+    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals()))) / PRECISION;
+
+    uint256 totalValue = token0Value + token1Value;
+    uint256 token0Amount = (_amountIn * token0Value) / totalValue;
+    uint256 token1Amount = _amountIn - token0Amount;
+
+    return (token0Amount, token1Amount);
   }
 
   function getTotalAmounts(IVault _localVault) public view returns (uint256, uint256) {

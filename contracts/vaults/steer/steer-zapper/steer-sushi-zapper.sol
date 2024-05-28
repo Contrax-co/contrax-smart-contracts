@@ -164,16 +164,20 @@ contract SteerSushiZapperBase is PriceCalculator {
     return false;
   }
 
-  function getPrice(address token, IVault vault) internal view returns (uint256) {
+   function getPrice(address token, IVault vault) internal view returns (uint256) {
     if (token == weth) {
       return calculateTokenPriceInUsdc(weth, weth_Usdc_Pair);
     } else {
       (address token0, address token1) = steerVaultTokens(vault);
-      // get pair address from factory contract
-      address pair = IUniswapV2Factory(sushiFactory).getPair(token0, token1);
+      
+      // get pair address from factory contract for weth and desired token
+      address pair;
+      if (token == token0) {
+        pair = IUniswapV2Factory(sushiFactory).getPair(token0, weth);
+        return calculateLpPriceInUsdc(token0, pair);
+      }
 
-      if (token == token0) return calculateLpPriceInUsdc(token0, pair);
-
+      pair = IUniswapV2Factory(sushiFactory).getPair(token1, weth);
       return calculateLpPriceInUsdc(token1, pair);
     }
   }
