@@ -61,7 +61,7 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
   await contract.deployed();
   console.log(`${params.name}: ${contract.address}`);
 
-  if (hre.network.name === "localhost") return contract;
+  if (hre.network.name === "localhost" || hre.network.name === "hardhat") return contract;
 
   console.log("Verifying...");
   await verify(contract.address, params.args, params.name, params.verificationWait, params.contractPath);
@@ -71,7 +71,7 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
 
 const governance = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 const timelock = governance;
-const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d"
+const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d";
 
 const poolFees = [
   {
@@ -104,30 +104,54 @@ const poolFees = [
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  // const VaultSteerSushiWethSushi = await deploy({
-  //   name: "VaultSteerSushiWethSushi",
-  //   args: [governance, timelock],
-  //   contractPath: "contracts/vaults/steer/vault-steer-weth-sushi.sol:VaultSteerSushiWethSushi",
-  // });
+  const VaultSteerSushiUsdtUsdc = await deploy({
+    name: "VaultSteerSushiUsdtUsdc",
+    args: [governance, timelock, controller],
+    contractPath: "contracts/vaults/steer/vault-steer-usdt-usdc.sol:VaultSteerSushiUsdtUsdc",
+  });
+
+  const VaultSteerSushiWethSushi = await deploy({
+    name: "VaultSteerSushiWethSushi",
+    args: [governance, timelock, controller],
+    contractPath: "contracts/vaults/steer/vault-steer-weth-sushi.sol:VaultSteerSushiWethSushi",
+  });
+
+  const VaultSteerSushiWethUsdc = await deploy({
+    name: "VaultSteerSushiWethUsdc",
+    args: [governance, timelock, controller],
+    contractPath: "contracts/vaults/steer/vault-steer-weth-usdc.sol:VaultSteerSushiWethUsdc",
+  });
 
   // deploy strategy
-  const SteerStrategy = await deploy({
-      name: "StrategySteerUsdcUsdce",
-      args: [governance, governance,controller,governance],
-      contractPath: "contracts/strategies/steer/strategy-steer-usdc-usdce.sol:StrategySteerUsdcUsdce",
-  })
+  const StrategySteerUsdcUsdce = await deploy({
+    name: "StrategySteerUsdcUsdce",
+    args: [governance, governance, controller, governance],
+    contractPath: "contracts/strategies/steer/strategy-steer-usdc-usdce.sol:StrategySteerUsdcUsdce",
+  });
 
+  const StrategySteerUsdcUsdt = await deploy({
+    name: "StrategySteerUsdcUsdt",
+    args: [governance, governance, controller, governance],
+    contractPath: "contracts/strategies/steer/strategy-steer-usdc-usdt.sol:StrategySteerUsdcUsdt",
+  });
+
+  const StrategySteerWethSushi = await deploy({
+    name: "StrategySteerWethSushi",
+    args: [governance, governance, controller, governance],
+    contractPath: "contracts/strategies/steer/strategy-steer-weth-sushi.sol:StrategySteerWethSushi",
+  });
+
+  const StrategySteerUsdcWeth = await deploy({
+    name: "StrategySteerUsdcWeth",
+    args: [governance, governance, controller, governance],
+    contractPath: "contracts/strategies/steer/strategy-steer-usdc-weth.sol:StrategySteerUsdcWeth",
+  });
 
   const SteerZapperBase = await deploy({
     name: "SteerZapperBase",
     args: [
       governance,
-      [
-        "0x3fB6C1C5b7319Af78608570F97b920a553aB0Ed3",
-        "0xe41586C416D8fAb3ee01e8a29DaD6f3a8655097d",
-        "0xc9464b7Fb1952AA4E26B54B6E1015038f11ab10d",
-        "0x9EfA1F99c86F6Ff0Fa0886775B436281b99e3f26",
-      ],
+      ["0x76512AB6a1DEDD45B75dee47841eB9feD2411789", VaultSteerSushiUsdtUsdc.address, VaultSteerSushiWethUsdc.address],
       poolFees.map((e) => e.token0),
       poolFees.map((e) => e.token1),
       poolFees.map((e) => e.poolFee),
@@ -137,7 +161,7 @@ async function main() {
 
   const SteerSushiZapperBase = await deploy({
     name: "SteerSushiZapperBase",
-    args: [governance, ["0x9EfA1F99c86F6Ff0Fa0886775B436281b99e3f26"]],
+    args: [governance, [VaultSteerSushiWethSushi.address]],
     contractPath: "contracts/vaults/steer/steer-zapper/steer-sushi-zapper.sol:SteerSushiZapperBase",
   });
 }

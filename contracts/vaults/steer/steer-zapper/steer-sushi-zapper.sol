@@ -27,11 +27,15 @@ contract SteerSushiZapperBase is PriceCalculator {
 
   uint256 public constant minimumAmount = 1000;
 
-  constructor(address _governance) PriceCalculator(_governance) {
+  constructor(address _governance, address[] memory _vaults) PriceCalculator(_governance) {
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
     governance = _governance;
+
+    for (uint i = 0; i < _vaults.length; i++) {
+      whitelistedVaults[_vaults[i]] = true;
+    }
   }
 
   receive() external payable {
@@ -164,12 +168,12 @@ contract SteerSushiZapperBase is PriceCalculator {
     return false;
   }
 
-   function getPrice(address token, IVault vault) internal view returns (uint256) {
+  function getPrice(address token, IVault vault) internal view returns (uint256) {
     if (token == weth) {
       return calculateTokenPriceInUsdc(weth, weth_Usdc_Pair);
     } else {
       (address token0, address token1) = steerVaultTokens(vault);
-      
+
       // get pair address from factory contract for weth and desired token
       address pair;
       if (token == token0) {
@@ -186,7 +190,6 @@ contract SteerSushiZapperBase is PriceCalculator {
     (address token0, address token1) = steerVaultTokens(vault);
     (uint256 amount0, uint256 amount1) = getTotalAmounts(vault);
     (uint256 token0Price, uint256 token1Price) = calculateSteerVaultTokensPrices(vault);
-    
 
     uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals()))) / PRECISION;
     uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals()))) / PRECISION;
