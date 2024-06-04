@@ -10,8 +10,8 @@ import "../../interfaces/vault.sol";
 
 contract VaultSteerBase is ERC20 {
   using SafeERC20 for IERC20;
-  using SafeMath for uint256;
   using Address for address;
+  using SafeMath for uint256;
 
   IERC20 public token;
 
@@ -22,28 +22,26 @@ contract VaultSteerBase is ERC20 {
   address public timelock;
   address public controller;
 
-  // Declare a Deposit Event
-  event Deposit(address indexed _from, uint _timestamp, uint _value, uint _shares);
-
-  // Declare a Withdraw Event
-  event Withdraw(address indexed _from, uint _timestamp, uint _value, uint _shares);
-
   constructor(
-    address _steerVault,
+    address _token,
     address _governance,
     address _timelock,
     address _controller
   )
     ERC20(
-      string(abi.encodePacked("freezing ", ERC20(_steerVault).name())),
-      string(abi.encodePacked("s", ERC20(_steerVault).symbol()))
+      string(abi.encodePacked("freezing ", ERC20(_token).name())),
+      string(abi.encodePacked("s", ERC20(_token).symbol()))
     )
   {
-    _setupDecimals(ERC20(_steerVault).decimals());
+    _setupDecimals(ERC20(_token).decimals());
+    token = IERC20(_token);
     governance = _governance;
     timelock = _timelock;
-    token = IERC20(_steerVault);
     controller = _controller;
+  }
+
+  function balance() public view returns (uint256) {
+    return token.balanceOf(address(this)).add(IController(controller).balanceOf(address(token)));
   }
 
   function setMin(uint256 _min) external {
@@ -52,18 +50,9 @@ contract VaultSteerBase is ERC20 {
     min = _min;
   }
 
-  function balance() public view returns (uint256) {
-    return token.balanceOf(address(this)).add(IController(controller).balanceOf(address(token)));
-  }
-
   function setGovernance(address _governance) public {
     require(msg.sender == governance, "!governance");
     governance = _governance;
-  }
-
-  function setController(address _controller) public {
-    require(msg.sender == timelock, "!timelock");
-    controller = _controller;
   }
 
   function setTimelock(address _timelock) public {
@@ -71,6 +60,13 @@ contract VaultSteerBase is ERC20 {
     timelock = _timelock;
   }
 
+  function setController(address _controller) public {
+    require(msg.sender == timelock, "!timelock");
+    controller = _controller;
+  }
+
+  // Custom logic in here for how much the vault allows to be borrowed
+  // Sets minimum required on-hand to keep small withdrawals cheap
   function available() public view returns (uint256) {
     return token.balanceOf(address(this)).mul(min).div(max);
   }
@@ -84,52 +80,25 @@ contract VaultSteerBase is ERC20 {
   function depositAll() external {
     deposit(token.balanceOf(msg.sender));
   }
- 
+
+  // Declare a Deposit Event
+  event Deposit(address indexed _from, uint _timestamp, uint _value, uint _shares);
+
   function deposit(uint256 _amount) public {
-    // extract before deposit balance of token
-    uint256 beforeBal = token.balanceOf(address(this));
-
+    uint256 _pool = balance();
+    uint256 _before = token.balanceOf(address(this));
     token.safeTransferFrom(msg.sender, address(this), _amount);
-    // extract after deposit balance of token
-    uint256 afterBal = token.balanceOf(address(this));
-
-    // calculate shares to mint
-    _amount = afterBal.sub(beforeBal);
-
+    uint256 _after = token.balanceOf(address(this));
+    _amount = _after.sub(_before); // Additional check for deflationary tokens
     uint256 shares = 0;
     if (totalSupply() == 0) {
       shares = _amount;
     } else {
-      shares = (_amount.mul(totalSupply())).div(balance());
+      shares = (_amount.mul(totalSupply())).div(_pool);
     }
-
-    // mint local vault shares to msg.sender
     _mint(msg.sender, shares);
 
     emit Deposit(tx.origin, block.timestamp, _amount, shares);
-  }
-
-  function withdraw(uint256 _shares) public {
-    uint256 ratio = (balance().mul(_shares)).div(totalSupply());
-
-    //burn user shares
-    _burn(msg.sender, _shares);
-
-    // Check vault balance
-    uint256 bal = token.balanceOf(address(this));
-
-    if (bal < ratio) {
-      uint256 _withdraw = ratio.sub(bal);
-      IController(controller).withdraw(address(token), _withdraw);
-      uint256 _after = token.balanceOf(address(this));
-      uint256 _diff = _after.sub(bal);
-      if (_diff < _withdraw) {
-        ratio = bal.add(_diff);
-      }
-    }
-
-    token.safeTransfer(msg.sender, ratio);
-    emit Withdraw(tx.origin, block.timestamp, ratio, _shares);
   }
 
   function withdrawAll() external {
@@ -141,6 +110,30 @@ contract VaultSteerBase is ERC20 {
     require(msg.sender == controller, "!controller");
     require(reserve != address(token), "token");
     IERC20(reserve).safeTransfer(controller, amount);
+  }
+
+  // Declare a Withdraw Event
+  event Withdraw(address indexed _from, uint _timestamp, uint _value, uint _shares);
+
+  // No rebalance implementation for lower fees and faster swaps
+  function withdraw(uint256 _shares) public {
+    uint256 r = (balance().mul(_shares)).div(totalSupply());
+    _burn(msg.sender, _shares);
+
+    // Check balance
+    uint256 b = token.balanceOf(address(this));
+    if (b < r) {
+      uint256 _withdraw = r.sub(b);
+      IController(controller).withdraw(address(token), _withdraw);
+      uint256 _after = token.balanceOf(address(this));
+      uint256 _diff = _after.sub(b);
+      if (_diff < _withdraw) {
+        r = b.add(_diff);
+      }
+    }
+
+    token.safeTransfer(msg.sender, r);
+    emit Withdraw(tx.origin, block.timestamp, r, _shares);
   }
 
   function getRatio() public view returns (uint256) {

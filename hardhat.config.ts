@@ -15,14 +15,23 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      {
+        version: "0.8.0",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
     ],
   },
   networks: {
     hardhat: {
       chainId: 42161,
       forking: {
-        url: "https://arb1.arbitrum.io/rpc", //"https://arb1.arbitrum.io/rpc",
-        blockNumber: 210889162,
+        url: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`, // "https://arb1.arbitrum.io/rpc",
+        blockNumber: 211889162,
       },
     },
     arbitrum: {
@@ -49,4 +58,3 @@ const config: HardhatUserConfig = {
   },
 };
 export default config;
-

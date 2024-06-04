@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import "../../../lib/safe-math.sol";
 import "../../../lib/erc20.sol";
@@ -10,8 +10,9 @@ import "../../../interfaces/uniswapv3.sol";
 import "../../../interfaces/ISteerPeriphery.sol";
 import "../../../interfaces/ISushiMultiPositionLiquidityManager.sol";
 import "../../../Utils/PriceCalculator.sol";
+import "../../../Utils/PriceCalculatorV3.sol";
 
-contract SteerZapperBase is PriceCalculator {
+contract SteerZapperBase is PriceCalculatorV3 {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -19,7 +20,7 @@ contract SteerZapperBase is PriceCalculator {
 
   address public router = 0xE592427A0AEce92De3Edee1F18E0157C05861564; // uniswap V3 router
   address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
-  address public sushiFactory = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
+  address public uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
@@ -28,31 +29,14 @@ contract SteerZapperBase is PriceCalculator {
 
   uint256 public constant minimumAmount = 1000;
 
-  constructor(
-    address _governance,
-    address[] memory _vaults,
-    address[] memory _token0,
-    address[] memory _token1,
-    uint24[] memory _poolFee
-  ) PriceCalculator(_governance) {
+  constructor(address _governance, address[] memory _vaults) PriceCalculatorV3(_governance) {
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
     governance = _governance;
 
-    require(
-      _token0.length == _poolFee.length && _token1.length == _poolFee.length,
-      "token and pool fee length must be equal"
-    );
-
     for (uint i = 0; i < _vaults.length; i++) {
       whitelistedVaults[_vaults[i]] = true;
-    }
-
-    for (uint i = 0; i < _poolFee.length; i++) {
-      poolFees[_token0[i]][_token1[i]] = _poolFee[i];
-      // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
-      poolFees[_token1[i]][_token0[i]] = _poolFee[i];
     }
   }
 
@@ -155,6 +139,8 @@ contract SteerZapperBase is PriceCalculator {
     path[0] = tokenIn;
     path[1] = tokenOut;
 
+    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, uniV3Factory);
+
     _approveTokenIfNeeded(path[0], address(router));
     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
       tokenIn: path[0],
@@ -170,9 +156,7 @@ contract SteerZapperBase is PriceCalculator {
     ISwapRouter(address(router)).exactInputSingle(params);
   }
 
-  function calculateSteerVaultTokensPrices(
-    IVault vault
-  ) internal view returns (uint256 token0Price, uint256 token1Price) {
+  function calculateSteerVaultTokensPrices(IVault vault) internal returns (uint256 token0Price, uint256 token1Price) {
     (address token0, address token1) = steerVaultTokens(vault);
 
     bool isToken0Stable = isStableToken(token0);
@@ -181,6 +165,12 @@ contract SteerZapperBase is PriceCalculator {
     if (isToken0Stable) token0Price = 1 * PRECISION;
     if (isToken1Stable) token1Price = 1 * PRECISION;
 
+    if (isToken0Stable && isToken1Stable) {
+      // For stable pairs, set the pool fee to 500 which is 0.05% pool fee
+      poolFees[token0][token1] = 500;
+      // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
+      poolFees[token1][token0] = 500;
+    }
     if (!isToken0Stable) {
       token0Price = getPrice(token0, vault);
     }
@@ -199,21 +189,44 @@ contract SteerZapperBase is PriceCalculator {
     return false;
   }
 
-  function getPrice(address token, IVault vault) internal view returns (uint256) {
+  function getPrice(address token, IVault vault) internal returns (uint256) {
     if (token == weth) {
-      return calculateTokenPriceInUsdc(weth, weth_Usdc_Pair);
+      return calculateEthPriceInUsdc();
     } else {
       (address token0, address token1) = steerVaultTokens(vault);
-      
       // get pair address from factory contract for weth and desired token
       address pair;
       if (token == token0) {
-        pair = IUniswapV2Factory(sushiFactory).getPair(token0, weth);
-        return calculateLpPriceInUsdc(token0, pair);
+        pair = fetchPool(token0, weth, uniV3Factory);
+       
+        return calculateTokenPriceInUsd(token0, pair);
       }
-      pair = IUniswapV2Factory(sushiFactory).getPair(token1, weth);
-      return calculateLpPriceInUsdc(token1, pair);
+
+      pair = fetchPool(token1, weth, uniV3Factory);
+     
+      return calculateTokenPriceInUsd(token1, pair);
     }
+  }
+
+  function fetchPool(address token0, address token1, address _uniV3Factory) internal returns (address) {
+    address pairWithMaxLiquidity = address(0);
+    uint256 maxLiquidity = 0;
+
+    for (uint256 i = 0; i < poolsFee.length; i++) {
+      address currentPair = IUniswapV3Factory(_uniV3Factory).getPool(token0, token1, poolsFee[i]);
+      if (currentPair != address(0)) {
+        uint256 currentLiquidity = IUniswapV3Pool(currentPair).liquidity();
+        if (currentLiquidity > maxLiquidity) {
+          maxLiquidity = currentLiquidity;
+          pairWithMaxLiquidity = currentPair;
+          poolFees[token0][token1] = poolsFee[i];
+          // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
+          poolFees[token1][token0] = poolsFee[i];
+        }
+      }
+    }
+    require(pairWithMaxLiquidity != address(0), "No pool found with sufficient liquidity");
+    return pairWithMaxLiquidity;
   }
 
   function zapInETH(
@@ -354,13 +367,13 @@ contract SteerZapperBase is PriceCalculator {
     _returnAssets(path);
   }
 
-  function calculateSteerVaultTokensRatio(IVault vault, uint256 _amountIn) internal view returns (uint256, uint256) {
+  function calculateSteerVaultTokensRatio(IVault vault, uint256 _amountIn) internal returns (uint256, uint256) {
     (address token0, address token1) = steerVaultTokens(vault);
     (uint256 amount0, uint256 amount1) = getTotalAmounts(vault);
     (uint256 token0Price, uint256 token1Price) = calculateSteerVaultTokensPrices(vault);
 
-    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals()))) / PRECISION;
-    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals()))) / PRECISION;
+    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals())));
+    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals())));
 
     uint256 totalValue = token0Value + token1Value;
     uint256 token0Amount = (_amountIn * token0Value) / totalValue;
