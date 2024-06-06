@@ -37,7 +37,7 @@ contract StrategySteerWethSushi is StrategySteerBase {
       path[0] = tokenIn;
       path[1] = tokenOut;
     }
-
+    
     _approveTokenIfNeeded(path[0], address(router));
 
     UniswapRouterV2(router).swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp);

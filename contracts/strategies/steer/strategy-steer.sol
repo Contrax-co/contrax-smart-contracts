@@ -5,10 +5,10 @@ import "../../lib/erc20.sol";
 import "../../interfaces/controller.sol";
 import "../../lib/safe-math.sol";
 import "../../interfaces/ISushiMultiPositionLiquidityManager.sol";
-import "../../Utils/PriceCalculator.sol";
+import "../../Utils/PriceCalculatorV3.sol";
 import "../../interfaces/weth.sol";
 
-abstract contract StrategySteer is PriceCalculator {
+abstract contract StrategySteer is PriceCalculatorV3 {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -18,7 +18,6 @@ abstract contract StrategySteer is PriceCalculator {
   // Tokens
   address public want;
   address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
-
   address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
   ISushiMultiPositionLiquidityManager public steerVault;
 
@@ -56,7 +55,7 @@ abstract contract StrategySteer is PriceCalculator {
     address _strategist,
     address _controller,
     address _timelock
-  ) PriceCalculator(_governance) {
+  ) PriceCalculatorV3(_governance) {
     require(_want != address(0));
     require(_governance != address(0));
     require(_strategist != address(0));
@@ -68,6 +67,10 @@ abstract contract StrategySteer is PriceCalculator {
     strategist = _strategist;
     controller = _controller;
     timelock = _timelock;
+
+    // Safety checks to ensure WETH token address`
+    WETH(weth).deposit{value: 0}();
+    WETH(weth).withdraw(0);
 
     steerVault = ISushiMultiPositionLiquidityManager(want);
   }
@@ -235,15 +238,7 @@ abstract contract StrategySteer is PriceCalculator {
     uint256 balance;
     for (uint256 i; i < tokens.length; i++) {
       balance = IERC20(tokens[i]).balanceOf(address(this));
-      if (balance > 0) {
-        if (tokens[i] == weth) {
-          WETH(weth).withdraw(balance);
-          (bool success, ) = msg.sender.call{value: balance}(new bytes(0));
-          require(success, "ETH transfer failed");
-        } else {
-          IERC20(tokens[i]).safeTransfer(msg.sender, balance);
-        }
-      }
+      if (balance > 0) IERC20(tokens[i]).safeTransfer(msg.sender, balance);
     }
   }
 

@@ -8,6 +8,8 @@ import { setupSigners } from "../utils/static";
 const walletAddress = process.env.WALLET_ADDR === undefined ? "" : process.env["WALLET_ADDR"];
 
 let zapInUsdcAmount: string = "2500000000";
+
+let zapInEthAmount: string = "10000000000000000000";
 //1.5k Arb
 let zapInArbAmount: string = "1500000000000000000000";
 let timelockIsStrategist = false;
@@ -65,6 +67,7 @@ const poolFees = [
   // },// usdc-usdt
 ];
 
+
 describe("Strategy Steer Test", async () => {
   // These reset the state after each test is executed
   beforeEach(async () => {
@@ -112,7 +115,12 @@ describe("Strategy Steer Test", async () => {
     // Now we can deploy the new strategy
     strategyContract = await stratFactory
       .connect(walletSigner)
-      .deploy(governanceSigner.getAddress(), strategistSigner.getAddress(), controllerAdd, timelockSigner.getAddress());
+      .deploy(
+        governanceSigner.getAddress(),
+        strategistSigner.getAddress(),
+        controllerAdd,
+        timelockSigner.getAddress()
+      );
 
     const approveStrategy = await controllerContract
       .connect(timelockSigner)
@@ -127,38 +135,27 @@ describe("Strategy Steer Test", async () => {
 
     await setStrategy(strategyName, controllerContract, timelockSigner, steerVaultAddrress, strategyContract.address);
 
-    usdcContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", usdcAddress, walletSigner);
-    await overwriteTokenAmount(usdcAddress, strategyContract.address, zapInUsdcAmount, 9);
+    arbContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", arbAddress, walletSigner);
+    await overwriteTokenAmount(arbAddress, strategyContract.address, zapInEthAmount, 51);
 
-    await strategyContract.connect(timelockSigner).setRewardToken(usdcAddress);
-    
-    
-    //Set pool fees for Usdc/Usdt
-    await strategyContract
-      .connect(governanceSigner)
-      .setPoolFees("0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8", 100);
-
-      await strategyContract
-      .connect(governanceSigner)
-      .setPoolFees("0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", 100);
+    await strategyContract.connect(timelockSigner).setRewardToken(arbAddress);
   });
 
-  it("Strategy Should contains Usdc balance", async function () {
-    let usdcBal: BigNumber = await usdcContract.balanceOf(strategyContract.address);
-    expect(usdcBal.toNumber()).to.be.gt(0);
-    expect(usdcBal.toString()).to.be.equals(zapInUsdcAmount);
+  it("Strategy Should contains Arb balance", async function () {
+    let arbBal: BigNumber = await arbContract.balanceOf(strategyContract.address);
+    expect(arbBal.toString()).to.be.equals(zapInEthAmount);
   });
 
-  it("Should exchange strategy usdc to steerVault token", async function () {
-    
-    let usdcBalBefore: BigNumber = await usdcContract.balanceOf(strategyContract.address);
+  it("Should exchange strategy Arb to steerVault token", async function () {
+    let arbBalBefore: BigNumber = await arbContract.balanceOf(strategyContract.address);
     let txRes = await strategyContract.connect(governanceSigner).harvest();
-    let usdcBalAfter: BigNumber = await usdcContract.balanceOf(strategyContract.address);
+    let arbBalAfter: BigNumber = await arbContract.balanceOf(strategyContract.address);
 
     const txReceipt = await txRes.wait();
 
-    expect(usdcBalAfter.toNumber()).to.be.lt(usdcBalBefore.toNumber());
+    expect(arbBalAfter).to.be.lt(arbBalBefore);
     // Now you can check for the event
     expect(txReceipt.events?.some((event: { event: string }) => event.event === "Harvest")).to.be.true;
   });
 });
+

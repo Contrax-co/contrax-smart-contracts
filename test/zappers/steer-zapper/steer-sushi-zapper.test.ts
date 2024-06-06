@@ -106,6 +106,7 @@ describe("Steer Zapper Test", async () => {
     const zapperFactory = await ethers.getContractFactory("SteerSushiZapperBase");
     zapperContract = await zapperFactory.connect(walletSigner).deploy(
       walletSigner.getAddress(),
+      [vaultContract.address]
     );
     zapperContract.connect(walletSigner).addToWhitelist(vaultContract.address);
     usdcContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", usdcAddress, walletSigner);

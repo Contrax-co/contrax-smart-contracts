@@ -8,8 +8,8 @@ import { setupSigners } from "../utils/static";
 const walletAddress = process.env.WALLET_ADDR === undefined ? "" : process.env["WALLET_ADDR"];
 
 let zapInUsdcAmount: string = "2500000000";
-//100 Arb
-let zapInEthAmount: string = "10000000000000000000"; 
+
+let zapInEthAmount: string = "100000000000000000000";
 
 let timelockIsStrategist = false;
 let snapshotId: string;
@@ -29,10 +29,10 @@ let wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 let usdcAddress = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 let arbAddress = "0x912CE59144191C1204E64559FE8253a0e49E6548";
 
-const steerVaultAddrress = "0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65";
+const steerVaultAddrress = "0x01476fcCa94502267008119B83Cea234dc3fA7D7";
 
-const vaultName = "VaultSteerSushiUsdcUsdce";
-const strategyName = "StrategySteerUsdcUsdce";
+const vaultName = "VaultSteerSushiWethUsdc";
+const strategyName = "StrategySteerUsdcWeth";
 const poolFees = [
   {
     poolFee: 100,
@@ -65,6 +65,7 @@ const poolFees = [
     token1: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
   },// usdc-usdt
 ];
+
 
 describe("Strategy Steer Test", async () => {
   // These reset the state after each test is executed

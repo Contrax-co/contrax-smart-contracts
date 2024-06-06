@@ -9,6 +9,9 @@ const walletAddress = process.env.WALLET_ADDR === undefined ? "" : process.env["
 
 let zapInUsdcAmount: string = "2500000000";
 
+//100 Arb
+let zapInEthAmount: string = "10000000000000000000"; 
+
 let timelockIsStrategist = false;
 let snapshotId: string;
 
@@ -131,27 +134,25 @@ describe("Strategy Steer Test", async () => {
 
     await setStrategy(strategyName, controllerContract, timelockSigner, steerVaultAddrress, strategyContract.address);
 
-    usdcContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", usdcAddress, walletSigner);
-    await overwriteTokenAmount(usdcAddress, strategyContract.address, zapInUsdcAmount, 9);
+    arbContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", arbAddress, walletSigner);
+    await overwriteTokenAmount(arbAddress, strategyContract.address, zapInEthAmount, 51);
 
-    await strategyContract.connect(timelockSigner).setRewardToken(usdcAddress);
-
+    await strategyContract.connect(timelockSigner).setRewardToken(arbAddress);
   });
 
-  it("Strategy Should contains Usdc balance", async function () {
-    let usdcBal: BigNumber = await usdcContract.balanceOf(strategyContract.address);
-    expect(usdcBal.toNumber()).to.be.gt(0);
-    expect(usdcBal.toString()).to.be.equals(zapInUsdcAmount);
+  it("Strategy Should contains Arb balance", async function () {
+    let arbBal: BigNumber = await arbContract.balanceOf(strategyContract.address);
+    expect(arbBal.toString()).to.be.equals(zapInEthAmount);
   });
 
-  it("Should exchange strategy usdc to steerVault token", async function () {
-    let usdcBalBefore: BigNumber = await usdcContract.balanceOf(strategyContract.address);
-    let txRes = await strategyContract.connect(strategistSigner).harvest();
-    let usdcBalAfter: BigNumber = await usdcContract.balanceOf(strategyContract.address);
+  it("Should exchange strategy Arb to steerVault token", async function () {
+    let arbBalBefore: BigNumber = await arbContract.balanceOf(strategyContract.address);
+    let txRes = await strategyContract.connect(governanceSigner).harvest();
+    let arbBalAfter: BigNumber = await arbContract.balanceOf(strategyContract.address);
 
     const txReceipt = await txRes.wait();
 
-    expect(usdcBalAfter.toNumber()).to.be.lt(usdcBalBefore.toNumber());
+    expect(arbBalAfter).to.be.lt(arbBalBefore);
     // Now you can check for the event
     expect(txReceipt.events?.some((event: { event: string }) => event.event === "Harvest")).to.be.true;
   });

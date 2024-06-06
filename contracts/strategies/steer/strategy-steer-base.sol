@@ -4,15 +4,13 @@ pragma solidity 0.8.4;
 import "./strategy-steer.sol";
 import "../../interfaces/ISteerPeriphery.sol";
 import "../../interfaces/vault.sol";
-// Vault address for steer sushi USDC-USDC.e pool
-//0x3eE813a6fCa2AaCAF0b7C72428fC5BC031B9BD65
 
 abstract contract StrategySteerBase is StrategySteer {
   using SafeMath for uint256;
   using SafeERC20 for IERC20;
   using SafeERC20 for IVault;
 
-  address public sushiFactory = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
+  address public uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
   uint256 public constant minimumAmount = 1000;
 
   constructor(
@@ -41,7 +39,7 @@ abstract contract StrategySteerBase is StrategySteer {
     uint256 beforeBal = IERC20(want).balanceOf(address(this));
 
     (address token0, address token1) = steerVaultTokens();
-
+    
     (uint256 tokenInAmount0, uint256 tokenInAmount1) = calculateSteerVaultTokensRatio(_reward);
 
     uint256 tokenInAmount = tokenInAmount0 + tokenInAmount1;
@@ -79,14 +77,15 @@ abstract contract StrategySteerBase is StrategySteer {
     //deposit to Steer Periphery contract
     ISteerPeriphery(steerPeriphery).deposit(want, _amount0, _amount1, 0, 0, address(this));
 
-    address[] memory tokens = new address[](2);
+    address[] memory tokens = new address[](3);
     tokens[0] = token0;
     tokens[1] = token1;
-
+    tokens[2] = rewardToken;
+    
     _returnAssets(tokens);
   }
 
-  function calculateSteerVaultTokensPrices() internal view returns (uint256 token0Price, uint256 token1Price) {
+  function calculateSteerVaultTokensPrices() internal returns (uint256 token0Price, uint256 token1Price) {
     (address token0, address token1) = steerVaultTokens();
 
     bool isToken0Stable = isStableToken(token0);
@@ -95,6 +94,12 @@ abstract contract StrategySteerBase is StrategySteer {
     if (isToken0Stable) token0Price = 1 * PRECISION;
     if (isToken1Stable) token1Price = 1 * PRECISION;
 
+    if (isToken0Stable && isToken1Stable) {
+      // For stable pairs, set the pool fee to 500 which is 0.05% pool fee
+      poolFees[token0][token1] = 500;
+      // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
+      poolFees[token1][token0] = 500;
+    }
     if (!isToken0Stable) {
       token0Price = getPrice(token0);
     }
@@ -113,31 +118,55 @@ abstract contract StrategySteerBase is StrategySteer {
     return false;
   }
 
-  function getPrice(address token) internal view returns (uint256) {
+  function getPrice(address token) internal returns (uint256) {
     if (token == weth) {
-      return calculateTokenPriceInUsdc(weth, weth_Usdc_Pair);
+      return calculateEthPriceInUsdc();
     } else {
       (address token0, address token1) = steerVaultTokens();
-      
       // get pair address from factory contract for weth and desired token
       address pair;
       if (token == token0) {
-        pair = IUniswapV2Factory(sushiFactory).getPair(token0, weth);
-        return calculateLpPriceInUsdc(token0, pair);
+        pair = fetchPool(token0, weth, uniV3Factory);
+
+        return calculateTokenPriceInUsd(token0, pair);
       }
 
-      pair = IUniswapV2Factory(sushiFactory).getPair(token1, weth);
-      return calculateLpPriceInUsdc(token1, pair);
+      pair = fetchPool(token1, weth, uniV3Factory);
+
+      return calculateTokenPriceInUsd(token1, pair);
     }
   }
 
-  function calculateSteerVaultTokensRatio(uint256 _amountIn) internal view returns (uint256, uint256) {
+  function fetchPool(address token0, address token1, address _uniV3Factory) internal returns (address) {
+    address pairWithMaxLiquidity = address(0);
+    uint256 maxLiquidity = 0;
+
+    for (uint256 i = 0; i < poolsFee.length; i++) {
+      address currentPair = IUniswapV3Factory(_uniV3Factory).getPool(token0, token1, poolsFee[i]);
+      if (currentPair != address(0)) {
+        uint256 currentLiquidity = IUniswapV3Pool(currentPair).liquidity();
+        if (currentLiquidity > maxLiquidity) {
+          maxLiquidity = currentLiquidity;
+          pairWithMaxLiquidity = currentPair;
+          poolFees[token0][token1] = poolsFee[i];
+          // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
+          poolFees[token1][token0] = poolsFee[i];
+        }
+      }
+    }
+    require(pairWithMaxLiquidity != address(0), "No pool found with sufficient liquidity");
+ 
+
+    return pairWithMaxLiquidity;
+  }
+
+  function calculateSteerVaultTokensRatio(uint256 _amountIn) internal returns (uint256, uint256) {
     (address token0, address token1) = steerVaultTokens();
     (uint256 amount0, uint256 amount1) = getTotalAmounts();
     (uint256 token0Price, uint256 token1Price) = calculateSteerVaultTokensPrices();
 
-    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals()))) / PRECISION;
-    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals()))) / PRECISION;
+    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals())));
+    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals())));
 
     uint256 totalValue = token0Value + token1Value;
     uint256 token0Amount = (_amountIn * token0Value) / totalValue;
