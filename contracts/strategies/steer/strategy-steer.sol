@@ -238,7 +238,7 @@ abstract contract StrategySteer is PriceCalculatorV3 {
     uint256 balance;
     for (uint256 i; i < tokens.length; i++) {
       balance = IERC20(tokens[i]).balanceOf(address(this));
-      if (balance > 0) IERC20(tokens[i]).safeTransfer(msg.sender, balance);
+      if (balance > 0) IERC20(tokens[i]).safeTransfer(IController(controller).treasury(),balance);
     }
   }
 
