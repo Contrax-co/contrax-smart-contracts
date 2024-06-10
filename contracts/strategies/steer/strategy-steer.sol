@@ -223,7 +223,7 @@ abstract contract StrategySteer is PriceCalculatorV3 {
 
   function harvest() public virtual;
 
-  function depositToSteerVault(uint256 _amount0, uint256 _amount1) public virtual;
+  function depositToSteerVault(uint256 _amount0, uint256 _amount1) internal virtual;
 
   function getTotalAmounts() public view returns (uint256, uint256) {
     return steerVault.getTotalAmounts();
@@ -238,7 +238,7 @@ abstract contract StrategySteer is PriceCalculatorV3 {
     uint256 balance;
     for (uint256 i; i < tokens.length; i++) {
       balance = IERC20(tokens[i]).balanceOf(address(this));
-      if (balance > 0) IERC20(tokens[i]).safeTransfer(IController(controller).treasury(),balance);
+      if (balance > 0) IERC20(tokens[i]).safeTransfer(IController(controller).treasury(), balance);
     }
   }
 

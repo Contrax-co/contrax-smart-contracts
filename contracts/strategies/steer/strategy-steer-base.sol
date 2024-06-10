@@ -39,7 +39,7 @@ abstract contract StrategySteerBase is StrategySteer {
     uint256 beforeBal = IERC20(want).balanceOf(address(this));
 
     (address token0, address token1) = steerVaultTokens();
-    
+
     (uint256 tokenInAmount0, uint256 tokenInAmount1) = calculateSteerVaultTokensRatio(_reward);
 
     uint256 tokenInAmount = tokenInAmount0 + tokenInAmount1;
@@ -67,7 +67,7 @@ abstract contract StrategySteerBase is StrategySteer {
     emit Harvest(block.timestamp, afterBal.sub(beforeBal));
   }
 
-  function depositToSteerVault(uint256 _amount0, uint256 _amount1) public override {
+  function depositToSteerVault(uint256 _amount0, uint256 _amount1) internal override {
     (address token0, address token1) = steerVaultTokens();
 
     //approve both tokens to Steer Periphery contract
@@ -81,7 +81,7 @@ abstract contract StrategySteerBase is StrategySteer {
     tokens[0] = token0;
     tokens[1] = token1;
     tokens[2] = rewardToken;
-    
+
     _returnAssets(tokens);
   }
 
@@ -155,7 +155,6 @@ abstract contract StrategySteerBase is StrategySteer {
       }
     }
     require(pairWithMaxLiquidity != address(0), "No pool found with sufficient liquidity");
- 
 
     return pairWithMaxLiquidity;
   }
