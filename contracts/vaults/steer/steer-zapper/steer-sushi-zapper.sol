@@ -9,9 +9,10 @@ import "../../../interfaces/vault.sol";
 import "../../../interfaces/uniswapv2.sol";
 import "../../../interfaces/ISteerPeriphery.sol";
 import "../../../interfaces/ISushiMultiPositionLiquidityManager.sol";
-import "../../../Utils/PriceCalculator.sol";
+import "../../../Utils/PriceCalculatorV3.sol";
+import "../../../interfaces/uniswapv3.sol";
 
-contract SteerSushiZapperBase is PriceCalculator {
+contract SteerSushiZapperBase is PriceCalculatorV3 {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -22,12 +23,17 @@ contract SteerSushiZapperBase is PriceCalculator {
   address public sushiFactory = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
   address public sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
 
+  address public uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
 
+  // tokenIn => tokenOut => poolFee
+  mapping(address => mapping(address => uint24)) public poolFees;
+
   uint256 public constant minimumAmount = 1000;
 
-  constructor(address _governance, address[] memory _vaults) PriceCalculator(_governance) {
+  constructor(address _governance, address[] memory _vaults) PriceCalculatorV3(_governance) {
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
@@ -141,7 +147,7 @@ contract SteerSushiZapperBase is PriceCalculator {
 
   function calculateSteerVaultTokensPrices(
     IVault vault
-  ) internal view returns (uint256 token0Price, uint256 token1Price) {
+  ) internal returns (uint256 token0Price, uint256 token1Price) {
     (address token0, address token1) = steerVaultTokens(vault);
 
     bool isToken0Stable = isStableToken(token0);
@@ -168,25 +174,47 @@ contract SteerSushiZapperBase is PriceCalculator {
     return false;
   }
 
-  function getPrice(address token, IVault vault) internal view returns (uint256) {
+  function getPrice(address token, IVault vault) internal returns (uint256) {
     if (token == weth) {
-      return calculateTokenPriceInUsdc(weth, weth_Usdc_Pair);
+      return calculateEthPriceInUsdc();
     } else {
       (address token0, address token1) = steerVaultTokens(vault);
-
       // get pair address from factory contract for weth and desired token
       address pair;
       if (token == token0) {
-        pair = IUniswapV2Factory(sushiFactory).getPair(token0, weth);
-        return calculateLpPriceInUsdc(token0, pair);
+        pair = fetchPool(token0, weth, uniV3Factory);
+
+        return calculateTokenPriceInUsd(token0, pair);
       }
 
-      pair = IUniswapV2Factory(sushiFactory).getPair(token1, weth);
-      return calculateLpPriceInUsdc(token1, pair);
+      pair = fetchPool(token1, weth, uniV3Factory);
+
+      return calculateTokenPriceInUsd(token1, pair);
     }
   }
 
-  function calculateSteerVaultTokensRatio(IVault vault, uint256 _amountIn) internal view returns (uint256, uint256) {
+  function fetchPool(address token0, address token1, address _uniV3Factory) internal returns (address) {
+    address pairWithMaxLiquidity = address(0);
+    uint256 maxLiquidity = 0;
+
+    for (uint256 i = 0; i < poolsFee.length; i++) {
+      address currentPair = IUniswapV3Factory(_uniV3Factory).getPool(token0, token1, poolsFee[i]);
+      if (currentPair != address(0)) {
+        uint256 currentLiquidity = IUniswapV3Pool(currentPair).liquidity();
+        if (currentLiquidity > maxLiquidity) {
+          maxLiquidity = currentLiquidity;
+          pairWithMaxLiquidity = currentPair;
+          poolFees[token0][token1] = poolsFee[i];
+          // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
+          poolFees[token1][token0] = poolsFee[i];
+        }
+      }
+    }
+    require(pairWithMaxLiquidity != address(0), "No pool found with sufficient liquidity");
+    return pairWithMaxLiquidity;
+  }
+
+  function calculateSteerVaultTokensRatio(IVault vault, uint256 _amountIn) internal returns (uint256, uint256) {
     (address token0, address token1) = steerVaultTokens(vault);
     (uint256 amount0, uint256 amount1) = getTotalAmounts(vault);
     (uint256 token0Price, uint256 token1Price) = calculateSteerVaultTokensPrices(vault);

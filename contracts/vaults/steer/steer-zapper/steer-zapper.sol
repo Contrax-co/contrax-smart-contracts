@@ -9,7 +9,6 @@ import "../../../interfaces/vault.sol";
 import "../../../interfaces/uniswapv3.sol";
 import "../../../interfaces/ISteerPeriphery.sol";
 import "../../../interfaces/ISushiMultiPositionLiquidityManager.sol";
-import "../../../Utils/PriceCalculator.sol";
 import "../../../Utils/PriceCalculatorV3.sol";
 
 contract SteerZapperBase is PriceCalculatorV3 {
