@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import "../lib/erc20.sol";
 import "../interfaces/uniswapv3.sol";
 import "../lib/OracleLibrary.sol";
-import "hardhat/console.sol";
+
 
 contract PriceCalculatorV3 {
   using SafeERC20 for IERC20;
