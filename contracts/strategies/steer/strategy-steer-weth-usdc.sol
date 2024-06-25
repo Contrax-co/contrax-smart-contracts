@@ -17,14 +17,14 @@ contract StrategySteerUsdcWeth is StrategySteerBase {
 
   
   // Dex
-  address public router = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+  address public constant router = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
  function _swap(address tokenIn, address tokenOut, uint256 amountIn) internal override {
     address[] memory path = new address[](2);
     path[0] = tokenIn;
     path[1] = tokenOut;
 
-    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, uniV3Factory);
+    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, UNIV3FACTORY);
 
     _approveTokenIfNeeded(path[0], address(router));
     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({

@@ -17,8 +17,8 @@ contract StrategySteerWethSushi is StrategySteerBase {
 
   
   // Dex
-  address public router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // suhsi V2 router;
-  address public sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
+  address public constant router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // suhsi V2 router;
+  address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
 
 
   function _swap(address tokenIn, address tokenOut, uint256 amountIn) internal override {

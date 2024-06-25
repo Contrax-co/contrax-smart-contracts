@@ -10,7 +10,7 @@ abstract contract StrategySteerBase is StrategySteer {
   using SafeERC20 for IERC20;
   using SafeERC20 for IVault;
 
-  address public uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+  address public constant UNIV3FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
   uint256 public constant minimumAmount = 1000;
 
   constructor(
@@ -126,12 +126,12 @@ abstract contract StrategySteerBase is StrategySteer {
       // get pair address from factory contract for weth and desired token
       address pair;
       if (token == token0) {
-        pair = fetchPool(token0, weth, uniV3Factory);
+        pair = fetchPool(token0, weth, UNIV3FACTORY);
 
         return calculateTokenPriceInUsd(token0, pair);
       }
 
-      pair = fetchPool(token1, weth, uniV3Factory);
+      pair = fetchPool(token1, weth, UNIV3FACTORY);
 
       return calculateTokenPriceInUsd(token1, pair);
     }

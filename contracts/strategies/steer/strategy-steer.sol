@@ -18,29 +18,28 @@ abstract contract StrategySteer is PriceCalculatorV3 {
   // Tokens
   address public want;
   address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
-  address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
+  address public constant steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
   ISushiMultiPositionLiquidityManager public steerVault;
 
   // Perfomance fees - start with 10%
-  uint256 public performanceTreasuryFee = 1000;
-  uint256 public constant performanceTreasuryMax = 10000;
+  uint32 public performanceTreasuryFee = 1000;
+  uint32 public constant performanceTreasuryMax = 10000;
 
-  uint256 public performanceDevFee = 0;
-  uint256 public constant performanceDevMax = 10000;
+  uint32 public performanceDevFee = 0;
+  uint32 public constant performanceDevMax = 10000;
 
   // Withdrawal fee 0%
   // - 0% to treasury
   // - 0% to dev fund
-  uint256 public withdrawalTreasuryFee = 0;
-  uint256 public constant withdrawalTreasuryMax = 100000;
+  uint32 public withdrawalTreasuryFee = 0;
+  uint32 public constant withdrawalTreasuryMax = 100000;
 
-  uint256 public withdrawalDevFundFee = 0;
-  uint256 public constant withdrawalDevFundMax = 100000;
+  uint32 public withdrawalDevFundFee = 0;
+  uint32 public constant withdrawalDevFundMax = 100000;
 
   // How much tokens to keep? 10%
-  uint256 public keep = 1000;
-  uint256 public keepReward = 1000;
-  uint256 public constant keepMax = 10000;
+  uint32 public keepReward = 1000;
+  uint32 public constant keepMax = 10000;
 
   address public controller;
   address public strategist;
@@ -82,6 +81,11 @@ abstract contract StrategySteer is PriceCalculatorV3 {
     _;
   }
 
+  modifier onlyTimeLock() {
+    require(msg.sender == timelock);
+    _;
+  }
+
   function balanceOf() public view returns (uint256) {
     return IERC20(want).balanceOf(address(this));
   }
@@ -99,14 +103,8 @@ abstract contract StrategySteer is PriceCalculatorV3 {
   }
 
   // **** Setters ****
-
-  function setKeep(uint256 _keep) external {
-    require(msg.sender == timelock, "!timelock");
-    keep = _keep;
-  }
-
-  function setKeepReward(uint256 _keepReward) external {
-    require(msg.sender == timelock, "!timelock");
+  function setKeepReward(uint32 _keepReward) external onlyTimeLock {
+    require(_keepReward <= keepMax, "invalid keep reward");
     keepReward = _keepReward;
   }
 
@@ -116,27 +114,27 @@ abstract contract StrategySteer is PriceCalculatorV3 {
   }
 
   function setFeeDistributor(address _feeDistributor) external {
-    require(msg.sender == governance, "not authorized");
+    require(msg.sender == governance, "!governance");
     feeDistributor = _feeDistributor;
   }
 
-  function setWithdrawalDevFundFee(uint256 _withdrawalDevFundFee) external {
-    require(msg.sender == timelock, "!timelock");
+  function setWithdrawalDevFundFee(uint32 _withdrawalDevFundFee) external onlyTimeLock {
+    require(_withdrawalDevFundFee <= withdrawalDevFundMax, "invalid withdrawal dev fund fee");
     withdrawalDevFundFee = _withdrawalDevFundFee;
   }
 
-  function setWithdrawalTreasuryFee(uint256 _withdrawalTreasuryFee) external {
-    require(msg.sender == timelock, "!timelock");
+  function setWithdrawalTreasuryFee(uint32 _withdrawalTreasuryFee) external onlyTimeLock {
+    require(_withdrawalTreasuryFee <= withdrawalTreasuryMax, "invalid withdrawal treasury fee");
     withdrawalTreasuryFee = _withdrawalTreasuryFee;
   }
 
-  function setPerformanceDevFee(uint256 _performanceDevFee) external {
-    require(msg.sender == timelock, "!timelock");
+  function setPerformanceDevFee(uint32 _performanceDevFee) external onlyTimeLock {
+    require(_performanceDevFee <= performanceDevMax, "invalid performance dev fee");
     performanceDevFee = _performanceDevFee;
   }
 
-  function setPerformanceTreasuryFee(uint256 _performanceTreasuryFee) external {
-    require(msg.sender == timelock, "!timelock");
+  function setPerformanceTreasuryFee(uint32 _performanceTreasuryFee) external onlyTimeLock {
+    require(_performanceTreasuryFee <= performanceTreasuryMax, "invalid performance treasury fee");
     performanceTreasuryFee = _performanceTreasuryFee;
   }
 
@@ -150,13 +148,11 @@ abstract contract StrategySteer is PriceCalculatorV3 {
     governance = _governance;
   }
 
-  function setTimelock(address _timelock) external {
-    require(msg.sender == timelock, "!timelock");
+  function setTimelock(address _timelock) external onlyTimeLock {
     timelock = _timelock;
   }
 
-  function setController(address _controller) external {
-    require(msg.sender == timelock, "!timelock");
+  function setController(address _controller) external onlyTimeLock {
     controller = _controller;
   }
 
@@ -236,7 +232,7 @@ abstract contract StrategySteer is PriceCalculatorV3 {
   //returns DUST
   function _returnAssets(address[] memory tokens) internal {
     uint256 balance;
-    for (uint256 i; i < tokens.length; i++) {
+    for (uint256 i = 0; i < tokens.length; i++) {
       balance = IERC20(tokens[i]).balanceOf(address(this));
       if (balance > 0) IERC20(tokens[i]).safeTransfer(IController(controller).treasury(), balance);
     }
@@ -250,8 +246,7 @@ abstract contract StrategySteer is PriceCalculatorV3 {
 
   // **** Emergency functions ****
 
-  function execute(address _target, bytes memory _data) public payable returns (bytes memory response) {
-    require(msg.sender == timelock, "!timelock");
+  function execute(address _target, bytes memory _data) public payable onlyTimeLock returns (bytes memory response) {
     require(_target != address(0), "!target");
 
     // call contract in current context

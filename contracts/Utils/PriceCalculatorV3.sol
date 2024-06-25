@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.4;
 
 import "../lib/erc20.sol";
 import "../interfaces/uniswapv3.sol";
 import "../lib/OracleLibrary.sol";
-import "hardhat/console.sol";
 
 contract PriceCalculatorV3 {
   using SafeERC20 for IERC20;
@@ -23,9 +22,9 @@ contract PriceCalculatorV3 {
     0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8
   ];
 
-  address public weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+  address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
-  address public weth_Usdc_Pool_V3 = 0xC6962004f452bE9203591991D15f6b388e09E8D0;
+  address public constant WETH_USDC_POOLV3 = 0xC6962004f452bE9203591991D15f6b388e09E8D0;
 
   // Modifier to restrict access to governance only
   modifier onlyGovernance() {
@@ -50,7 +49,7 @@ contract PriceCalculatorV3 {
   function calculateTokenPriceInUsd(address _token, address _pairAddress) public view returns (uint256) {
     IUniswapV3Pool pool = IUniswapV3Pool(_pairAddress);
     (, int24 tick, , , , , ) = pool.slot0();
-
+ 
     address token0 = pool.token0();
 
     uint256 lpPriceInWei;
@@ -84,7 +83,7 @@ contract PriceCalculatorV3 {
   }
 
   function calculateEthPriceInUsdc() public view returns (uint256) {
-    IUniswapV3Pool pool = IUniswapV3Pool(weth_Usdc_Pool_V3);
+    IUniswapV3Pool pool = IUniswapV3Pool(WETH_USDC_POOLV3);
     (, int24 tick, , , , , ) = pool.slot0();
 
     uint256 PriceFromOracle = getPriceInTermsOfToken0(tick);

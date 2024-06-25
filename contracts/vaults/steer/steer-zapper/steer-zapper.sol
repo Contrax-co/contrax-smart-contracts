@@ -17,9 +17,9 @@ contract SteerZapperBase is PriceCalculatorV3 {
   using SafeMath for uint256;
   using SafeERC20 for IVault;
 
-  address public router = 0xE592427A0AEce92De3Edee1F18E0157C05861564; // uniswap V3 router
-  address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
-  address public uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+  address public constant router = 0xE592427A0AEce92De3Edee1F18E0157C05861564; // uniswap V3 router
+  address public constant steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
+  address public constant uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;

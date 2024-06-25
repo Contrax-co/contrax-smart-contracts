@@ -18,12 +18,11 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
   using SafeMath for uint256;
   using SafeERC20 for IVault;
 
-  address public router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // suhsi V2 router
-  address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
-  address public sushiFactory = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
-  address public sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
-
-  address public uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+  address public constant router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // suhsi V2 router
+  address public constant steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
+  address public constant sushiFactory = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
+  address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
+  address public constant uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
@@ -211,6 +210,7 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
       }
     }
     require(pairWithMaxLiquidity != address(0), "No pool found with sufficient liquidity");
+
     return pairWithMaxLiquidity;
   }
 
