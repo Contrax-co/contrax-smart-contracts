@@ -5,8 +5,8 @@ import { Contract, Signer, BigNumber } from "ethers";
 import { overwriteTokenAmount, returnSigner, setStrategy } from "../../utils/helpers";
 import { setupSigners } from "../../utils/static";
 
-let zapInUsdcAmount: string = "2500000000";
-let zapInEthAmount: string = "100000000000000000";
+let zapInUsdcAmount: string = "25000000000";
+let zapInEthAmount: string = "1000000000000000000";
 
 let timelockIsStrategist = false;
 

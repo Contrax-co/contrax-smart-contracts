@@ -139,7 +139,7 @@ contract SteerZapperBase is PriceCalculatorV3 {
     path[1] = tokenOut;
 
     if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, uniV3Factory);
-
+ 
     _approveTokenIfNeeded(path[0], address(router));
     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
       tokenIn: path[0],
@@ -164,12 +164,6 @@ contract SteerZapperBase is PriceCalculatorV3 {
     if (isToken0Stable) token0Price = 1 * PRECISION;
     if (isToken1Stable) token1Price = 1 * PRECISION;
 
-    if (isToken0Stable && isToken1Stable) {
-      // For stable pairs, set the pool fee to 500 which is 0.05% pool fee
-      poolFees[token0][token1] = 500;
-      // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
-      poolFees[token1][token0] = 500;
-    }
     if (!isToken0Stable) {
       token0Price = getPrice(token0, vault);
     }
@@ -197,12 +191,12 @@ contract SteerZapperBase is PriceCalculatorV3 {
       address pair;
       if (token == token0) {
         pair = fetchPool(token0, weth, uniV3Factory);
-       
+
         return calculateTokenPriceInUsd(token0, pair);
       }
 
       pair = fetchPool(token1, weth, uniV3Factory);
-     
+
       return calculateTokenPriceInUsd(token1, pair);
     }
   }
