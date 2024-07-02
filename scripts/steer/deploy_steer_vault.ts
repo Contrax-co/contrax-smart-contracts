@@ -71,6 +71,7 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
 
 const governance = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 const timelock = governance;
+const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d";
 
 const poolFees = [
   {
@@ -103,34 +104,48 @@ const poolFees = [
 async function main() {
   const [deployer] = await ethers.getSigners();
 
+  // const VaultSteerSushiUsdcUsdce = await deploy({
+  //   name: "VaultSteerSushiUsdcUsdce",
+  //   args: [governance, timelock, controller],
+  //   contractPath: "contracts/vaults/steer/vault-steer-usdc-usdc.e.sol:VaultSteerSushiUsdcUsdce",
+  // });
+
+  // const VaultSteerSushiUsdtUsdc = await deploy({
+  //   name: "VaultSteerSushiUsdtUsdc",
+  //   args: [governance, timelock, controller],
+  //   contractPath: "contracts/vaults/steer/vault-steer-usdt-usdc.sol:VaultSteerSushiUsdtUsdc",
+  // });
+
   // const VaultSteerSushiWethSushi = await deploy({
   //   name: "VaultSteerSushiWethSushi",
-  //   args: [governance, timelock],
+  //   args: [governance, timelock, controller],
   //   contractPath: "contracts/vaults/steer/vault-steer-weth-sushi.sol:VaultSteerSushiWethSushi",
   // });
 
-  // const SteerZapperBase = await deploy({
-  //   name: "SteerZapperBase",
-  //   args: [
-  //     governance,
-  //     [
-  //       "0x3fB6C1C5b7319Af78608570F97b920a553aB0Ed3",
-  //       "0xe41586C416D8fAb3ee01e8a29DaD6f3a8655097d",
-  //       "0xc9464b7Fb1952AA4E26B54B6E1015038f11ab10d",
-  //       "0x9EfA1F99c86F6Ff0Fa0886775B436281b99e3f26",
-  //     ],
-  //     poolFees.map((e) => e.token0),
-  //     poolFees.map((e) => e.token1),
-  //     poolFees.map((e) => e.poolFee),
-  //   ],
-  //   contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
+  // const VaultSteerSushiWethUsdc = await deploy({
+  //   name: "VaultSteerSushiWethUsdc",
+  //   args: [governance, timelock, controller],
+  //   contractPath: "contracts/vaults/steer/vault-steer-weth-usdc.sol:VaultSteerSushiWethUsdc",
   // });
 
-  const SteerSushiZapperBase = await deploy({
-    name: "SteerSushiZapperBase",
-    args: [governance, ["0x9EfA1F99c86F6Ff0Fa0886775B436281b99e3f26"]],
-    contractPath: "contracts/vaults/steer/steer-zapper/steer-sushi-zapper.sol:SteerSushiZapperBase",
+  const SteerZapperBase = await deploy({
+    name: "SteerZapperBase",
+    args: [
+      governance,
+      [
+        "0x404148F0B94Bc1EA2fdFE98B0DbF36Ff3E015Bb5",
+        "0x84f35729fF344C76FA73989511735c85E1F7487D",
+        "0x79deCB182664B1E7809a7EFBb94B50Db4D183310",
+      ],
+    ],
+    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
   });
+
+  // const SteerSushiZapperBase = await deploy({
+  //   name: "SteerSushiZapperBase",
+  //   args: [governance, ["0x9EfA1F99c86F6Ff0Fa0886775B436281b99e3f26"]],
+  //   contractPath: "contracts/vaults/steer/steer-zapper/steer-sushi-zapper.sol:SteerSushiZapperBase",
+  // });
 }
 
 main()

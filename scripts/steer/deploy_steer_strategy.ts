@@ -104,66 +104,82 @@ const poolFees = [
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  const VaultSteerSushiUsdtUsdc = await deploy({
-    name: "VaultSteerSushiUsdtUsdc",
-    args: [governance, timelock, controller],
-    contractPath: "contracts/vaults/steer/vault-steer-usdt-usdc.sol:VaultSteerSushiUsdtUsdc",
-  });
+  // const VaultSteerSushiUsdtUsdc = await deploy({
+  //   name: "VaultSteerSushiUsdtUsdc",
+  //   args: [governance, timelock, controller],
+  //   contractPath: "contracts/vaults/steer/vault-steer-usdt-usdc.sol:VaultSteerSushiUsdtUsdc",
+  // });
 
-  const VaultSteerSushiWethSushi = await deploy({
-    name: "VaultSteerSushiWethSushi",
-    args: [governance, timelock, controller],
-    contractPath: "contracts/vaults/steer/vault-steer-weth-sushi.sol:VaultSteerSushiWethSushi",
-  });
+  // const VaultSteerSushiWethSushi = await deploy({
+  //   name: "VaultSteerSushiWethSushi",
+  //   args: [governance, timelock, controller],
+  //   contractPath: "contracts/vaults/steer/vault-steer-weth-sushi.sol:VaultSteerSushiWethSushi",
+  // });
 
-  const VaultSteerSushiWethUsdc = await deploy({
-    name: "VaultSteerSushiWethUsdc",
-    args: [governance, timelock, controller],
-    contractPath: "contracts/vaults/steer/vault-steer-weth-usdc.sol:VaultSteerSushiWethUsdc",
-  });
+  // const VaultSteerSushiWethUsdc = await deploy({
+  //   name: "VaultSteerSushiWethUsdc",
+  //   args: [governance, timelock, controller],
+  //   contractPath: "contracts/vaults/steer/vault-steer-weth-usdc.sol:VaultSteerSushiWethUsdc",
+  // });
 
   // deploy strategy
-  const StrategySteerUsdcUsdce = await deploy({
-    name: "StrategySteerUsdcUsdce",
-    args: [governance, governance, controller, governance],
-    contractPath: "contracts/strategies/steer/strategy-steer-usdc-usdce.sol:StrategySteerUsdcUsdce",
-  });
+  // const StrategySteerUsdcUsdce = await deploy({
+  //   name: "StrategySteerUsdcUsdce",
+  //   args: [governance, governance, controller, governance],
+  //   contractPath: "contracts/strategies/steer/strategy-steer-usdc-usdce.sol:StrategySteerUsdcUsdce",
+  // });
 
-  const StrategySteerUsdcUsdt = await deploy({
-    name: "StrategySteerUsdcUsdt",
-    args: [governance, governance, controller, governance],
-    contractPath: "contracts/strategies/steer/strategy-steer-usdc-usdt.sol:StrategySteerUsdcUsdt",
-  });
+  // const StrategySteerUsdcUsdt = await deploy({
+  //   name: "StrategySteerUsdcUsdt",
+  //   args: [governance, governance, controller, governance],
+  //   contractPath: "contracts/strategies/steer/strategy-steer-usdc-usdt.sol:StrategySteerUsdcUsdt",
+  // });
 
-  const StrategySteerWethSushi = await deploy({
-    name: "StrategySteerWethSushi",
-    args: [governance, governance, controller, governance],
-    contractPath: "contracts/strategies/steer/strategy-steer-weth-sushi.sol:StrategySteerWethSushi",
-  });
+  await verify(
+    "0xc3138161693981075Bb5911551906114CD1ea52b",
+    [governance, governance, controller, governance],
+    "StrategySteerUsdcUsdce",
+    0,
+    "contracts/strategies/steer/strategy-steer-usdc-usdce.sol:StrategySteerUsdcUsdce"
+  );
 
-  const StrategySteerUsdcWeth = await deploy({
-    name: "StrategySteerUsdcWeth",
-    args: [governance, governance, controller, governance],
-    contractPath: "contracts/strategies/steer/strategy-steer-usdc-weth.sol:StrategySteerUsdcWeth",
-  });
+  // await verify(
+  //   "0x297006F9E1A6d0e7EEf3514aC10d5684D7b9A454",
+  //   [governance, governance, controller, governance],
+  //   "StrategySteerUsdcUsdt",
+  //   0,
+  //   "contracts/strategies/steer/strategy-steer-usdc-usdt.sol:StrategySteerUsdcUsdt"
+  // );
 
-  const SteerZapperBase = await deploy({
-    name: "SteerZapperBase",
-    args: [
-      governance,
-      ["0x76512AB6a1DEDD45B75dee47841eB9feD2411789", VaultSteerSushiUsdtUsdc.address, VaultSteerSushiWethUsdc.address],
-      poolFees.map((e) => e.token0),
-      poolFees.map((e) => e.token1),
-      poolFees.map((e) => e.poolFee),
-    ],
-    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
-  });
+  // const StrategySteerWethSushi = await deploy({
+  //   name: "StrategySteerWethSushi",
+  //   args: [governance, governance, controller, governance],
+  //   contractPath: "contracts/strategies/steer/strategy-steer-weth-sushi.sol:StrategySteerWethSushi",
+  // });
 
-  const SteerSushiZapperBase = await deploy({
-    name: "SteerSushiZapperBase",
-    args: [governance, [VaultSteerSushiWethSushi.address]],
-    contractPath: "contracts/vaults/steer/steer-zapper/steer-sushi-zapper.sol:SteerSushiZapperBase",
-  });
+  // const StrategySteerUsdcWeth = await deploy({
+  //   name: "StrategySteerUsdcWeth",
+  //   args: [governance, governance, controller, governance],
+  //   contractPath: "contracts/strategies/steer/strategy-steer-weth-usdc.sol:StrategySteerUsdcWeth",
+  // });
+
+  // const SteerZapperBase = await deploy({
+  //   name: "SteerZapperBase",
+  //   args: [
+  //     governance,
+  //     ["0x76512AB6a1DEDD45B75dee47841eB9feD2411789", VaultSteerSushiUsdtUsdc.address, VaultSteerSushiWethUsdc.address],
+  //     poolFees.map((e) => e.token0),
+  //     poolFees.map((e) => e.token1),
+  //     poolFees.map((e) => e.poolFee),
+  //   ],
+  //   contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
+  // });
+
+  // const SteerSushiZapperBase = await deploy({
+  //   name: "SteerSushiZapperBase",
+  //   args: [governance, [VaultSteerSushiWethSushi.address]],
+  //   contractPath: "contracts/vaults/steer/steer-zapper/steer-sushi-zapper.sol:SteerSushiZapperBase",
+  // });
 }
 
 main()
