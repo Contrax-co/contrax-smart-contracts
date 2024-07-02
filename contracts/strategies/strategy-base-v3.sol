@@ -10,6 +10,7 @@ import "../interfaces/vault.sol";
 import "../interfaces/controller.sol";
 import "../interfaces/uniswapv2.sol";
 import "../interfaces/uniswapv3.sol";
+import "../interfaces/camelot.sol";
 
 
 /**
@@ -28,6 +29,10 @@ abstract contract StrategyBaseV3 {
     address public uniswapRouterV3 = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address public sushiRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
     address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
+    address public camelotRouterV3 = 0x1F721E2E82F6676FCE4eA07A5958cF098D339e18;
+
+    address public camelotRouter = 0xc873fEcbd354f5A56E00E710B90EF4201db2448d;
+
 
     // For this example, we will set the pool fee to 0.3%.
     uint24 public constant poolFee = 3000;
@@ -352,6 +357,30 @@ abstract contract StrategyBaseV3 {
         amountOut = ISwapRouter(uniswapRouterV3).exactInputSingle(params);
     }
 
+    function _swapCamelot(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal returns (uint256 amountOut){
+
+        IERC20(_from).safeApprove(camelotRouterV3, 0);
+        IERC20(_from).safeApprove(camelotRouterV3, _amount);
+
+        ICamelotRouterV3.ExactInputSingleParams memory params =
+        ICamelotRouterV3.ExactInputSingleParams({
+            tokenIn: _from,
+            tokenOut: _to,
+            recipient: address(this),
+            deadline: block.timestamp,
+            amountIn: _amount,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+        });
+
+        // The call to `exactInputSingle` executes the swap.
+        amountOut = ICamelotRouterV3(camelotRouterV3).exactInputSingle(params);
+    }
+
     function _swapUniswapWithPath(
         address[] memory path,
         uint256 _amount
@@ -372,6 +401,28 @@ abstract contract StrategyBaseV3 {
         // Executes the swap
         amountOut = ISwapRouter(uniswapRouterV3).exactInput(params);
     }
+
+    function _swapCamelotWithPath(
+        address[] memory path,
+        uint256 _amount
+    ) internal returns (uint256 amountOut){
+
+        IERC20(path[0]).safeApprove(camelotRouterV3, 0);
+        IERC20(path[0]).safeApprove(camelotRouterV3, _amount);
+
+        ICamelotRouterV3.ExactInputParams memory params =
+            ICamelotRouterV3.ExactInputParams({
+                path: abi.encodePacked(path[0], poolFee, path[1], poolFee, path[2]),
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: _amount,
+                amountOutMinimum: 0
+            });
+
+        // Executes the swap
+        amountOut = ICamelotRouterV3(camelotRouterV3).exactInput(params);
+    }
+
 
     function _distributePerformanceFeesAndDeposit() internal {
         uint256 _want = IERC20(want).balanceOf(address(this));

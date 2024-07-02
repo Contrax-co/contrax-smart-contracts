@@ -381,7 +381,6 @@ interface IAlgebraFactory {
    * @return pool The address of the newly created pool
    */
   function createPool(address tokenA, address tokenB) external returns (address pool);
-
 }
 
 /// @title Pool state that never changes
@@ -569,4 +568,6 @@ interface IUniswapV3PoolDerivedState {
 /// @notice A Uniswap pool facilitates swapping and automated market making between any two assets that strictly conform
 /// to the ERC20 specification
 /// @dev The pool interface is broken up into many smaller pieces
-interface IUniswapV3Pool is IUniswapV3PoolImmutables, IUniswapV3PoolState, IUniswapV3PoolDerivedState {}
+interface IUniswapV3Pool is IUniswapV3PoolImmutables, IUniswapV3PoolState, IUniswapV3PoolDerivedState {
+
+}
