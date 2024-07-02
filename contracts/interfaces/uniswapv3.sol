@@ -62,67 +62,65 @@ interface ISwapRouter {
   function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);
 }
 
-interface ICamelotRouterV3{
-   struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        address recipient;
-        uint256 deadline;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
-    }
+interface ICamelotRouterV3 {
+  struct ExactInputSingleParams {
+    address tokenIn;
+    address tokenOut;
+    address recipient;
+    uint256 deadline;
+    uint256 amountIn;
+    uint256 amountOutMinimum;
+    uint160 sqrtPriceLimitX96;
+  }
 
-    /// @notice Swaps `amountIn` of one token for as much as possible of another token
-    /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
-    /// @return amountOut The amount of the received token
-    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
+  /// @notice Swaps `amountIn` of one token for as much as possible of another token
+  /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
+  /// @return amountOut The amount of the received token
+  function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
 
-    struct ExactInputParams {
-        bytes path;
-        address recipient;
-        uint256 deadline;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-    }
+  struct ExactInputParams {
+    bytes path;
+    address recipient;
+    uint256 deadline;
+    uint256 amountIn;
+    uint256 amountOutMinimum;
+  }
 
-    /// @notice Swaps `amountIn` of one token for as much as possible of another along the specified path
-    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
-    /// @return amountOut The amount of the received token
-    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut);
+  /// @notice Swaps `amountIn` of one token for as much as possible of another along the specified path
+  /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
+  /// @return amountOut The amount of the received token
+  function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut);
 
-    struct ExactOutputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 deadline;
-        uint256 amountOut;
-        uint256 amountInMaximum;
-        uint160 sqrtPriceLimitX96;
-    }
+  struct ExactOutputSingleParams {
+    address tokenIn;
+    address tokenOut;
+    uint24 fee;
+    address recipient;
+    uint256 deadline;
+    uint256 amountOut;
+    uint256 amountInMaximum;
+    uint160 sqrtPriceLimitX96;
+  }
 
+  /// @notice Swaps as little as possible of one token for `amountOut` of another token
+  /// @param params The parameters necessary for the swap, encoded as `ExactOutputSingleParams` in calldata
+  /// @return amountIn The amount of the input token
+  function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn);
 
-    /// @notice Swaps as little as possible of one token for `amountOut` of another token
-    /// @param params The parameters necessary for the swap, encoded as `ExactOutputSingleParams` in calldata
-    /// @return amountIn The amount of the input token
-    function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn);
+  struct ExactOutputParams {
+    bytes path;
+    address recipient;
+    uint256 deadline;
+    uint256 amountOut;
+    uint256 amountInMaximum;
+  }
 
-    struct ExactOutputParams {
-        bytes path;
-        address recipient;
-        uint256 deadline;
-        uint256 amountOut;
-        uint256 amountInMaximum;
-    }
+  /// @notice Swaps as little as possible of one token for `amountOut` of another along the specified path (reversed)
+  /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata
+  /// @return amountIn The amount of the input token
+  function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);
 
-    /// @notice Swaps as little as possible of one token for `amountOut` of another along the specified path (reversed)
-    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata
-    /// @return amountIn The amount of the input token
-    function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);
-
-    function multicall(bytes[] calldata data) external payable returns (bytes[] memory results);
-
+  function multicall(bytes[] calldata data) external payable returns (bytes[] memory results);
 }
 
 /// @title QuoterV2 Interface
@@ -286,6 +284,106 @@ interface IUniswapV3Factory {
   function enableFeeAmount(uint24 fee, int24 tickSpacing) external;
 }
 
+/**
+ * @title The interface for the Algebra Factory
+ * @dev Credit to Uniswap Labs under GPL-2.0-or-later license:
+ * https://github.com/Uniswap/v3-core/tree/main/contracts/interfaces
+ */
+interface IAlgebraFactory {
+  /**
+   * @notice Emitted when the owner of the factory is changed
+   * @param newOwner The owner after the owner was changed
+   */
+  event Owner(address indexed newOwner);
+
+  /**
+   * @notice Emitted when the vault address is changed
+   * @param newVaultAddress The vault address after the address was changed
+   */
+  event VaultAddress(address indexed newVaultAddress);
+
+  /**
+   * @notice Emitted when a pool is created
+   * @param token0 The first token of the pool by address sort order
+   * @param token1 The second token of the pool by address sort order
+   * @param pool The address of the created pool
+   */
+  event Pool(address indexed token0, address indexed token1, address pool);
+
+  /**
+   * @notice Emitted when the farming address is changed
+   * @param newFarmingAddress The farming address after the address was changed
+   */
+  event FarmingAddress(address indexed newFarmingAddress);
+
+  /**
+   * @notice Emitted when the default community fee is changed
+   * @param newDefaultCommunityFee The new default community fee value
+   */
+  event DefaultCommunityFee(uint8 newDefaultCommunityFee);
+
+  event FeeConfiguration(
+    uint16 alpha1,
+    uint16 alpha2,
+    uint32 beta1,
+    uint32 beta2,
+    uint16 gamma1,
+    uint16 gamma2,
+    uint32 volumeBeta,
+    uint16 volumeGamma,
+    uint16 baseFee
+  );
+
+  /**
+   * @notice Returns the current owner of the factory
+   * @dev Can be changed by the current owner via setOwner
+   * @return The address of the factory owner
+   */
+  function owner() external view returns (address);
+
+  /**
+   * @notice Returns the current poolDeployerAddress
+   * @return The address of the poolDeployer
+   */
+  function poolDeployer() external view returns (address);
+
+  /**
+   * @dev Is retrieved from the pools to restrict calling
+   * certain functions not by a tokenomics contract
+   * @return The tokenomics contract address
+   */
+  function farmingAddress() external view returns (address);
+
+  /**
+   * @notice Returns the default community fee
+   * @return Fee which will be set at the creation of the pool
+   */
+  function defaultCommunityFee() external view returns (uint8);
+
+  function vaultAddress() external view returns (address);
+
+  /**
+   * @notice Returns the pool address for a given pair of tokens and a fee, or address 0 if it does not exist
+   * @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order
+   * @param tokenA The contract address of either token0 or token1
+   * @param tokenB The contract address of the other token
+   * @return pool The pool address
+   */
+  function poolByPair(address tokenA, address tokenB) external view returns (address pool);
+
+  /**
+   * @notice Creates a pool for the given two tokens and fee
+   * @param tokenA One of the two tokens in the desired pool
+   * @param tokenB The other of the two tokens in the desired pool
+   * @dev tokenA and tokenB may be passed in either order: token0/token1 or token1/token0. tickSpacing is retrieved
+   * from the fee. The call will revert if the pool already exists, the fee is invalid, or the token arguments
+   * are invalid.
+   * @return pool The address of the newly created pool
+   */
+  function createPool(address tokenA, address tokenB) external returns (address pool);
+
+}
+
 /// @title Pool state that never changes
 /// @notice These parameters are fixed for a pool forever, i.e., the methods will always return the same values
 interface IUniswapV3PoolImmutables {
@@ -318,7 +416,6 @@ interface IUniswapV3PoolImmutables {
   /// @return The max amount of liquidity per tick
   function maxLiquidityPerTick() external view returns (uint128);
 }
-
 
 /// @title Pool state that can change
 /// @notice These methods compose the pool's state, and can change with any frequency including multiple times
@@ -439,40 +536,34 @@ interface IUniswapV3PoolState {
 /// @notice Contains view functions to provide information about the pool that is computed rather than stored on the
 /// blockchain. The functions here may have variable gas costs.
 interface IUniswapV3PoolDerivedState {
-    /// @notice Returns the cumulative tick and liquidity as of each timestamp `secondsAgo` from the current block timestamp
-    /// @dev To get a time weighted average tick or liquidity-in-range, you must call this with two values, one representing
-    /// the beginning of the period and another for the end of the period. E.g., to get the last hour time-weighted average tick,
-    /// you must call it with secondsAgos = [3600, 0].
-    /// @dev The time weighted average tick represents the geometric time weighted average price of the pool, in
-    /// log base sqrt(1.0001) of token1 / token0. The TickMath library can be used to go from a tick value to a ratio.
-    /// @param secondsAgos From how long ago each cumulative tick and liquidity value should be returned
-    /// @return tickCumulatives Cumulative tick values as of each `secondsAgos` from the current block timestamp
-    /// @return secondsPerLiquidityCumulativeX128s Cumulative seconds per liquidity-in-range value as of each `secondsAgos` from the current block
-    /// timestamp
-    function observe(uint32[] calldata secondsAgos)
-        external
-        view
-        returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s);
+  /// @notice Returns the cumulative tick and liquidity as of each timestamp `secondsAgo` from the current block timestamp
+  /// @dev To get a time weighted average tick or liquidity-in-range, you must call this with two values, one representing
+  /// the beginning of the period and another for the end of the period. E.g., to get the last hour time-weighted average tick,
+  /// you must call it with secondsAgos = [3600, 0].
+  /// @dev The time weighted average tick represents the geometric time weighted average price of the pool, in
+  /// log base sqrt(1.0001) of token1 / token0. The TickMath library can be used to go from a tick value to a ratio.
+  /// @param secondsAgos From how long ago each cumulative tick and liquidity value should be returned
+  /// @return tickCumulatives Cumulative tick values as of each `secondsAgos` from the current block timestamp
+  /// @return secondsPerLiquidityCumulativeX128s Cumulative seconds per liquidity-in-range value as of each `secondsAgos` from the current block
+  /// timestamp
+  function observe(
+    uint32[] calldata secondsAgos
+  ) external view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s);
 
-    /// @notice Returns a snapshot of the tick cumulative, seconds per liquidity and seconds inside a tick range
-    /// @dev Snapshots must only be compared to other snapshots, taken over a period for which a position existed.
-    /// I.e., snapshots cannot be compared if a position is not held for the entire period between when the first
-    /// snapshot is taken and the second snapshot is taken.
-    /// @param tickLower The lower tick of the range
-    /// @param tickUpper The upper tick of the range
-    /// @return tickCumulativeInside The snapshot of the tick accumulator for the range
-    /// @return secondsPerLiquidityInsideX128 The snapshot of seconds per liquidity for the range
-    /// @return secondsInside The snapshot of seconds per liquidity for the range
-    function snapshotCumulativesInside(int24 tickLower, int24 tickUpper)
-        external
-        view
-        returns (
-            int56 tickCumulativeInside,
-            uint160 secondsPerLiquidityInsideX128,
-            uint32 secondsInside
-        );
+  /// @notice Returns a snapshot of the tick cumulative, seconds per liquidity and seconds inside a tick range
+  /// @dev Snapshots must only be compared to other snapshots, taken over a period for which a position existed.
+  /// I.e., snapshots cannot be compared if a position is not held for the entire period between when the first
+  /// snapshot is taken and the second snapshot is taken.
+  /// @param tickLower The lower tick of the range
+  /// @param tickUpper The upper tick of the range
+  /// @return tickCumulativeInside The snapshot of the tick accumulator for the range
+  /// @return secondsPerLiquidityInsideX128 The snapshot of seconds per liquidity for the range
+  /// @return secondsInside The snapshot of seconds per liquidity for the range
+  function snapshotCumulativesInside(
+    int24 tickLower,
+    int24 tickUpper
+  ) external view returns (int56 tickCumulativeInside, uint160 secondsPerLiquidityInsideX128, uint32 secondsInside);
 }
-
 
 /// @title The interface for a Uniswap V3 Pool
 /// @notice A Uniswap pool facilitates swapping and automated market making between any two assets that strictly conform

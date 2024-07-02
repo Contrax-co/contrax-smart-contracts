@@ -13,10 +13,12 @@ contract SwapRouter {
 
   address public governance;
 
-  uint256 private maxLiquidityV3;
-  uint256 private maxLiquidityV2;
+  uint256 private maxLiquidityV3 = 0;
+  uint256 private maxLiquidityV2 = 0;
 
   address public constant WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+  address constant CAMELOT_ROUTER = 0x1F721E2E82F6676FCE4eA07A5958cF098D339e18;
+  address constant CAMELOT_FACTORY_V3 = 0x1a3c9B1d2F0529D97f2afC5136Cc23e58f1FD35B;
 
   // tokenIn => tokenOut => poolFee
   mapping(address => mapping(address => uint24)) public poolFees;
@@ -38,14 +40,12 @@ contract SwapRouter {
 
   address[] private routerAddressesv3 = [
     0xE592427A0AEce92De3Edee1F18E0157C05861564, // uniswap v3
-    0x8A21F6768C1f8075791D08546Dadf6daA0bE820c, // sushiswap v3
-    0x1F721E2E82F6676FCE4eA07A5958cF098D339e18 // camelotswap v3
+    0x8A21F6768C1f8075791D08546Dadf6daA0bE820c // sushiswap v3
   ];
 
   address[] private factoryAddressesV3 = [
     0x1F98431c8aD98523631AE4a59f267346ea31F984, // uniswap v3
-    0x1af415a1EbA07a4986a52B6f2e7dE7003D82231e, // sushiswap v3
-    0x1a3c9B1d2F0529D97f2afC5136Cc23e58f1FD35B // camelotswap v3
+    0x1af415a1EbA07a4986a52B6f2e7dE7003D82231e // sushiswap v3
   ];
 
   // Modifier to restrict access to governance only
@@ -105,6 +105,34 @@ contract SwapRouter {
     }
   }
 
+  function fetchMaxLiquidPoolForCamelot(
+    address token0,
+    address token1
+  ) internal returns (address pairWithMaxLiquidity) {
+    pairWithMaxLiquidity = address(0);
+    uint256 maxLiquidity = 0;
+
+    address currentPair = IAlgebraFactory(CAMELOT_FACTORY_V3).poolByPair(token0, token1);
+    if (currentPair != address(0)) {
+      // get pair tokens
+      address token0Address = IUniswapV3Pool(currentPair).token0();
+      address token1Address = IUniswapV3Pool(currentPair).token1();
+
+      uint256 token0Reserve = IERC20(currentPair).balanceOf(token0Address);
+      uint256 token1Reserve = IERC20(currentPair).balanceOf(token1Address);
+
+      // get pair liquidity
+      uint256 currentLiquidity = uint256(int256(ABDKMath64x64.sqrt(int128(uint128(token0Reserve * token1Reserve)))));
+
+      if (currentLiquidity > maxLiquidity && currentLiquidity > maxLiquidityV3) {
+        maxLiquidityV3 = currentLiquidity;
+        maxLiquidity = currentLiquidity;
+        pairWithMaxLiquidity = currentPair;
+      }
+      pairWithMaxLiquidity;
+    }
+  }
+
   function fetchMaxLiquidPoolV3(address token0, address token1, address _V3Factory) internal returns (address) {
     address pairWithMaxLiquidity = address(0);
     uint256 maxLiquidity = 0;
@@ -122,7 +150,7 @@ contract SwapRouter {
         // get pair liquidity
         uint256 currentLiquidity = uint256(int256(ABDKMath64x64.sqrt(int128(uint128(token0Reserve * token1Reserve)))));
 
-        if (currentLiquidity > maxLiquidity) {
+        if (currentLiquidity > maxLiquidity && currentLiquidity > maxLiquidityV3) {
           maxLiquidityV3 = currentLiquidity;
           maxLiquidity = currentLiquidity;
           pairWithMaxLiquidity = currentPair;
@@ -133,6 +161,29 @@ contract SwapRouter {
       }
     }
     return pairWithMaxLiquidity;
+  }
+
+  function swapCamelotV3(address _tokenIn, address _tokenOut, uint256 _amountIn) internal {
+
+    address[] memory path = new address[](2);
+    path[0] = _tokenIn;
+    path[1] = _tokenOut;
+
+    _approveTokenIfNeeded(path[0], address(CAMELOT_ROUTER));
+
+    ICamelotRouterV3.ExactInputSingleParams memory params = ICamelotRouterV3.ExactInputSingleParams({
+      tokenIn: path[0],
+      tokenOut: path[1],
+      recipient: address(this),
+      deadline: block.timestamp,
+      amountIn: _amountIn,
+      amountOutMinimum: 0,
+      sqrtPriceLimitX96: 0
+    });
+
+    // The call to `exactInputSingle` executes the swap.
+    ICamelotRouterV3(CAMELOT_ROUTER).exactInputSingle(params);
+    _returnAssets(path);
   }
 
   function swapV2(address tokenIn, address tokenOut, uint256 amountIn, address _router) internal {
@@ -170,6 +221,11 @@ contract SwapRouter {
     path[1] = WETH;
     path[2] = tokenOut;
 
+    if (poolFees[WETH][tokenOut] == 0) {
+      (, address factoryV3) = fetchPoolV3(WETH, tokenOut);
+      require(factoryToRouter[factoryV3] == _router, "router mismatch");
+    }
+
     _approveTokenIfNeeded(path[0], address(_router));
 
     ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
@@ -191,6 +247,11 @@ contract SwapRouter {
     path[0] = tokenIn;
     path[1] = tokenOut;
 
+    if (poolFees[tokenIn][tokenOut] == 0) {
+      (, address factoryV3) = fetchPoolV3(tokenIn, tokenOut);
+      if (factoryV3 != address(0)) _router = factoryToRouter[factoryV3];
+    }
+
     _approveTokenIfNeeded(path[0], address(_router));
     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
       tokenIn: path[0],
@@ -208,25 +269,25 @@ contract SwapRouter {
     _returnAssets(path);
   }
 
+  function multiRouteSwap(address tokenIn, address tokenOut, uint256 amountIn) internal {
+    (, address factoryV2) = fetchPoolV2(tokenIn, WETH);
+    (, address factoryV3) = fetchPoolV3(tokenIn, WETH);
+    if (factoryV2 != address(0) && maxLiquidityV2 > maxLiquidityV3) {
+      multiPathSwapV2(tokenIn, tokenOut, amountIn, factoryToRouter[factoryV2]);
+    } else if (factoryV3 != address(0) && maxLiquidityV3 > maxLiquidityV2) {
+      multiPathSwapV3(tokenIn, tokenOut, amountIn, factoryToRouter[factoryV3]);
+    }
+  }
+
   function swap(address tokenIn, address tokenOut, uint256 amountIn) external {
     (, address factoryV2) = fetchPoolV2(tokenIn, tokenOut);
     (, address factoryV3) = fetchPoolV3(tokenIn, tokenOut);
     if (factoryV2 != address(0) && maxLiquidityV2 > maxLiquidityV3) {
       swapV2(tokenIn, tokenOut, amountIn, factoryToRouter[factoryV2]);
-    } else {
-      require(factoryV3 != address(0) && maxLiquidityV3 > maxLiquidityV2, "No pool found with sufficient liquidity");
+    } else if (factoryV3 != address(0) && maxLiquidityV3 > maxLiquidityV2) {
       swapV3(tokenIn, tokenOut, amountIn, factoryToRouter[factoryV3]);
-    }
-  }
-
-  function multiRouteSwap(address tokenIn, address tokenOut, uint256 amountIn) external {
-    (, address factoryV2) = fetchPoolV2(tokenIn, tokenOut);
-    if (factoryV2 != address(0)) {
-      swapV2(tokenIn, tokenOut, amountIn, factoryToRouter[factoryV2]);
     } else {
-      (, address factoryV3) = fetchPoolV3(tokenIn, tokenOut);
-      require(factoryV3 != address(0), "No pool found with sufficient liquidity");
-      swapV3(tokenIn, tokenOut, amountIn, factoryToRouter[factoryV3]);
+      multiRouteSwap(tokenIn, tokenOut, amountIn);
     }
   }
 
