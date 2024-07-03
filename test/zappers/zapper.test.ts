@@ -41,7 +41,7 @@ let walletSigner: Signer;
 let controllerSigner: Signer;
 let timelockSigner: Signer;
 
-
+let wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"; //WETH
 let asset_addr = "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a";    // GMX
 let asset_addr2 = "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a";   // GMX
 let asset_addr3 = "0xf0cb2dc0db5e6c66B9a70Ac27B06b878da017028";   // OHM
@@ -92,7 +92,7 @@ describe( "Tests for Zapper", async () => {
         //     "0x10000000000000000000000",]
         // );
 
-        const zapperFactory = await ethers.getContractFactory('VaultLPZapperPeapods');
+        const zapperFactory = await ethers.getContractFactory('VaultZapperPeapods');
         Zapper = await zapperFactory.connect(walletSigner).deploy();
 
         Vault = await ethers.getContractAt(vaultName, vault_addr, walletSigner);
@@ -129,7 +129,7 @@ describe( "Tests for Zapper", async () => {
       console.log("before zapping")
 
 
-      await Zapper.connect(walletSigner).zapInETH(vault_addr, 0, asset_addr, {value: "15000000000000000000"});
+      await Zapper.connect(walletSigner).zapInETH(vault_addr, 0, wethAddress, {value: "15000000000000000000"});
 
       let _vaultAfter = await Vault.connect(walletSigner).balanceOf(await walletSigner.getAddress()); 
 

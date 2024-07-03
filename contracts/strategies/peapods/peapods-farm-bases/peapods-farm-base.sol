@@ -47,6 +47,7 @@ abstract contract StrategyPeapodsFarmBase is StrategyBase {
 
   function _withdrawSome(uint256 _amount)
     internal
+    pure
     override
     returns (uint256)
   {
