@@ -9,7 +9,6 @@ import "../../../interfaces/uniswapv2.sol";
 import "../../../interfaces/camelot.sol";
 import "../../../interfaces/peapods.sol";
 
-
 abstract contract PeapodsZapperBase {
   using SafeERC20 for IERC20;
   using Address for address;
@@ -96,7 +95,14 @@ abstract contract PeapodsZapperBase {
 
     _approveTokenIfNeeded(path[0], address(camelotRouterV2));
 
-    UniswapRouterV2(camelotRouterV2).swapExactTokensForTokens(_amount, 0, path, address(this), block.timestamp);
+    ICamelotRouter(camelotRouterV2).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+      _amount,
+      0,
+      path,
+      address(this),
+      zero,
+      block.timestamp
+    );
   }
 
   function _swapCamelot(address _from, address _to, uint256 _amount) internal returns (uint256 amountOut) {
@@ -156,7 +162,6 @@ abstract contract PeapodsZapperBase {
 
       if (baseToken[apToken] == ohm) {
         _swapCamelotWithPathV2(weth, baseToken[apToken], _amount);
-
       } else {
         _swapCamelot(weth, baseToken[apToken], _amount);
       }
