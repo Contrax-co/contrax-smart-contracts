@@ -77,8 +77,15 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   const VaultLPZapperPeapods = await deploy({
-    name: "VaultLPZapperPeapods",
-    args: [],
+    name: "PeapodsZapper",
+    args: [
+      governance,
+      [
+        "0x92781a20B6447F304E72321ed4BC8ca4349b3739",
+        "0x7f9E71e0d829619b5445073d034927347cf0e3eA",
+        "0x91805fD2cB80ad57379842630a569aC6D72E1B47",
+      ],
+    ],
   });
 }
 

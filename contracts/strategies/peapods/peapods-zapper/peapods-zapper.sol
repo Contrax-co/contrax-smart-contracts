@@ -1,17 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "./peapods-lp-zapper-base.sol";
+import "./peapods-zapper-base.sol";
 
-contract VaultZapperPeapods is PeapodsZapperBase {
+contract PeapodsZapper is PeapodsZapperBase {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
   using SafeERC20 for IVault;
 
-  constructor()
-    PeapodsZapperBase(0x1F721E2E82F6676FCE4eA07A5958cF098D339e18, 0xCb410A689A03E06de0a6247b13C13D14237DecC8)
-  {}
+  constructor(
+    address _governance,
+    address[] memory _vaults
+  ) PeapodsZapperBase(0x1F721E2E82F6676FCE4eA07A5958cF098D339e18, _governance) {
+    WETH(weth).deposit{value: 0}();
+    WETH(weth).withdraw(0);
+
+    for (uint i = 0; i < _vaults.length; i++) {
+      whitelistedVaults[_vaults[i]] = true;
+    }
+  }
 
   function zapOutAndSwap(
     address vault_addr,
@@ -27,6 +35,8 @@ contract VaultZapperPeapods is PeapodsZapperBase {
     if (desiredToken == apToken) {
       address[] memory path = new address[](1);
       path[0] = desiredToken;
+
+      require(IERC20(desiredToken).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
       _returnAssets(path);
     } else {
@@ -61,6 +71,8 @@ contract VaultZapperPeapods is PeapodsZapperBase {
       path4[0] = baseToken[apToken];
       path4[1] = desiredToken;
 
+      require(IERC20(desiredToken).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
+
       _returnAssets(path4);
     }
   }
@@ -78,6 +90,8 @@ contract VaultZapperPeapods is PeapodsZapperBase {
     if (apToken == weth) {
       address[] memory path = new address[](1);
       path[0] = apToken;
+
+      require(IERC20(weth).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
       _returnAssets(path);
     } else {
@@ -107,6 +121,8 @@ contract VaultZapperPeapods is PeapodsZapperBase {
       path2[0] = baseToken[apToken];
       path2[1] = weth;
 
+      require(IERC20(weth).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
+
       _returnAssets(path2);
     }
   }
@@ -124,8 +140,12 @@ contract VaultZapperPeapods is PeapodsZapperBase {
     _approveTokenIfNeeded(address(vault.token()), address(vault));
     vault.deposit(IERC20(apToken).balanceOf(address(this)));
 
+    uint256 vaultBalance = vault.balanceOf(address(this));
+
+    require(vaultBalance >= tokenAmountOutMin, "Insignificant tokenAmountOutMin");
+
     //add to guage if possible instead of returning to user, and so no receipt token
-    vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
+    vault.safeTransfer(msg.sender, vaultBalance);
 
     address[] memory path = new address[](2);
     path[0] = apToken;
@@ -133,33 +153,4 @@ contract VaultZapperPeapods is PeapodsZapperBase {
 
     _returnAssets(path);
   }
-
-  // function estimateSwap(address vault_addr, address tokenIn, uint256 fullInvestmentIn) public view returns (uint256 swapAmountIn, uint256 swapAmountOut, address swapTokenOut){
-  //     (, address token) = _getVaultPair(vault_addr);
-
-  //     bool isInputA = token == tokenIn;
-
-  //     if(isInputA){
-  //       swapAmountOut = fullInvestmentIn;
-  //       swapAmountIn = fullInvestmentIn;
-
-  //       swapTokenOut = gmx;
-
-  //     }else{
-  //         address[] memory path = new address[](2);
-  //         path[0]= tokenIn;
-  //         path[1] = gmx;
-
-  //         uint256[] memory amounts = UniswapRouterV2(router).getAmountsOut(
-  //             fullInvestmentIn,
-  //             path
-  //         );
-
-  //         swapAmountOut = amounts[1];
-  //         swapAmountIn = amounts[0];
-
-  //         swapTokenOut = gmx;
-
-  //     }
-  // }
 }
