@@ -19,6 +19,10 @@ contract PeapodsZapper is PeapodsZapperBase {
     for (uint i = 0; i < _vaults.length; i++) {
       whitelistedVaults[_vaults[i]] = true;
     }
+
+    baseToken[0x6a02F704890F507f13d002F2785ca7Ba5BFcc8F7] = 0x02f92800F57BCD74066F5709F1Daa1A4302Df875; // apPEAS / PEAS
+    baseToken[0xEb1A8f8Ea373536600082BA9aE2DB97327513F7d] = 0xf0cb2dc0db5e6c66B9a70Ac27B06b878da017028; // apOHM / OHM
+    baseToken[0x8CB10B11Fad33cfE4758Dc9977d74CE7D2fB4609] = 0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a; // apGMX / GMX
   }
 
   function zapOutAndSwap(
