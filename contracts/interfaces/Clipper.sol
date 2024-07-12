@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.4;
 
 interface IClipper {
@@ -16,4 +15,6 @@ interface IClipper {
     bytes32 r,
     bytes32 s
   ) external payable;
+
+  function burnToWithdraw(uint256 amount) external;
 }

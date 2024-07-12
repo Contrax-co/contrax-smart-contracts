@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.4;
+pragma abicoder v2;
 
 import "../lib/erc20.sol";
 import "../lib/ABDKMath64x64.sol";
 import "../interfaces/uniswapv2.sol";
 import "../interfaces/uniswapv3.sol";
+import "../interfaces/camelot.sol";
 
 contract SwapRouter {
   using SafeERC20 for IERC20;
@@ -15,6 +17,7 @@ contract SwapRouter {
 
   uint256 private maxLiquidityV3 = 0;
   uint256 private maxLiquidityV2 = 0;
+  // uint256 private maxLiquidityV1 = 0;
 
   address public constant WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
   address constant CAMELOT_ROUTER = 0x1F721E2E82F6676FCE4eA07A5958cF098D339e18;
@@ -164,7 +167,6 @@ contract SwapRouter {
   }
 
   function swapCamelotV3(address _tokenIn, address _tokenOut, uint256 _amountIn) internal {
-
     address[] memory path = new address[](2);
     path[0] = _tokenIn;
     path[1] = _tokenOut;
@@ -186,10 +188,29 @@ contract SwapRouter {
     _returnAssets(path);
   }
 
-  function swapV2(address tokenIn, address tokenOut, uint256 amountIn, address _router) internal {
+  function swapCamelotV2(address tokenIn, address tokenOut, uint256 _amount) internal {
     address[] memory path;
 
     path = new address[](2);
+    path[0] = tokenIn;
+    path[1] = tokenOut;
+
+    _approveTokenIfNeeded(path[0], address(CAMELOT_ROUTER));
+
+    ICamelotRouter(CAMELOT_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+      _amount,
+      0,
+      path,
+      address(this),
+      address(0),
+      block.timestamp
+    );
+  }
+
+  function swapV2(address tokenIn, address tokenOut, uint256 amountIn, address _router) internal {
+    address[] memory path;
+
+    path = new address[](2); // 2 path
     path[0] = tokenIn;
     path[1] = tokenOut;
 
@@ -213,6 +234,26 @@ contract SwapRouter {
     UniswapRouterV2(_router).swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp);
 
     _returnAssets(path);
+  }
+
+  function multiPathSwapCamelotV2(address tokenIn, address tokenOut, uint256 _amount) internal {
+    address[] memory path = new address[](3);
+    path[0] = tokenIn;
+    path[1] = WETH;
+    path[2] = tokenOut;
+
+    _approveTokenIfNeeded(WETH, address(CAMELOT_ROUTER));
+
+    _approveTokenIfNeeded(path[0], address(CAMELOT_ROUTER));
+
+    ICamelotRouter(CAMELOT_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+      _amount,
+      0,
+      path,
+      address(this),
+      address(0),
+      block.timestamp
+    );
   }
 
   function multiPathSwapV3(address tokenIn, address tokenOut, uint256 amountIn, address _router) internal {
