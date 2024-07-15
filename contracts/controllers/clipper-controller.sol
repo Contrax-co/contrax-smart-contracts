@@ -14,7 +14,7 @@ import "../interfaces/onesplit.sol";
 import "../interfaces/strategy.sol";
 import "../interfaces/converter.sol";
 
-contract SteerController {
+contract ClipperController {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;

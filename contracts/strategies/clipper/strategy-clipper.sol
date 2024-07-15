@@ -4,11 +4,9 @@ pragma solidity 0.8.4;
 import "../../lib/erc20.sol";
 import "../../interfaces/controller.sol";
 import "../../lib/safe-math.sol";
-import "../../interfaces/ISushiMultiPositionLiquidityManager.sol";
-import "../../Utils/PriceCalculatorV3.sol";
 import "../../interfaces/weth.sol";
 
-contract StrategySteer {
+contract StrategyClipper {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;

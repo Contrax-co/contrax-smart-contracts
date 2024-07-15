@@ -9,7 +9,7 @@ import "../../../interfaces/vault.sol";
 import "../../../interfaces/Clipper.sol";
 import "../../../interfaces/uniswapv3.sol";
 
-contract SteerZapperBase {
+contract ClipperZapperBase {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -240,7 +240,6 @@ contract SteerZapperBase {
     deposit(vault, packedInput, packedConfig, r, s, tokenAmountOutMin);
   }
 
-
   function zapOutAndSwap(
     IVault vault,
     uint256 withdrawAmount,
@@ -264,7 +263,7 @@ contract SteerZapperBase {
     }
     require(IERC20(desiredToken).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
-    _returnClipperTokens();
+    _returnAssets(ClipperTokens);
   }
 
   function zapOutAndSwapEth(
@@ -290,7 +289,7 @@ contract SteerZapperBase {
 
     require(IERC20(weth).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
-    _returnClipperTokens();
+    _returnAssets(ClipperTokens);
   }
 
   function _approveTokenIfNeeded(address token, address spender) internal {
