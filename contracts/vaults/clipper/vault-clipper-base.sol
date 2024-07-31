@@ -4,8 +4,6 @@ pragma solidity ^0.8.4;
 import "../../lib/erc20.sol";
 import "../../lib/safe-math.sol";
 import "../../interfaces/controller.sol";
-import "../../interfaces/ISushiMultiPositionLiquidityManager.sol";
-import "../../interfaces/ISteerPeriphery.sol";
 import "../../interfaces/vault.sol";
 
 contract VaultClipperBase is ERC20 {

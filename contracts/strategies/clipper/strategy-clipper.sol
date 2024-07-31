@@ -6,7 +6,7 @@ import "../../interfaces/controller.sol";
 import "../../lib/safe-math.sol";
 import "../../interfaces/weth.sol";
 
-contract StrategyClipper {
+abstract contract StrategyClipper {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -167,6 +167,10 @@ contract StrategyClipper {
     // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
     poolFees[_token1][_token0] = _poolFee;
   }
+
+  function harvest(uint256 packedInput, uint256 packedConfig, bytes32 r, bytes32 s) public virtual;
+
+  function _swap(address, address, uint256) internal virtual;
 
   // Controller only function for creating additional rewards from dust
   function withdraw(IERC20 _asset) external returns (uint256 balance) {
