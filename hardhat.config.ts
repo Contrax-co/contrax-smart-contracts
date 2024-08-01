@@ -30,7 +30,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 42161,
       forking: {
-        url: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`, // "https://arb1.arbitrum.io/rpc",
+        url: "https://arbitrum.llamarpc.com", //`https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`, // "https://arb1.arbitrum.io/rpc",
         // blockNumber: 211889162,
       },
     },

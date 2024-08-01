@@ -244,9 +244,11 @@ abstract contract StrategySteer is PriceCalculatorV3 {
     }
   }
 
+
   // **** Emergency functions ****
 
-  function execute(address _target, bytes memory _data) public payable onlyTimeLock returns (bytes memory response) {
+
+function execute(address _target, bytes memory _data) public payable onlyTimeLock returns (bytes memory response) {
     require(_target != address(0), "!target");
 
     // call contract in current context

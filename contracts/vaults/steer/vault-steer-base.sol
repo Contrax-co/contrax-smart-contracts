@@ -55,7 +55,7 @@ contract VaultSteerBase is ERC20 {
     governance = _governance;
   }
 
-  function setTimelock(address _timelock) public {
+  function setTimelock(address _timelock) public { 
     require(msg.sender == timelock, "!timelock");
     timelock = _timelock;
   }
