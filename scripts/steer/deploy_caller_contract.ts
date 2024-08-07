@@ -77,12 +77,6 @@ async function main() {
     args: [],
     contractPath: "contracts/Utils/CallerContract.sol:CallerContract",
   });
-
-  // const SteerSushiZapperBase = await deploy({
-  //   name: "SteerSushiZapperBase",
-  //   args: [governance, ["0x9EfA1F99c86F6Ff0Fa0886775B436281b99e3f26"]],
-  //   contractPath: "contracts/vaults/steer/steer-zapper/steer-sushi-zapper.sol:SteerSushiZapperBase",
-  // });
 }
 
 main()
@@ -91,3 +85,4 @@ main()
     console.error(error);
     process.exit(1);
   });
+
