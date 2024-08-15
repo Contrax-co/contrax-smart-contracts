@@ -24,6 +24,7 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
   address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
   address public constant uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
+  address weth;
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
 
@@ -32,7 +33,8 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
 
   uint256 public constant minimumAmount = 1000;
 
-  constructor(address _governance, address[] memory _vaults) PriceCalculatorV3(_governance) {
+  constructor(address _governance,address _weth, address[] memory _vaults) PriceCalculatorV3(_governance) {
+    weth = _weth;
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./vault-steer-base.sol";
+import "../vault-steer-base.sol";
 
 // Vault address for steer sushi WETH-USDC pool
 // 0x01476fcCa94502267008119B83Cea234dc3fA7D7

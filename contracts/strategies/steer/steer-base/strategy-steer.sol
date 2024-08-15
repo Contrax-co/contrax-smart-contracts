@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../../lib/erc20.sol";
-import "../../interfaces/controller.sol";
-import "../../lib/safe-math.sol";
-import "../../interfaces/ISushiMultiPositionLiquidityManager.sol";
-import "../../Utils/PriceCalculatorV3.sol";
-import "../../interfaces/weth.sol";
+import "../../../lib/erc20.sol";
+import "../../../interfaces/controller.sol";
+import "../../../lib/safe-math.sol";
+import "../../../interfaces/ISushiMultiPositionLiquidityManager.sol";
+import "../../../Utils/PriceCalculatorV3.sol";
+import "../../../interfaces/weth.sol";
 
 abstract contract StrategySteer is PriceCalculatorV3 {
   using SafeERC20 for IERC20;
@@ -19,6 +19,7 @@ abstract contract StrategySteer is PriceCalculatorV3 {
   address public want;
   address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
   address public constant steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
+  address public constant weth = 0x4200000000000000000000000000000000000006;
   ISushiMultiPositionLiquidityManager public steerVault;
 
   // Perfomance fees - start with 10%

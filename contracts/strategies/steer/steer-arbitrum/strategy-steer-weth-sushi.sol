@@ -2,7 +2,7 @@
 pragma solidity 0.8.4;
 
 import "./strategy-steer-base.sol";
-import "../../interfaces/uniswapv2.sol";
+import "../../../interfaces/uniswapv2.sol";
 
 // Vault address for steer sushi WETH-Sushi pool
 // 0x6723b8E1B28E924857C02F96f7B23041758AfA98

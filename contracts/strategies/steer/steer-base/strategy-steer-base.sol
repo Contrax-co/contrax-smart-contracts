@@ -2,15 +2,15 @@
 pragma solidity 0.8.4;
 
 import "./strategy-steer.sol";
-import "../../interfaces/ISteerPeriphery.sol";
-import "../../interfaces/vault.sol";
+import "../../../interfaces/ISteerPeriphery.sol";
+import "../../../interfaces/vault.sol";
 
 abstract contract StrategySteerBase is StrategySteer {
   using SafeMath for uint256;
   using SafeERC20 for IERC20;
   using SafeERC20 for IVault;
 
-  address public constant UNIV3FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+  address public FACTORY_TO_FETCH_PRICE;
   uint256 public constant minimumAmount = 1000;
 
   constructor(
@@ -18,8 +18,11 @@ abstract contract StrategySteerBase is StrategySteer {
     address _governance,
     address _strategist,
     address _controller,
-    address _timelock
-  ) StrategySteer(_want, _governance, _strategist, _controller, _timelock) {}
+    address _timelock,
+    address _V3Factory
+  ) StrategySteer(_want, _governance, _strategist, _controller, _timelock) {
+    FACTORY_TO_FETCH_PRICE = _V3Factory;
+  }
 
   // Declare a Harvest Event
   event Harvest(uint _timestamp, uint _value);
@@ -126,23 +129,23 @@ abstract contract StrategySteerBase is StrategySteer {
       // get pair address from factory contract for weth and desired token
       address pair;
       if (token == token0) {
-        pair = fetchPool(token0, weth, UNIV3FACTORY);
+        pair = fetchPool(token0, weth, FACTORY_TO_FETCH_PRICE);
 
         return calculateTokenPriceInUsd(token0, pair);
       }
 
-      pair = fetchPool(token1, weth, UNIV3FACTORY);
+      pair = fetchPool(token1, weth, FACTORY_TO_FETCH_PRICE);
 
       return calculateTokenPriceInUsd(token1, pair);
     }
   }
 
-  function fetchPool(address token0, address token1, address _uniV3Factory) internal returns (address) {
+  function fetchPool(address token0, address token1, address _V3Factory) internal returns (address) {
     address pairWithMaxLiquidity = address(0);
     uint256 maxLiquidity = 0;
 
     for (uint256 i = 0; i < poolsFee.length; i++) {
-      address currentPair = IUniswapV3Factory(_uniV3Factory).getPool(token0, token1, poolsFee[i]);
+      address currentPair = IUniswapV3Factory(_V3Factory).getPool(token0, token1, poolsFee[i]);
       if (currentPair != address(0)) {
         uint256 currentLiquidity = IUniswapV3Pool(currentPair).liquidity();
         if (currentLiquidity > maxLiquidity) {

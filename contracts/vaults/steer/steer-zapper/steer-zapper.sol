@@ -17,9 +17,10 @@ contract SteerZapperBase is PriceCalculatorV3 {
   using SafeMath for uint256;
   using SafeERC20 for IVault;
 
-  address public constant router = 0xE592427A0AEce92De3Edee1F18E0157C05861564; // uniswap V3 router
+  address router; // uniswap V3 router
   address public constant steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
-  address public constant uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+  address V3Factory;
+  address weth;
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
@@ -28,7 +29,10 @@ contract SteerZapperBase is PriceCalculatorV3 {
 
   uint256 public constant minimumAmount = 1000;
 
-  constructor(address _governance, address[] memory _vaults) PriceCalculatorV3(_governance) {
+  constructor(address _governance, address _weth, address _router,address _V3Factory,address[] memory _vaults) PriceCalculatorV3(_governance) {
+    weth = _weth;
+    router = _router;
+    V3Factory = _V3Factory;
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
@@ -138,8 +142,8 @@ contract SteerZapperBase is PriceCalculatorV3 {
     path[0] = tokenIn;
     path[1] = tokenOut;
 
-    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, uniV3Factory);
- 
+    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, V3Factory);
+
     _approveTokenIfNeeded(path[0], address(router));
     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
       tokenIn: path[0],
@@ -190,12 +194,12 @@ contract SteerZapperBase is PriceCalculatorV3 {
       // get pair address from factory contract for weth and desired token
       address pair;
       if (token == token0) {
-        pair = fetchPool(token0, weth, uniV3Factory);
+        pair = fetchPool(token0, weth, V3Factory);
 
         return calculateTokenPriceInUsd(token0, pair);
       }
 
-      pair = fetchPool(token1, weth, uniV3Factory);
+      pair = fetchPool(token1, weth, V3Factory);
 
       return calculateTokenPriceInUsd(token1, pair);
     }

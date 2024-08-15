@@ -2,29 +2,32 @@
 pragma solidity 0.8.4;
 
 import "./strategy-steer-base.sol";
-import "../../interfaces/uniswapv3.sol";
+import "../../../interfaces/uniswapv3.sol";
 
-// Vault address for steer sushi WETH-USDC pool
-// 0x01476fcCa94502267008119B83Cea234dc3fA7D7
+// Vault address for steer sushi WETH-USDBC pool base
+// 0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3
+
+// V3 Factory sushi => 0xc35DADB65012eC5796536bD9864eD8773aBc74C4
 
 contract StrategySteerUsdcWeth is StrategySteerBase {
   constructor( 
     address _governance,
     address _strategist,
     address _controller,
-    address _timelock
-  ) StrategySteerBase(0x01476fcCa94502267008119B83Cea234dc3fA7D7, _governance, _strategist, _controller, _timelock) {}
+    address _timelock,
+    address _V3Factory
+  ) StrategySteerBase(0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3, _governance, _strategist, _controller, _timelock, _V3Factory) {}
 
   
   // Dex
-  address public constant router = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+  address public constant router = 0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f;
 
  function _swap(address tokenIn, address tokenOut, uint256 amountIn) internal override {
     address[] memory path = new address[](2);
     path[0] = tokenIn;
     path[1] = tokenOut;
 
-    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, UNIV3FACTORY);
+    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut,FACTORY_TO_FETCH_PRICE);
 
     _approveTokenIfNeeded(path[0], address(router));
     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({

@@ -22,8 +22,6 @@ contract PriceCalculatorV3 {
     0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8
   ];
 
-  address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
-
   address public constant WETH_USDC_POOLV3 = 0xC6962004f452bE9203591991D15f6b388e09E8D0;
 
   // Modifier to restrict access to governance only
