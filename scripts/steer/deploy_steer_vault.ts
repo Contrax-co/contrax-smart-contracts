@@ -72,6 +72,7 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
 const governance = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 const timelock = governance;
 const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d";
+const v3Factory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
 
 const poolFees = [
   {
@@ -110,29 +111,17 @@ async function main() {
     contractPath: "contracts/controllers/steer-controller.sol:SteerController",
   });
 
-  // const VaultSteerSushiUsdcUsdce = await deploy({
-  //   name: "VaultSteerSushiUsdcUsdce",
-  //   args: [governance, timelock, controller],
-  //   contractPath: "contracts/vaults/steer/vault-steer-usdc-usdc.e.sol:VaultSteerSushiUsdcUsdce",
-  // });
+  const StrategySteerWethUsdbc = await deploy({
+    name: "StrategySteerUsdbcWeth",
+    args: [governance, governance, steerController.address, governance, v3Factory],
+    contractPath: "contracts/strategies/steer/steer-base/strategy-steer-weth-usdbc.sol:StrategySteerUsdbcWeth",
+  });
 
-  // const VaultSteerSushiUsdtUsdc = await deploy({
-  //   name: "VaultSteerSushiUsdtUsdc",
-  //   args: [governance, timelock, controller],
-  //   contractPath: "contracts/vaults/steer/vault-steer-usdt-usdc.sol:VaultSteerSushiUsdtUsdc",
-  // });
-
-  // const VaultSteerSushiWethSushi = await deploy({
-  //   name: "VaultSteerSushiWethSushi",
-  //   args: [governance, timelock, controller],
-  //   contractPath: "contracts/vaults/steer/vault-steer-weth-sushi.sol:VaultSteerSushiWethSushi",
-  // });
-
-  // const VaultSteerSushiWethUsdc = await deploy({
-  //   name: "VaultSteerSushiWethUsdc",
-  //   args: [governance, timelock, controller],
-  //   contractPath: "contracts/vaults/steer/vault-steer-weth-usdc.sol:VaultSteerSushiWethUsdc",
-  // });
+  const VaultSteerSushiWethUsdbc = await deploy({
+    name: "VaultSteerSushiWethUsdbc",
+    args: [governance, timelock, steerController.address],
+    contractPath: "contracts/vaults/steer/steer-vault-base/vault-steer-weth-usdbc.sol:VaultSteerSushiWethUsdbc",
+  });
 
   // const SteerZapperBase = await deploy({
   //   name: "SteerZapperBase",

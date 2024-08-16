@@ -9,25 +9,33 @@ import "../../../interfaces/uniswapv3.sol";
 
 // V3 Factory sushi => 0xc35DADB65012eC5796536bD9864eD8773aBc74C4
 
-contract StrategySteerUsdcWeth is StrategySteerBase {
-  constructor( 
+contract StrategySteerUsdbcWeth is StrategySteerBase {
+  constructor(
     address _governance,
     address _strategist,
     address _controller,
     address _timelock,
     address _V3Factory
-  ) StrategySteerBase(0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3, _governance, _strategist, _controller, _timelock, _V3Factory) {}
+  )
+    StrategySteerBase(
+      0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3,
+      _governance,
+      _strategist,
+      _controller,
+      _timelock,
+      _V3Factory
+    )
+  {}
 
-  
   // Dex
   address public constant router = 0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f;
 
- function _swap(address tokenIn, address tokenOut, uint256 amountIn) internal override {
+  function _swap(address tokenIn, address tokenOut, uint256 amountIn) internal override {
     address[] memory path = new address[](2);
     path[0] = tokenIn;
     path[1] = tokenOut;
 
-    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut,FACTORY_TO_FETCH_PRICE);
+    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, FACTORY_TO_FETCH_PRICE);
 
     _approveTokenIfNeeded(path[0], address(router));
     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
