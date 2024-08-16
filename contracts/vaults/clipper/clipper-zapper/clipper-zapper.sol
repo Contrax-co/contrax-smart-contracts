@@ -182,9 +182,9 @@ contract ClipperZapperBase {
 
     IClipper(CLIPPER).packedTransmitAndDepositOneAsset(packedInput, packedConfig, r, s);
 
-    //get steer vault balance
+    //get clipper vault balance
     uint256 clipperBal = IERC20(CLIPPER).balanceOf(address(this));
-    //depoist steer vault shares to local vault
+    //depoist clipper vault shares to local vault
 
     _approveTokenIfNeeded(CLIPPER, address(vault));
 

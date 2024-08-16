@@ -78,25 +78,12 @@ contract StrategyClipperBase is StrategyClipper {
     ISwapRouter(address(router)).exactInputSingle(params);
   }
 
-  function deposit(IVault vault, uint256 packedInput, uint256 packedConfig, bytes32 r, bytes32 s) internal {
+  function deposit(uint256 packedInput, uint256 packedConfig, bytes32 r, bytes32 s) internal {
     (, address tokenIn) = unpack(packedInput);
 
     _approveTokenIfNeeded(tokenIn, CLIPPER);
 
     IClipper(CLIPPER).packedTransmitAndDepositOneAsset(packedInput, packedConfig, r, s);
-
-    //get steer vault balance
-    uint256 clipperBal = IERC20(CLIPPER).balanceOf(address(this));
-    //depoist steer vault shares to local vault
-
-    _approveTokenIfNeeded(CLIPPER, address(vault));
-
-    vault.deposit(clipperBal);
-
-    uint256 vaultBalance = vault.balanceOf(address(this));
-
-    //return vault tokens to user
-    IERC20(address(vault)).safeTransfer(msg.sender, vaultBalance);
 
     address[] memory tokens = new address[](2);
     tokens[0] = tokenIn;
@@ -112,15 +99,13 @@ contract StrategyClipperBase is StrategyClipper {
     uint256 _keepReward = _reward.mul(keepReward).div(keepMax);
     IERC20(rewardToken).safeTransfer(IController(controller).treasury(), _keepReward);
 
-    //get strategy steer vault tokens before balances
+    //get strategy clipper vault tokens before balances
     uint256 beforeBal = IERC20(want).balanceOf(address(this));
 
-    address _vault = IController(controller).vaults(address(want));
-
-    //get strategy steer vault tokens after balances
+    //get strategy clipper vault tokens after balances
     uint256 afterBal = IERC20(want).balanceOf(address(this));
 
-    deposit(IVault(_vault), packedInput, packedConfig, r, s);
+    deposit(packedInput, packedConfig, r, s);
 
     emit Harvest(block.timestamp, afterBal.sub(beforeBal));
   }
