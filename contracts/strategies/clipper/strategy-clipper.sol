@@ -55,6 +55,8 @@ abstract contract StrategyClipper {
     require(_controller != address(0));
     require(_timelock != address(0));
 
+    //Arb Address set as reward token
+    rewardToken = 0x912CE59144191C1204E64559FE8253a0e49E6548;
     want = _want;
     governance = _governance;
     strategist = _strategist;
