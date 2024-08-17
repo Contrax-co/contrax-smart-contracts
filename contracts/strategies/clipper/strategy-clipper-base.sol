@@ -85,9 +85,8 @@ contract StrategyClipperBase is StrategyClipper {
 
     IClipper(CLIPPER).packedTransmitAndDepositOneAsset(packedInput, packedConfig, r, s);
 
-    address[] memory tokens = new address[](2);
+    address[] memory tokens = new address[](1);
     tokens[0] = tokenIn;
-    tokens[1] = CLIPPER;
 
     _returnAssets(tokens);
   }
