@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "./strategy-steer-base.sol";
+import "../strategy-steer-base.sol";
 import "../../../interfaces/uniswapv3.sol";
 
 // Vault address for steer sushi WETH-USDBC pool base
@@ -15,6 +15,7 @@ contract StrategySteerUsdbcWeth is StrategySteerBase {
     address _strategist,
     address _controller,
     address _timelock,
+    address _weth,
     address _V3Factory
   )
     StrategySteerBase(
@@ -23,6 +24,7 @@ contract StrategySteerUsdbcWeth is StrategySteerBase {
       _strategist,
       _controller,
       _timelock,
+      _weth,
       _V3Factory
     )
   {}
@@ -35,7 +37,7 @@ contract StrategySteerUsdbcWeth is StrategySteerBase {
     path[0] = tokenIn;
     path[1] = tokenOut;
 
-    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, FACTORY_TO_FETCH_PRICE);
+    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, V3FACTORY);
 
     _approveTokenIfNeeded(path[0], address(router));
     ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({

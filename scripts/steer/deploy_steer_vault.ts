@@ -73,6 +73,8 @@ const governance = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 const timelock = governance;
 const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d";
 const v3Factory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
+const weth = "0x4200000000000000000000000000000000000006";
+const router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
 
 const poolFees = [
   {
@@ -111,9 +113,9 @@ async function main() {
     contractPath: "contracts/controllers/steer-controller.sol:SteerController",
   });
 
-  const StrategySteerWethUsdbc = await deploy({
+  const StrategySteerUsdbcWeth = await deploy({
     name: "StrategySteerUsdbcWeth",
-    args: [governance, governance, steerController.address, governance, v3Factory],
+    args: [governance, governance, steerController.address, governance, weth, v3Factory],
     contractPath: "contracts/strategies/steer/steer-base/strategy-steer-weth-usdbc.sol:StrategySteerUsdbcWeth",
   });
 
@@ -123,18 +125,11 @@ async function main() {
     contractPath: "contracts/vaults/steer/steer-vault-base/vault-steer-weth-usdbc.sol:VaultSteerSushiWethUsdbc",
   });
 
-  // const SteerZapperBase = await deploy({
-  //   name: "SteerZapperBase",
-  //   args: [
-  //     governance,
-  //     [
-  //       "0x404148F0B94Bc1EA2fdFE98B0DbF36Ff3E015Bb5",
-  //       "0x84f35729fF344C76FA73989511735c85E1F7487D",
-  //       "0x79deCB182664B1E7809a7EFBb94B50Db4D183310",
-  //     ],
-  //   ],
-  //   contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
-  // });
+  const SteerZapperBase = await deploy({
+    name: "SteerZapperBase",
+    args: [governance, weth, router, v3Factory, [VaultSteerSushiWethUsdbc.address]],
+    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
+  });
 
   // const SteerSushiZapperBase = await deploy({
   //   name: "SteerSushiZapperBase",

@@ -29,7 +29,13 @@ contract SteerZapperBase is PriceCalculatorV3 {
 
   uint256 public constant minimumAmount = 1000;
 
-  constructor(address _governance, address _weth, address _router,address _V3Factory,address[] memory _vaults) PriceCalculatorV3(_governance) {
+  constructor(
+    address _governance,
+    address _weth,
+    address _router,
+    address _V3Factory,
+    address[] memory _vaults
+  ) PriceCalculatorV3(_governance) {
     weth = _weth;
     router = _router;
     V3Factory = _V3Factory;
@@ -59,6 +65,12 @@ contract SteerZapperBase is PriceCalculatorV3 {
     uint24 fee = poolFees[token0][token1];
     require(fee > 0, "pool fee is not set");
     return fee;
+  }
+
+  function setSwapAddresses(address _weth, address _router, address _V3Factory) external onlyGovernance {
+    weth = _weth;
+    router = _router;
+    V3Factory = _V3Factory;
   }
 
   // Function to add a vault to the whitelist

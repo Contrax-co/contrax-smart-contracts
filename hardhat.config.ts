@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import dotenv from "dotenv";
+import { network } from "hardhat";
 dotenv.config();
 
 const config: HardhatUserConfig = {
@@ -26,6 +27,7 @@ const config: HardhatUserConfig = {
       },
     ],
   },
+
   networks: {
     hardhat: {
       chainId: 42161,
@@ -34,9 +36,16 @@ const config: HardhatUserConfig = {
         // blockNumber: 211889162,
       },
     },
+
     arbitrum: {
       chainId: 42161,
       url: "https://arb1.arbitrum.io/rpc",
+      accounts: [process.env.PRIVATE_KEY ?? ""],
+    },
+
+    base: {
+      chainId: 8453,
+      url: "https://base.llamarpc.com",
       accounts: [process.env.PRIVATE_KEY ?? ""],
     },
     mainnet: {
@@ -54,7 +63,20 @@ const config: HardhatUserConfig = {
     timeout: 1000000,
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      base: process.env.BASE_API_KEY ?? "",
+      arb: process.env.ETHERSCAN_API_KEY ?? "",
+    },
+    customChains: [
+      {
+        network: "base",
+        chainId: 8453,
+        urls: {
+          apiURL: "https://api.basescan.org/api",
+          browserURL: "https://basescan.org/",
+        },
+      },
+    ],
   },
 };
 export default config;

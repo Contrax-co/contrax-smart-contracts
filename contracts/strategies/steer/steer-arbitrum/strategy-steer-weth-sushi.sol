@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "./strategy-steer-base.sol";
+import "../strategy-steer-base.sol";
 import "../../../interfaces/uniswapv2.sol";
 
 // Vault address for steer sushi WETH-Sushi pool
@@ -12,14 +12,24 @@ contract StrategySteerWethSushi is StrategySteerBase {
     address _governance,
     address _strategist,
     address _controller,
-    address _timelock
-  ) StrategySteerBase(0x6723b8E1B28E924857C02F96f7B23041758AfA98, _governance, _strategist, _controller, _timelock) {}
+    address _timelock,
+    address _weth,
+    address _V3Factory
+  )
+    StrategySteerBase(
+      0x6723b8E1B28E924857C02F96f7B23041758AfA98,
+      _governance,
+      _strategist,
+      _controller,
+      _timelock,
+      _weth,
+      _V3Factory
+    )
+  {}
 
-  
   // Dex
   address public constant router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // suhsi V2 router;
   address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
-
 
   function _swap(address tokenIn, address tokenOut, uint256 amountIn) internal override {
     address[] memory path;
@@ -33,11 +43,11 @@ contract StrategySteerWethSushi is StrategySteerBase {
 
       _approveTokenIfNeeded(weth, address(router));
     } else {
-      path = new address[](2); 
+      path = new address[](2);
       path[0] = tokenIn;
       path[1] = tokenOut;
     }
-    
+
     _approveTokenIfNeeded(path[0], address(router));
 
     UniswapRouterV2(router).swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp);

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../../../lib/erc20.sol";
-import "../../../interfaces/controller.sol";
-import "../../../lib/safe-math.sol";
-import "../../../interfaces/ISushiMultiPositionLiquidityManager.sol";
-import "../../../Utils/PriceCalculatorV3.sol";
-import "../../../interfaces/weth.sol";
+import "../../lib/erc20.sol";
+import "../../interfaces/controller.sol";
+import "../../lib/safe-math.sol";
+import "../../interfaces/ISushiMultiPositionLiquidityManager.sol";
+import "../../Utils/PriceCalculatorV3.sol";
+import "../../interfaces/weth.sol";
 
 abstract contract StrategySteer is PriceCalculatorV3 {
   using SafeERC20 for IERC20;
@@ -19,7 +19,7 @@ abstract contract StrategySteer is PriceCalculatorV3 {
   address public want;
   address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
   address public constant steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
-  address public constant weth = 0x4200000000000000000000000000000000000006;
+  address weth;
   ISushiMultiPositionLiquidityManager public steerVault;
 
   // Perfomance fees - start with 10%
@@ -54,14 +54,17 @@ abstract contract StrategySteer is PriceCalculatorV3 {
     address _governance,
     address _strategist,
     address _controller,
-    address _timelock
+    address _timelock,
+    address _weth
   ) PriceCalculatorV3(_governance) {
     require(_want != address(0));
     require(_governance != address(0));
     require(_strategist != address(0));
     require(_controller != address(0));
     require(_timelock != address(0));
+    require(_weth != address(0));
 
+    weth = _weth;
     want = _want;
     governance = _governance;
     strategist = _strategist;
@@ -245,11 +248,9 @@ abstract contract StrategySteer is PriceCalculatorV3 {
     }
   }
 
-
   // **** Emergency functions ****
 
-
-function execute(address _target, bytes memory _data) public payable onlyTimeLock returns (bytes memory response) {
+  function execute(address _target, bytes memory _data) public payable onlyTimeLock returns (bytes memory response) {
     require(_target != address(0), "!target");
 
     // call contract in current context
