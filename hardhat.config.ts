@@ -30,10 +30,15 @@ const config: HardhatUserConfig = {
 
   networks: {
     hardhat: {
-      chainId: 42161,
+      // chainId: 42161,
+      // forking: {
+      //   url: "https://arbitrum.llamarpc.com", //`https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`, // "https://arb1.arbitrum.io/rpc",
+      //   // blockNumber: 211889162,
+      // },
+
+      chainId: 8453,
       forking: {
-        url: "https://arbitrum.llamarpc.com", //`https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`, // "https://arb1.arbitrum.io/rpc",
-        // blockNumber: 211889162,
+        url: "https://base-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}", //"https://base.llamarpc.com",
       },
     },
 
@@ -88,4 +93,3 @@ const config: HardhatUserConfig = {
   },
 };
 export default config;
-
