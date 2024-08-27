@@ -18,7 +18,7 @@ contract SteerZapperBase is PriceCalculatorV3 {
   using SafeERC20 for IVault;
 
   address router; // uniswap V3 router
-  address public constant steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
+  address STEER_PERIPHERY;
   address V3Factory;
   address weth;
 
@@ -34,11 +34,13 @@ contract SteerZapperBase is PriceCalculatorV3 {
     address _weth,
     address _router,
     address _V3Factory,
+    address _steerPeriphery,
     address[] memory _vaults
   ) PriceCalculatorV3(_governance) {
     weth = _weth;
     router = _router;
     V3Factory = _V3Factory;
+    STEER_PERIPHERY = _steerPeriphery;
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
@@ -119,13 +121,13 @@ contract SteerZapperBase is PriceCalculatorV3 {
 
     //Deposit tokens to steer vault tokens
     //approve both tokens to Steer Periphery contract
-    _approveTokenIfNeeded(token0, steerPeriphery);
-    _approveTokenIfNeeded(token1, steerPeriphery);
+    _approveTokenIfNeeded(token0, STEER_PERIPHERY);
+    _approveTokenIfNeeded(token1, STEER_PERIPHERY);
 
     //get steer vault from local vault
     address _steerVault = vault.token();
     //deposit to Steer Periphery contract
-    ISteerPeriphery(steerPeriphery).deposit(_steerVault, amount0, amount1, 0, 0, address(this));
+    ISteerPeriphery(STEER_PERIPHERY).deposit(_steerVault, amount0, amount1, 0, 0, address(this));
 
     //get steer vault balance
     uint256 balance = IERC20(_steerVault).balanceOf(address(this));

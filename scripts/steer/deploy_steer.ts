@@ -136,7 +136,7 @@ async function main() {
 
   const SteerZapperBase = await deploy({
     name: "SteerZapperBase",
-    args: [governance, wethBase, sushiV3Router, v3SushiFactory, [VaultSteerSushiWethUsdbc.address]],
+    args: [governance, wethBase, sushiV3Router, v3SushiFactory, steerPeripheryBase, [VaultSteerSushiWethUsdbc.address]],
     contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
   });
 
@@ -172,3 +172,4 @@ main()
     console.error(error);
     process.exit(1);
   });
+
