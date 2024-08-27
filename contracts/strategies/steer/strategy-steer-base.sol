@@ -11,6 +11,8 @@ abstract contract StrategySteerBase is StrategySteer {
   using SafeERC20 for IVault;
 
   address public V3FACTORY;
+  address STEER_PERIPHERY;
+
   uint256 public constant minimumAmount = 1000;
 
   constructor(
@@ -20,10 +22,12 @@ abstract contract StrategySteerBase is StrategySteer {
     address _controller,
     address _timelock,
     address _weth,
-    address _V3Factory
+    address _V3Factory,
+    address _steerPeriphery
   ) StrategySteer(_want, _governance, _strategist, _controller, _timelock, _weth) {
     require(_V3Factory != address(0));
     V3FACTORY = _V3Factory;
+    STEER_PERIPHERY = _steerPeriphery;
   }
 
   // Declare a Harvest Event
@@ -76,11 +80,11 @@ abstract contract StrategySteerBase is StrategySteer {
     (address token0, address token1) = steerVaultTokens();
 
     //approve both tokens to Steer Periphery contract
-    _approveTokenIfNeeded(token0, steerPeriphery);
-    _approveTokenIfNeeded(token1, steerPeriphery);
+    _approveTokenIfNeeded(token0, STEER_PERIPHERY);
+    _approveTokenIfNeeded(token1, STEER_PERIPHERY);
 
     //deposit to Steer Periphery contract
-    ISteerPeriphery(steerPeriphery).deposit(want, _amount0, _amount1, 0, 0, address(this));
+    ISteerPeriphery(STEER_PERIPHERY).deposit(want, _amount0, _amount1, 0, 0, address(this));
 
     address[] memory tokens = new address[](3);
     tokens[0] = token0;

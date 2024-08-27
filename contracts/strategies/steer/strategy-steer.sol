@@ -18,7 +18,7 @@ abstract contract StrategySteer is PriceCalculatorV3 {
   // Tokens
   address public want;
   address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
-  address public constant steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
+  
   address weth;
   ISushiMultiPositionLiquidityManager public steerVault;
 

@@ -6,7 +6,6 @@ import "../../../interfaces/uniswapv3.sol";
 
 // Vault address for steer sushi WETH-USDBC pool base
 // 0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3
-
 // V3 Factory sushi => 0xc35DADB65012eC5796536bD9864eD8773aBc74C4
 
 contract StrategySteerUsdbcWeth is StrategySteerBase {
@@ -16,7 +15,8 @@ contract StrategySteerUsdbcWeth is StrategySteerBase {
     address _controller,
     address _timelock,
     address _weth,
-    address _V3Factory
+    address _V3Factory,
+    address _steerPeriphery
   )
     StrategySteerBase(
       0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3,
@@ -25,7 +25,8 @@ contract StrategySteerUsdbcWeth is StrategySteerBase {
       _controller,
       _timelock,
       _weth,
-      _V3Factory
+      _V3Factory,
+      _steerPeriphery
     )
   {}
 

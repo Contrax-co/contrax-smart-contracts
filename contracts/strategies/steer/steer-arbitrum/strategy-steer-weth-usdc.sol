@@ -14,7 +14,8 @@ contract StrategySteerUsdcWeth is StrategySteerBase {
     address _controller,
     address _timelock,
     address _weth,
-    address _V3Factory
+    address _V3Factory,
+    address _steerPeriphery
   )
     StrategySteerBase(
       0x01476fcCa94502267008119B83Cea234dc3fA7D7,
@@ -23,7 +24,8 @@ contract StrategySteerUsdcWeth is StrategySteerBase {
       _controller,
       _timelock,
       _weth,
-      _V3Factory
+      _V3Factory,
+      _steerPeriphery
     )
   {}
 
