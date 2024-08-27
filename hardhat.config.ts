@@ -65,7 +65,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       base: process.env.BASE_API_KEY ?? "",
-      arb: process.env.ETHERSCAN_API_KEY ?? "",
+      arbitrum: process.env.ETHERSCAN_API_KEY ?? "",
     },
     customChains: [
       {
@@ -74,6 +74,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api.basescan.org/api",
           browserURL: "https://basescan.org/",
+        },
+      },
+      {
+        network: "arbitrum",
+        chainId: 42161,
+        urls: {
+          apiURL: "https://api.arbiscan.io/api",
+          browserURL: "https://arbiscan.io/",
         },
       },
     ],
