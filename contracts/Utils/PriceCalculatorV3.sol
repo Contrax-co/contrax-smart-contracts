@@ -17,12 +17,13 @@ contract PriceCalculatorV3 {
 
   // Array of stable tokens
   address[] public stableTokens = [
-    0xaf88d065e77c8cC2239327C5EDb3A432268e5831,
-    0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9,
-    0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8
+    0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, // BASE USDC
+    0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA // BASE USDBC
+    // 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8
   ];
 
-  address public constant WETH_USDC_POOLV3 = 0xC6962004f452bE9203591991D15f6b388e09E8D0;
+  // address public constant WETH_USDC_POOLV3_ARB = 0xC6962004f452bE9203591991D15f6b388e09E8D0;
+  address public constant WETH_USDC_POOLV3_BASE = 0xd0b53D9277642d899DF5C87A3966A349A798F224;
 
   // Modifier to restrict access to governance only
   modifier onlyGovernance() {
@@ -47,7 +48,7 @@ contract PriceCalculatorV3 {
   function calculateTokenPriceInUsd(address _token, address _pairAddress) public view returns (uint256) {
     IUniswapV3Pool pool = IUniswapV3Pool(_pairAddress);
     (, int24 tick, , , , , ) = pool.slot0();
- 
+
     address token0 = pool.token0();
 
     uint256 lpPriceInWei;
@@ -81,7 +82,7 @@ contract PriceCalculatorV3 {
   }
 
   function calculateEthPriceInUsdc() public view returns (uint256) {
-    IUniswapV3Pool pool = IUniswapV3Pool(WETH_USDC_POOLV3);
+    IUniswapV3Pool pool = IUniswapV3Pool(WETH_USDC_POOLV3_BASE);
     (, int24 tick, , , , , ) = pool.slot0();
 
     uint256 PriceFromOracle = getPriceInTermsOfToken0(tick);
