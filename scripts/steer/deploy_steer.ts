@@ -69,15 +69,21 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
   return contract;
 };
 
-const governance = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
+const governance = "0xcb6123060C52aFA2EF3a5F70e3d1253078d84B2f";
 const timelock = governance;
+
 const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d";
 const v3SushiFactory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
 
 const wethBase = "0x4200000000000000000000000000000000000006";
 const sushiV3Router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
+
+const WethUsdbcPool = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
 const steerPeripheryArb = "0x806c2240793b3738000fcb62C66BF462764B903F";
-const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e"
+
+const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
+
+const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
 // const poolFees = [
 //   {
@@ -134,6 +140,25 @@ async function main() {
     contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
   });
 
+  /** Setup Steer contracts
+   * =>> Set Reward Token on Strategy
+   * =>> Set Vault on Controller
+   * =>> Aprrove Strategy on controller
+   * =>> Set Strategy on Controller
+   **/
+
+  // Set Reward Token
+  await StrategySteerUsdbcWeth.connect(deployer).setRewardToken(baseToken);
+  await sleep(10);
+  // Set Vault controller
+  await steerController.connect(deployer).setVault(WethUsdbcPool, VaultSteerSushiWethUsdbc.address);
+  await sleep(10);
+  // Approve Strategy
+  await steerController.connect(deployer).approveStrategy(WethUsdbcPool, StrategySteerUsdbcWeth.address);
+  await sleep(10);
+  // Set Strategy
+  await steerController.connect(deployer).setStrategy(WethUsdbcPool, StrategySteerUsdbcWeth.address);
+
   // const SteerSushiZapperBase = await deploy({
   //   name: "SteerSushiZapperBase",
   //   args: [governance, ["0x9EfA1F99c86F6Ff0Fa0886775B436281b99e3f26"]],
@@ -147,4 +172,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

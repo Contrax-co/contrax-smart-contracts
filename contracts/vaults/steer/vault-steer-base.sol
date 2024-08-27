@@ -67,6 +67,7 @@ contract VaultSteerBase is ERC20 {
 
   // Custom logic in here for how much the vault allows to be borrowed
   // Sets minimum required on-hand to keep small withdrawals cheap
+  
   function available() public view returns (uint256) {
     return token.balanceOf(address(this)).mul(min).div(max);
   }
