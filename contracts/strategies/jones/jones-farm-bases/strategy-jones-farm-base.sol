@@ -4,7 +4,9 @@ pragma solidity 0.8.4;
 import "../../strategy-base.sol";
 import "../../../interfaces/jones.sol";
 
-import "hardhat/console.sol";
+import "hardhat/console.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyJonesFarmBase is StrategyBase {
     using SafeERC20 for IERC20;
@@ -63,7 +65,7 @@ abstract contract StrategyJonesFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function deposit() public override {
+    function deposit() public override sphereXGuardPublic(0xf171f30a, 0xd0e30db0) {
         uint256 _want = IERC20(want).balanceOf(address(this));
         console.log("the msg.sender is", msg.sender);
         if (_want > 0) {
@@ -76,7 +78,7 @@ abstract contract StrategyJonesFarmBase is StrategyBase {
     function _withdrawSome(uint256 _amount)
         internal
         override
-        returns (uint256)
+        sphereXGuardInternal(0xb8bd1165) returns (uint256)
     {
         IMilliner(milliner).withdraw(poolId, _amount);
         return _amount;
@@ -84,17 +86,17 @@ abstract contract StrategyJonesFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keep) external {
+    function setKeep(uint256 _keep) external sphereXGuardExternal(0x8bc6c523) {
         require(msg.sender == timelock, "!timelock");
         keep = _keep;
     }
 
-    function setKeepReward(uint256 _keepReward) external {
+    function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0xd1b7e0c1) {
         require(msg.sender == timelock, "!timelock");
         keepReward = _keepReward;
     }
 
-    function setRewardToken(address _rewardToken) external {
+    function setRewardToken(address _rewardToken) external sphereXGuardExternal(0x82c9a7b1) {
         require(
             msg.sender == timelock || msg.sender == strategist,
             "!timelock"
@@ -104,7 +106,7 @@ abstract contract StrategyJonesFarmBase is StrategyBase {
 
     // **** State Mutations ****
 
-    function harvest() public override onlyBenevolent {
+    function harvest() public override onlyBenevolent sphereXGuardPublic(0xee8d501e, 0x4641257d) {
         // Collects Reward tokens
         IMilliner(milliner).harvest(poolId);
 

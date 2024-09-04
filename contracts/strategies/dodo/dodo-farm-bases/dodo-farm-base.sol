@@ -2,7 +2,9 @@
 pragma solidity 0.8.4;
 
 import "../../strategy-base.sol";
-import "../../../interfaces/dodoproxy.sol";
+import "../../../interfaces/dodoproxy.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyDodoBase is StrategyBase {
     using SafeERC20 for IERC20;
@@ -56,7 +58,7 @@ abstract contract StrategyDodoBase is StrategyBase {
     }
 
     // **** Setters ****
-    function deposit() public override{
+    function deposit() public override sphereXGuardPublic(0xf996115a, 0xd0e30db0) {
         uint256 _want = IERC20(want).balanceOf(address(this));
     
         if (_want > 0) {
@@ -70,7 +72,7 @@ abstract contract StrategyDodoBase is StrategyBase {
     function _withdrawSome(uint256 _amount)
         internal
         override
-        returns (uint256)
+        sphereXGuardInternal(0x9fb24c12) returns (uint256)
     {
         IDodoMining(dodo_mine).withdraw(want, _amount);
     
@@ -79,17 +81,17 @@ abstract contract StrategyDodoBase is StrategyBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keepSUSHI) external {
+    function setKeep(uint256 _keepSUSHI) external sphereXGuardExternal(0x6c05e956) {
         require(msg.sender == timelock, "!timelock");
         keep = _keepSUSHI;
     }
 
-    function setKeepReward(uint256 _keepReward) external {
+    function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0x5f48d8a6) {
         require(msg.sender == timelock, "!timelock");
         keepReward = _keepReward;
     }
 
-    function setRewardToken(address _rewardToken) external {
+    function setRewardToken(address _rewardToken) external sphereXGuardExternal(0xa54128cd) {
         require(
             msg.sender == timelock || msg.sender == strategist,
             "!timelock"
@@ -100,7 +102,7 @@ abstract contract StrategyDodoBase is StrategyBase {
 
     // **** State Mutations ****
 
-    function harvest() public override onlyBenevolent {
+    function harvest() public override onlyBenevolent sphereXGuardPublic(0x77bab843, 0x4641257d) {
         // Collects Reward tokens
         IDodoMining(dodo_mine).claim(want);
         uint256 _dodo = IERC20(dodo).balanceOf(address(this));

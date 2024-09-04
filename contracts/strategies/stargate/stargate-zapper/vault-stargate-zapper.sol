@@ -8,12 +8,14 @@ import "../../../interfaces/uniswapv2.sol";
 import "../../../interfaces/vault.sol";
 import "../../../interfaces/controller.sol";
 import "../../../interfaces/weth.sol";
-import "../../../interfaces/stargateRouter.sol";
+import "../../../interfaces/stargateRouter.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 /**
  * The is the Strategy Base that most LPs will inherit 
  */
-contract StargateVaultZapper {
+contract StargateVaultZapper is SphereXProtected {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -38,7 +40,7 @@ contract StargateVaultZapper {
     }
 
     // transfers tokens from msg.sender to this contract 
-    function zapIn(address vault, address tokenIn, uint256 tokenInAmount, uint256 poolId) external {
+    function zapIn(address vault, address tokenIn, uint256 tokenInAmount, uint256 poolId) external sphereXGuardExternal(0x0d436f52) {
       require(tokenInAmount >= minimumAmount, "Insignificant input amount");
       require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
 
@@ -53,7 +55,7 @@ contract StargateVaultZapper {
 
     }
 
-    function _swapAndStake(address vault_addr, address tokenIn, uint256 _tokenInAmount, uint256 poolId) public {
+    function _swapAndStake(address vault_addr, address tokenIn, uint256 _tokenInAmount, uint256 poolId) public sphereXGuardPublic(0x65527ecb, 0x358c1d86) {
       (IVault vault, address vault_token) = _getVaultToken(vault_addr);
 
       IERC20(tokenIn).safeApprove(stargateRouter, 0);
@@ -78,7 +80,7 @@ contract StargateVaultZapper {
       vault_token = IVault(vault_addr).token();
     }
 
-    function _approveTokenIfNeeded(address token, address spender, uint256 _amountToApprove) internal {
+    function _approveTokenIfNeeded(address token, address spender, uint256 _amountToApprove) internal sphereXGuardInternal(0xdf56317c) {
       if (IERC20(token).allowance(address(this), spender) == 0) {
           IERC20(token).safeApprove(spender, uint256(0));
           IERC20(token).safeApprove(spender, _amountToApprove);
@@ -86,7 +88,7 @@ contract StargateVaultZapper {
     }
 
 
-    function zapOut(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 poolId) public {
+    function zapOut(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 poolId) public sphereXGuardPublic(0xa53f2018, 0xa863ff2f) {
       (IVault vault, address vault_token) = _getVaultToken(vault_addr);
 
       vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
@@ -102,7 +104,7 @@ contract StargateVaultZapper {
 
     }
 
-    function _returnAssets(address[] memory token) internal {
+    function _returnAssets(address[] memory token) internal sphereXGuardInternal(0xe59aede1) {
       uint256 balance;
       for (uint256 i; i < token.length; i++) {
           balance = IERC20(token[i]).balanceOf(address(this));

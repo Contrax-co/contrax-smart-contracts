@@ -4,7 +4,9 @@ pragma solidity 0.8.4;
 import "../../strategy-base.sol";
 import "../../../interfaces/liquidChef.sol";
 
-import "hardhat/console.sol";
+import "hardhat/console.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyLiquidFarmBase is StrategyBase {
   using SafeERC20 for IERC20;
@@ -61,7 +63,7 @@ abstract contract StrategyLiquidFarmBase is StrategyBase {
     return _pending;
   }
 
-  function deposit() public override{
+  function deposit() public override sphereXGuardPublic(0x39abdd6a, 0xd0e30db0) {
       uint256 _want = IERC20(want).balanceOf(address(this));
 
       if (_want > 0) {
@@ -75,24 +77,24 @@ abstract contract StrategyLiquidFarmBase is StrategyBase {
   function _withdrawSome(uint256 _amount)
     internal
     override
-    returns (uint256)
+    sphereXGuardInternal(0x4064e67c) returns (uint256)
   {
       IFastChef(fastChef).withdraw(poolId, _amount, address(this));
       return _amount;
   }
 
   // **** Setters ****
-  function setKeep(uint256 _keep) external {
+  function setKeep(uint256 _keep) external sphereXGuardExternal(0xe0f13cb6) {
     require(msg.sender == timelock, "!timelock");
     keep = _keep;
   }
 
-  function setKeepReward(uint256 _keepReward) external {
+  function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0xf8cfd0e6) {
     require(msg.sender == timelock, "!timelock");
     keepReward = _keepReward;
   }
 
-  function setRewardToken(address _rewardToken) external {
+  function setRewardToken(address _rewardToken) external sphereXGuardExternal(0xd4b65fbc) {
     require(
         msg.sender == timelock || msg.sender == strategist,
         "!timelock"
@@ -100,7 +102,7 @@ abstract contract StrategyLiquidFarmBase is StrategyBase {
     rewardToken = _rewardToken;
   }
 
-  function harvest() public override onlyBenevolent {
+  function harvest() public override onlyBenevolent sphereXGuardPublic(0xc72eff5a, 0x4641257d) {
     IFastChef(fastChef).harvest(poolId, address(this)); 
 
     IFastStaking(fastStaking).getReward();

@@ -4,7 +4,9 @@ pragma solidity 0.8.4;
 import "../../strategy-base.sol";
 import "../../../interfaces/pool.sol";
 
-import "hardhat/console.sol";
+import "hardhat/console.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyCapBase is StrategyBase {
     using SafeERC20 for IERC20;
@@ -58,7 +60,7 @@ abstract contract StrategyCapBase is StrategyBase {
     }
 
     // **** Setters ****
-    function deposit() public override {
+    function deposit() public override sphereXGuardPublic(0x0852e39a, 0xd0e30db0) {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
             IERC20(want).safeApprove(pool, 0);
@@ -72,7 +74,7 @@ abstract contract StrategyCapBase is StrategyBase {
     function _withdrawSome(uint256 _amount)
         internal
         override
-        returns (uint256)
+        sphereXGuardInternal(0x19c11973) returns (uint256)
     {
         IPool(pool).withdraw((_amount * UNIT)/10**decimals);
         return _amount;
@@ -80,17 +82,17 @@ abstract contract StrategyCapBase is StrategyBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keepSUSHI) external {
+    function setKeep(uint256 _keepSUSHI) external sphereXGuardExternal(0xfdec24da) {
         require(msg.sender == timelock, "!timelock");
         keep = _keepSUSHI;
     }
 
-    function setKeepReward(uint256 _keepReward) external {
+    function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0xf5c8ae9e) {
         require(msg.sender == timelock, "!timelock");
         keepReward = _keepReward;
     }
 
-    function setRewardToken(address _rewardToken) external {
+    function setRewardToken(address _rewardToken) external sphereXGuardExternal(0x90bcc4a0) {
         require(
             msg.sender == timelock || msg.sender == strategist,
             "!timelock"

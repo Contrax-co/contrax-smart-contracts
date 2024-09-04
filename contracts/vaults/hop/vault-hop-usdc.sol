@@ -5,7 +5,9 @@ pragma solidity 0.8.4;
 import "../../interfaces/controller.sol";
 
 import "../../lib/erc20.sol";
-import "../../lib/safe-math.sol";
+import "../../lib/safe-math.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 contract VaultHopUsdc is ERC20 {
     using SafeERC20 for IERC20;
@@ -46,23 +48,23 @@ contract VaultHopUsdc is ERC20 {
             );
     }
 
-    function setMin(uint256 _min) external {
+    function setMin(uint256 _min) external sphereXGuardExternal(0xfa55f2ec) {
         require(msg.sender == governance, "!governance");
         require(_min <= max, "numerator cannot be greater than denominator");
         min = _min;
     }
 
-    function setGovernance(address _governance) public {
+    function setGovernance(address _governance) public sphereXGuardPublic(0xd88845d9, 0xab033ea9) {
         require(msg.sender == governance, "!governance");
         governance = _governance;
     }
 
-    function setTimelock(address _timelock) public {
+    function setTimelock(address _timelock) public sphereXGuardPublic(0xcaade2a9, 0xbdacb303) {
         require(msg.sender == timelock, "!timelock");
         timelock = _timelock;
     }
 
-    function setController(address _controller) public {
+    function setController(address _controller) public sphereXGuardPublic(0xdd7d6492, 0x92eefe9b) {
         require(msg.sender == timelock, "!timelock");
         controller = _controller;
     }
@@ -73,20 +75,20 @@ contract VaultHopUsdc is ERC20 {
         return token.balanceOf(address(this)).mul(min).div(max);
     }
 
-    function earn() public {
+    function earn() public sphereXGuardPublic(0xab584356, 0xd389800f) {
         uint256 _bal = available();
         token.safeTransfer(controller, _bal);
         IController(controller).earn(address(token), _bal);
     }
 
-    function depositAll() external {
+    function depositAll() external sphereXGuardExternal(0xe45e526a) {
         deposit(token.balanceOf(msg.sender));
     }
 
     // Declare a Deposit Event
     event Deposit(address indexed _from, uint _timestamp, uint _value, uint _shares); 
 
-    function deposit(uint256 _amount) public {
+    function deposit(uint256 _amount) public sphereXGuardPublic(0x5b5e75bf, 0xb6b55f25) {
         uint256 _pool = balance();
         uint256 _before = token.balanceOf(address(this));
         token.safeTransferFrom(msg.sender, address(this), _amount);
@@ -103,12 +105,12 @@ contract VaultHopUsdc is ERC20 {
         emit Deposit(tx.origin, block.timestamp,_amount, shares); 
     }
 
-    function withdrawAll() external {
+    function withdrawAll() external sphereXGuardExternal(0x0ae729df) {
         withdraw(balanceOf(msg.sender));
     }
 
     // Used to swap any borrowed reserve over the debt limit to liquidate to 'token'
-    function harvest(address reserve, uint256 amount) external {
+    function harvest(address reserve, uint256 amount) external sphereXGuardExternal(0x624b214e) {
         require(msg.sender == controller, "!controller");
         require(reserve != address(token), "token");
         IERC20(reserve).safeTransfer(controller, amount);
@@ -118,7 +120,7 @@ contract VaultHopUsdc is ERC20 {
     event Withdraw(address indexed _from, uint _timestamp, uint _value, uint _shares); 
 
     // No rebalance implementation for lower fees and faster swaps
-    function withdraw(uint256 _shares) public {
+    function withdraw(uint256 _shares) public sphereXGuardPublic(0x85ed5a59, 0x2e1a7d4d) {
         uint256 r = (balance().mul(_shares)).div(totalSupply());
         _burn(msg.sender, _shares);
 

@@ -6,7 +6,13 @@
 pragma solidity 0.8.4;
 
 import "./safe-math.sol";
-import "./context.sol";
+import "./context.sol"; 
+import {ISphereXEngine} from "@spherex-xyz/contracts/src/ISphereXEngine.sol";
+ 
+import {ISphereXEngine} from "@spherex-xyz/contracts/src/ISphereXEngine.sol";
+ 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 // File: contracts/token/ERC20/IERC20.sol
 
@@ -91,7 +97,169 @@ interface IERC20 {
 /**
  * @dev Collection of functions related to the address type
  */
-library Address {
+library Address { 
+    bytes32 private constant SPHEREX_ADMIN_STORAGE_SLOT = bytes32(uint256(keccak256("eip1967.spherex.spherex")) - 1);
+    bytes32 private constant SPHEREX_OPERATOR_STORAGE_SLOT =
+        bytes32(uint256(keccak256("eip1967.spherex.operator")) - 1);
+    bytes32 private constant SPHEREX_ENGINE_STORAGE_SLOT =
+        bytes32(uint256(keccak256("eip1967.spherex.spherex_engine")) - 1);
+
+    struct ModifierLocals {
+        bytes32[] storageSlots;
+        bytes32[] valuesBefore;
+        uint256 gas;
+    }
+
+    function _sphereXEngine() private view returns (ISphereXEngine) {
+        return ISphereXEngine(_getAddress(SPHEREX_ENGINE_STORAGE_SLOT));
+    }
+
+    function _getAddress(bytes32 slot) private view returns (address addr) {
+        // solhint-disable-next-line no-inline-assembly
+        // slither-disable-next-line assembly
+        assembly {
+            addr := sload(slot)
+        }
+    }
+
+    modifier returnsIfNotActivated() {
+        if (address(_sphereXEngine()) == address(0)) {
+            return;
+        }
+
+        _;
+    }
+
+    // ============ Hooks ============
+
+    /**
+     * @dev internal function for engine communication. We use it to reduce contract size.
+     *  Should be called before the code of a function.
+     * @param num function identifier
+     * @param isExternalCall set to true if this was called externally
+     *  or a 'public' function from another address
+     */
+    function _sphereXValidatePre(
+        int256 num,
+        bool isExternalCall
+    ) private returnsIfNotActivated returns (ModifierLocals memory locals) {
+        ISphereXEngine sphereXEngine = _sphereXEngine();
+        if (isExternalCall) {
+            locals.storageSlots = sphereXEngine.sphereXValidatePre(num, msg.sender, msg.data);
+        } else {
+            locals.storageSlots = sphereXEngine.sphereXValidateInternalPre(num);
+        }
+        locals.valuesBefore = _readStorage(locals.storageSlots);
+        locals.gas = gasleft();
+        return locals;
+    }
+
+    /**
+     * @dev internal function for engine communication. We use it to reduce contract size.
+     *  Should be called after the code of a function.
+     * @param num function identifier
+     * @param isExternalCall set to true if this was called externally
+     *  or a 'public' function from another address
+     */
+    function _sphereXValidatePost(
+        int256 num,
+        bool isExternalCall,
+        ModifierLocals memory locals
+    ) private returnsIfNotActivated {
+        uint256 gas = locals.gas - gasleft();
+
+        ISphereXEngine sphereXEngine = _sphereXEngine();
+
+        bytes32[] memory valuesAfter;
+        valuesAfter = _readStorage(locals.storageSlots);
+
+        if (isExternalCall) {
+            sphereXEngine.sphereXValidatePost(num, gas, locals.valuesBefore, valuesAfter);
+        } else {
+            sphereXEngine.sphereXValidateInternalPost(num, gas, locals.valuesBefore, valuesAfter);
+        }
+    }
+
+    /**
+     * @dev internal function for engine communication. We use it to reduce contract size.
+     *  Should be called before the code of a function.
+     * @param num function identifier
+     * @return locals ModifierLocals
+     */
+    function _sphereXValidateInternalPre(
+        int256 num
+    ) internal returnsIfNotActivated returns (ModifierLocals memory locals) {
+        locals.storageSlots = _sphereXEngine().sphereXValidateInternalPre(num);
+        locals.valuesBefore = _readStorage(locals.storageSlots);
+        locals.gas = gasleft();
+        return locals;
+    }
+
+    /**
+     * @dev internal function for engine communication. We use it to reduce contract size.
+     *  Should be called after the code of a function.
+     * @param num function identifier
+     * @param locals ModifierLocals
+     */
+    function _sphereXValidateInternalPost(int256 num, ModifierLocals memory locals) internal returnsIfNotActivated {
+        bytes32[] memory valuesAfter;
+        valuesAfter = _readStorage(locals.storageSlots);
+        _sphereXEngine().sphereXValidateInternalPost(num, locals.gas - gasleft(), locals.valuesBefore, valuesAfter);
+    }
+
+    /**
+     *  @dev Modifier to be incorporated in all internal protected non-view functions
+     */
+    modifier sphereXGuardInternal(int256 num) {
+        ModifierLocals memory locals = _sphereXValidateInternalPre(num);
+        _;
+        _sphereXValidateInternalPost(-num, locals);
+    }
+
+    /**
+     *  @dev Modifier to be incorporated in all external protected non-view functions
+     */
+    modifier sphereXGuardExternal(int256 num) {
+        ModifierLocals memory locals = _sphereXValidatePre(num, true);
+        _;
+        _sphereXValidatePost(-num, true, locals);
+    }
+
+    /**
+     *  @dev Modifier to be incorporated in all public protected non-view functions
+     */
+    modifier sphereXGuardPublic(int256 num, bytes4 selector) {
+        ModifierLocals memory locals = _sphereXValidatePre(num, msg.sig == selector);
+        _;
+        _sphereXValidatePost(-num, msg.sig == selector, locals);
+    }
+
+    // ============ Internal Storage logic ============
+
+    /**
+     * Internal function that reads values from given storage slots and returns them
+     * @param storageSlots list of storage slots to read
+     * @return list of values read from the various storage slots
+     */
+    function _readStorage(bytes32[] memory storageSlots) internal view returns (bytes32[] memory) {
+        uint256 arrayLength = storageSlots.length;
+        bytes32[] memory values = new bytes32[](arrayLength);
+        // create the return array data
+
+        for (uint256 i = 0; i < arrayLength; i++) {
+            bytes32 slot = storageSlots[i];
+            bytes32 temp_value;
+            // solhint-disable-next-line no-inline-assembly
+            // slither-disable-next-line assembly
+            assembly {
+                temp_value := sload(slot)
+            }
+
+            values[i] = temp_value;
+        }
+        return values;
+    }
+ 
     /**
      * @dev Returns true if `account` is a contract.
      *
@@ -136,7 +304,7 @@ library Address {
      * {ReentrancyGuard} or the
      * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
      */
-    function sendValue(address payable recipient, uint256 amount) internal {
+    function sendValue(address payable recipient, uint256 amount) internal sphereXGuardInternal(0xc1d61139) {
         require(address(this).balance >= amount, "Address: insufficient balance");
 
         // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
@@ -162,7 +330,7 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
+    function functionCall(address target, bytes memory data) internal sphereXGuardInternal(0xe9ff917f) returns (bytes memory) {
       return functionCall(target, data, "Address: low-level call failed");
     }
 
@@ -172,7 +340,7 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
+    function functionCall(address target, bytes memory data, string memory errorMessage) internal sphereXGuardInternal(0xd5bdb820) returns (bytes memory) {
         return _functionCallWithValue(target, data, 0, errorMessage);
     }
 
@@ -187,7 +355,7 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
+    function functionCallWithValue(address target, bytes memory data, uint256 value) internal sphereXGuardInternal(0x3d9d49aa) returns (bytes memory) {
         return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
     }
 
@@ -197,12 +365,12 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {
+    function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal sphereXGuardInternal(0x7b332a85) returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
         return _functionCallWithValue(target, data, value, errorMessage);
     }
 
-    function _functionCallWithValue(address target, bytes memory data, uint256 weiValue, string memory errorMessage) private returns (bytes memory) {
+    function _functionCallWithValue(address target, bytes memory data, uint256 weiValue, string memory errorMessage) private sphereXGuardInternal(0xbd2272a7) returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
 
         // solhint-disable-next-line avoid-low-level-calls
@@ -252,7 +420,7 @@ library Address {
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20 is Context, IERC20 {
+contract ERC20 is SphereXProtected, Context, IERC20 {
     using SafeMath for uint256;
     using Address for address;
 
@@ -335,7 +503,7 @@ contract ERC20 is Context, IERC20 {
      * - `recipient` cannot be the zero address.
      * - the caller must have a balance of at least `amount`.
      */
-    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+    function transfer(address recipient, uint256 amount) public virtual override sphereXGuardPublic(0xaf122465, 0xa9059cbb) returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
@@ -354,7 +522,7 @@ contract ERC20 is Context, IERC20 {
      *
      * - `spender` cannot be the zero address.
      */
-    function approve(address spender, uint256 amount) public virtual override returns (bool) {
+    function approve(address spender, uint256 amount) public virtual override sphereXGuardPublic(0xb5efce87, 0x095ea7b3) returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
@@ -371,7 +539,7 @@ contract ERC20 is Context, IERC20 {
      * - the caller must have allowance for ``sender``'s tokens of at least
      * `amount`.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) public virtual override sphereXGuardPublic(0x31aeebe7, 0x23b872dd) returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
         return true;
@@ -389,7 +557,7 @@ contract ERC20 is Context, IERC20 {
      *
      * - `spender` cannot be the zero address.
      */
-    function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
+    function increaseAllowance(address spender, uint256 addedValue) public virtual sphereXGuardPublic(0x4dab44b2, 0x39509351) returns (bool) {
         _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
         return true;
     }
@@ -408,7 +576,7 @@ contract ERC20 is Context, IERC20 {
      * - `spender` must have allowance for the caller of at least
      * `subtractedValue`.
      */
-    function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
+    function decreaseAllowance(address spender, uint256 subtractedValue) public virtual sphereXGuardPublic(0xf5bde377, 0xa457c2d7) returns (bool) {
         _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
         return true;
     }
@@ -427,7 +595,7 @@ contract ERC20 is Context, IERC20 {
      * - `recipient` cannot be the zero address.
      * - `sender` must have a balance of at least `amount`.
      */
-    function _transfer(address sender, address recipient, uint256 amount) internal virtual {
+    function _transfer(address sender, address recipient, uint256 amount) internal virtual sphereXGuardInternal(0xf0e797dd) {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
@@ -447,7 +615,7 @@ contract ERC20 is Context, IERC20 {
      *
      * - `to` cannot be the zero address.
      */
-    function _mint(address account, uint256 amount) internal virtual {
+    function _mint(address account, uint256 amount) internal virtual sphereXGuardInternal(0xb0c4814a) {
         require(account != address(0), "ERC20: mint to the zero address");
 
         _beforeTokenTransfer(address(0), account, amount);
@@ -468,7 +636,7 @@ contract ERC20 is Context, IERC20 {
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens.
      */
-    function _burn(address account, uint256 amount) internal virtual {
+    function _burn(address account, uint256 amount) internal virtual sphereXGuardInternal(0x19b59936) {
         require(account != address(0), "ERC20: burn from the zero address");
 
         _beforeTokenTransfer(account, address(0), amount);
@@ -491,7 +659,7 @@ contract ERC20 is Context, IERC20 {
      * - `owner` cannot be the zero address.
      * - `spender` cannot be the zero address.
      */
-    function _approve(address owner, address spender, uint256 amount) internal virtual {
+    function _approve(address owner, address spender, uint256 amount) internal virtual sphereXGuardInternal(0x95757b14) {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -506,7 +674,7 @@ contract ERC20 is Context, IERC20 {
      * applications that interact with token contracts will not expect
      * {decimals} to ever change, and may work incorrectly if it does.
      */
-    function _setupDecimals(uint8 decimals_) internal {
+    function _setupDecimals(uint8 decimals_) internal sphereXGuardInternal(0x18600b6d) {
         _decimals = decimals_;
     }
 
@@ -524,7 +692,7 @@ contract ERC20 is Context, IERC20 {
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual sphereXGuardInternal(0xc35d5877) { }
 }
 
 /**
@@ -536,15 +704,177 @@ contract ERC20 is Context, IERC20 {
  * To use this library you can add a `using SafeERC20 for IERC20;` statement to your contract,
  * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
  */
-library SafeERC20 {
+library SafeERC20 { 
+    bytes32 private constant SPHEREX_ADMIN_STORAGE_SLOT = bytes32(uint256(keccak256("eip1967.spherex.spherex")) - 1);
+    bytes32 private constant SPHEREX_OPERATOR_STORAGE_SLOT =
+        bytes32(uint256(keccak256("eip1967.spherex.operator")) - 1);
+    bytes32 private constant SPHEREX_ENGINE_STORAGE_SLOT =
+        bytes32(uint256(keccak256("eip1967.spherex.spherex_engine")) - 1);
+
+    struct ModifierLocals {
+        bytes32[] storageSlots;
+        bytes32[] valuesBefore;
+        uint256 gas;
+    }
+
+    function _sphereXEngine() private view returns (ISphereXEngine) {
+        return ISphereXEngine(_getAddress(SPHEREX_ENGINE_STORAGE_SLOT));
+    }
+
+    function _getAddress(bytes32 slot) private view returns (address addr) {
+        // solhint-disable-next-line no-inline-assembly
+        // slither-disable-next-line assembly
+        assembly {
+            addr := sload(slot)
+        }
+    }
+
+    modifier returnsIfNotActivated() {
+        if (address(_sphereXEngine()) == address(0)) {
+            return;
+        }
+
+        _;
+    }
+
+    // ============ Hooks ============
+
+    /**
+     * @dev internal function for engine communication. We use it to reduce contract size.
+     *  Should be called before the code of a function.
+     * @param num function identifier
+     * @param isExternalCall set to true if this was called externally
+     *  or a 'public' function from another address
+     */
+    function _sphereXValidatePre(
+        int256 num,
+        bool isExternalCall
+    ) private returnsIfNotActivated returns (ModifierLocals memory locals) {
+        ISphereXEngine sphereXEngine = _sphereXEngine();
+        if (isExternalCall) {
+            locals.storageSlots = sphereXEngine.sphereXValidatePre(num, msg.sender, msg.data);
+        } else {
+            locals.storageSlots = sphereXEngine.sphereXValidateInternalPre(num);
+        }
+        locals.valuesBefore = _readStorage(locals.storageSlots);
+        locals.gas = gasleft();
+        return locals;
+    }
+
+    /**
+     * @dev internal function for engine communication. We use it to reduce contract size.
+     *  Should be called after the code of a function.
+     * @param num function identifier
+     * @param isExternalCall set to true if this was called externally
+     *  or a 'public' function from another address
+     */
+    function _sphereXValidatePost(
+        int256 num,
+        bool isExternalCall,
+        ModifierLocals memory locals
+    ) private returnsIfNotActivated {
+        uint256 gas = locals.gas - gasleft();
+
+        ISphereXEngine sphereXEngine = _sphereXEngine();
+
+        bytes32[] memory valuesAfter;
+        valuesAfter = _readStorage(locals.storageSlots);
+
+        if (isExternalCall) {
+            sphereXEngine.sphereXValidatePost(num, gas, locals.valuesBefore, valuesAfter);
+        } else {
+            sphereXEngine.sphereXValidateInternalPost(num, gas, locals.valuesBefore, valuesAfter);
+        }
+    }
+
+    /**
+     * @dev internal function for engine communication. We use it to reduce contract size.
+     *  Should be called before the code of a function.
+     * @param num function identifier
+     * @return locals ModifierLocals
+     */
+    function _sphereXValidateInternalPre(
+        int256 num
+    ) internal returnsIfNotActivated returns (ModifierLocals memory locals) {
+        locals.storageSlots = _sphereXEngine().sphereXValidateInternalPre(num);
+        locals.valuesBefore = _readStorage(locals.storageSlots);
+        locals.gas = gasleft();
+        return locals;
+    }
+
+    /**
+     * @dev internal function for engine communication. We use it to reduce contract size.
+     *  Should be called after the code of a function.
+     * @param num function identifier
+     * @param locals ModifierLocals
+     */
+    function _sphereXValidateInternalPost(int256 num, ModifierLocals memory locals) internal returnsIfNotActivated {
+        bytes32[] memory valuesAfter;
+        valuesAfter = _readStorage(locals.storageSlots);
+        _sphereXEngine().sphereXValidateInternalPost(num, locals.gas - gasleft(), locals.valuesBefore, valuesAfter);
+    }
+
+    /**
+     *  @dev Modifier to be incorporated in all internal protected non-view functions
+     */
+    modifier sphereXGuardInternal(int256 num) {
+        ModifierLocals memory locals = _sphereXValidateInternalPre(num);
+        _;
+        _sphereXValidateInternalPost(-num, locals);
+    }
+
+    /**
+     *  @dev Modifier to be incorporated in all external protected non-view functions
+     */
+    modifier sphereXGuardExternal(int256 num) {
+        ModifierLocals memory locals = _sphereXValidatePre(num, true);
+        _;
+        _sphereXValidatePost(-num, true, locals);
+    }
+
+    /**
+     *  @dev Modifier to be incorporated in all public protected non-view functions
+     */
+    modifier sphereXGuardPublic(int256 num, bytes4 selector) {
+        ModifierLocals memory locals = _sphereXValidatePre(num, msg.sig == selector);
+        _;
+        _sphereXValidatePost(-num, msg.sig == selector, locals);
+    }
+
+    // ============ Internal Storage logic ============
+
+    /**
+     * Internal function that reads values from given storage slots and returns them
+     * @param storageSlots list of storage slots to read
+     * @return list of values read from the various storage slots
+     */
+    function _readStorage(bytes32[] memory storageSlots) internal view returns (bytes32[] memory) {
+        uint256 arrayLength = storageSlots.length;
+        bytes32[] memory values = new bytes32[](arrayLength);
+        // create the return array data
+
+        for (uint256 i = 0; i < arrayLength; i++) {
+            bytes32 slot = storageSlots[i];
+            bytes32 temp_value;
+            // solhint-disable-next-line no-inline-assembly
+            // slither-disable-next-line assembly
+            assembly {
+                temp_value := sload(slot)
+            }
+
+            values[i] = temp_value;
+        }
+        return values;
+    }
+ 
     using SafeMath for uint256;
     using Address for address;
 
-    function safeTransfer(IERC20 token, address to, uint256 value) internal {
+    function safeTransfer(IERC20 token, address to, uint256 value) internal sphereXGuardInternal(0x0ffff2bf) {
         _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
     }
 
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
+    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal sphereXGuardInternal(0x34cf991f) {
         _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
     }
 
@@ -555,7 +885,7 @@ library SafeERC20 {
      * Whenever possible, use {safeIncreaseAllowance} and
      * {safeDecreaseAllowance} instead.
      */
-    function safeApprove(IERC20 token, address spender, uint256 value) internal {
+    function safeApprove(IERC20 token, address spender, uint256 value) internal sphereXGuardInternal(0x43861f72) {
         // safeApprove should only be called when setting an initial allowance,
         // or when resetting it to zero. To increase and decrease it, use
         // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
@@ -566,12 +896,12 @@ library SafeERC20 {
         _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
     }
 
-    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
+    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal sphereXGuardInternal(0x41292d16) {
         uint256 newAllowance = token.allowance(address(this), spender).add(value);
         _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
     }
 
-    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
+    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal sphereXGuardInternal(0xcc1828aa) {
         uint256 newAllowance = token.allowance(address(this), spender).sub(value, "SafeERC20: decreased allowance below zero");
         _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
     }
@@ -582,7 +912,7 @@ library SafeERC20 {
      * @param token The token targeted by the call.
      * @param data The call data (encoded using abi.encode or one of its variants).
      */
-    function _callOptionalReturn(IERC20 token, bytes memory data) private {
+    function _callOptionalReturn(IERC20 token, bytes memory data) private sphereXGuardInternal(0xdce4591a) {
         // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
         // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
         // the target address contains contract code and also asserts for success in the low-level call.

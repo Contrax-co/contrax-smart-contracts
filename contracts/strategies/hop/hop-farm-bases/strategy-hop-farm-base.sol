@@ -2,7 +2,9 @@
 pragma solidity 0.8.4;
 
 import "../../strategy-base-v3.sol";
-import "../../../interfaces/hop.sol";
+import "../../../interfaces/hop.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyHopFarmBase is StrategyBaseV3 {
     using SafeERC20 for IERC20;
@@ -57,7 +59,7 @@ abstract contract StrategyHopFarmBase is StrategyBaseV3 {
     }
 
     // **** Setters ****
-    function deposit() public override {
+    function deposit() public override sphereXGuardPublic(0xdcda2df5, 0xd0e30db0) {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
             IERC20(want).safeApprove(stakingRewards, 0);
@@ -69,7 +71,7 @@ abstract contract StrategyHopFarmBase is StrategyBaseV3 {
     function _withdrawSome(uint256 _amount)
         internal
         override
-        returns (uint256)
+        sphereXGuardInternal(0x1996a763) returns (uint256)
     {
         IHopStakingRewards(stakingRewards).withdraw(_amount);
 
@@ -78,17 +80,17 @@ abstract contract StrategyHopFarmBase is StrategyBaseV3 {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keep) external {
+    function setKeep(uint256 _keep) external sphereXGuardExternal(0x9346d788) {
         require(msg.sender == timelock, "!timelock");
         keep = _keep;
     }
 
-    function setKeepReward(uint256 _keepReward) external {
+    function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0x2608e64e) {
         require(msg.sender == timelock, "!timelock");
         keepReward = _keepReward;
     }
 
-    function setRewardToken(address _rewardToken) external {
+    function setRewardToken(address _rewardToken) external sphereXGuardExternal(0xa4ab9138) {
         require(
             msg.sender == timelock || msg.sender == strategist,
             "!timelock"
@@ -102,7 +104,7 @@ abstract contract StrategyHopFarmBase is StrategyBaseV3 {
     // Declare a Harvest Event
     event Harvest(uint _timestamp, uint _value); 
 
-    function harvest() public override onlyBenevolent {
+    function harvest() public override onlyBenevolent sphereXGuardPublic(0x31755086, 0x4641257d) {
         // Collects REWARD token(s)
         IHopStakingRewards(stakingRewards).getReward();
 

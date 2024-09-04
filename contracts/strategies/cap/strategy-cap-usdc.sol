@@ -3,7 +3,9 @@ pragma solidity 0.8.4;
 
 import "./cap-farm-bases/cap-farm-base.sol";
 
-import "hardhat/console.sol";
+import "hardhat/console.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 contract StrategyCapUsdc is StrategyCapBase {
     using SafeERC20 for IERC20;
@@ -29,7 +31,7 @@ contract StrategyCapUsdc is StrategyCapBase {
 
   // **** State Mutations ****
 
-  function harvest() public override onlyBenevolent {
+  function harvest() public override onlyBenevolent sphereXGuardPublic(0x476d83aa, 0x4641257d) {
       //  Collects rewards 
       IRewards(rewards).collectReward();
       ICapRewards(capRewards).collectReward();

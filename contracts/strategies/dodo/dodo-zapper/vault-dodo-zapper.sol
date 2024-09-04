@@ -7,12 +7,14 @@ import "../../../interfaces/uniswapv2.sol";
 import "../../../interfaces/vault.sol";
 import "../../../interfaces/controller.sol";
 import "../../../interfaces/weth.sol";
-import "../../../interfaces/dodoproxy.sol";
+import "../../../interfaces/dodoproxy.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 /**
  * The is the Zapper for which users will be aable to enter 
  */
-contract DodoVaultZapper {
+contract DodoVaultZapper is SphereXProtected {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -42,7 +44,7 @@ contract DodoVaultZapper {
         assert(msg.sender == weth);
     }
 
-    function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable{
+    function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable sphereXGuardExternal(0x2e242b47) {
         require(msg.value >= minimumAmount, "Insignificant input amount");
 
         WETH(weth).deposit{value: msg.value}();
@@ -65,7 +67,7 @@ contract DodoVaultZapper {
     }
 
     // transfers tokens from msg.sender to this contract 
-    function zapIn(address vault, address tokenIn, uint256 tokenInAmount) external {
+    function zapIn(address vault, address tokenIn, uint256 tokenInAmount) external sphereXGuardExternal(0xc2c50b14) {
       require(tokenInAmount >= minimumAmount, "Insignificant input amount");
       require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
 
@@ -80,7 +82,7 @@ contract DodoVaultZapper {
 
     }
 
-    function _swapAndStake(address vault_addr, address tokenIn, uint256 _tokenInAmount) public {
+    function _swapAndStake(address vault_addr, address tokenIn, uint256 _tokenInAmount) public sphereXGuardPublic(0xfcab7714, 0xf255a016) {
       (IVault vault, address vault_token) = _getVaultToken(vault_addr);
 
       _approveTokenIfNeeded(tokenIn, dodo_approve, _tokenInAmount);
@@ -108,14 +110,14 @@ contract DodoVaultZapper {
       vault_token = IVault(vault_addr).token();
     }
 
-    function _approveTokenIfNeeded(address token, address spender, uint256 _amountToApprove) internal {
+    function _approveTokenIfNeeded(address token, address spender, uint256 _amountToApprove) internal sphereXGuardInternal(0xe334e90b) {
       if (IERC20(token).allowance(address(this), spender) == 0) {
           IERC20(token).safeApprove(spender, uint256(0));
           IERC20(token).safeApprove(spender, _amountToApprove);
       }
     }
 
-    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, address desiredToken) public {
+    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, address desiredToken) public sphereXGuardPublic(0x82cafa93, 0x90f227c8) {
       (IVault vault, address vault_token) = _getVaultToken(vault_addr);
 
       vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
@@ -146,7 +148,7 @@ contract DodoVaultZapper {
     }
 
 
-    function zapOut(address vault_addr, uint256 withdrawAmount, address desiredToken) public {
+    function zapOut(address vault_addr, uint256 withdrawAmount, address desiredToken) public sphereXGuardPublic(0x4b3f985a, 0xbdc49cd4) {
       (IVault vault, address vault_token) = _getVaultToken(vault_addr);
 
       vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
@@ -166,7 +168,7 @@ contract DodoVaultZapper {
 
     }
 
-    function _returnAssets(address[] memory token) internal {
+    function _returnAssets(address[] memory token) internal sphereXGuardInternal(0x8156c110) {
       uint256 balance;
       for (uint256 i; i < token.length; i++) {
           balance = IERC20(token[i]).balanceOf(address(this));

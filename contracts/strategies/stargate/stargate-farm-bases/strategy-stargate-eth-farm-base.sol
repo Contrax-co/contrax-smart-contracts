@@ -5,7 +5,9 @@ import "../../strategy-base.sol";
 import "../../../interfaces/stargateRouter.sol";
 import "../../../interfaces/weth.sol";
 
-import "hardhat/console.sol";
+import "hardhat/console.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyEthStargateFarmBase is StrategyBase {
     using SafeERC20 for IERC20;
@@ -68,7 +70,7 @@ abstract contract StrategyEthStargateFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function deposit() public override {
+    function deposit() public override sphereXGuardPublic(0x06c0c585, 0xd0e30db0) {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if(_want > 0) {
             IERC20(want).safeApprove(lpStaking, 0);
@@ -81,7 +83,7 @@ abstract contract StrategyEthStargateFarmBase is StrategyBase {
     function _withdrawSome(uint256 _amount)
         internal
         override
-        returns (uint256)
+        sphereXGuardInternal(0xb7941f72) returns (uint256)
     {
         ILPStaking(lpStaking).withdraw(poolId, _amount);
         return _amount;
@@ -89,17 +91,17 @@ abstract contract StrategyEthStargateFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keep) external {
+    function setKeep(uint256 _keep) external sphereXGuardExternal(0xc8241ab4) {
         require(msg.sender == timelock, "!timelock");
         keep = _keep;
     }
 
-    function setKeepReward(uint256 _keepReward) external {
+    function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0xe731c445) {
         require(msg.sender == timelock, "!timelock");
         keepReward = _keepReward;
     }
 
-    function setRewardToken(address _rewardToken) external {
+    function setRewardToken(address _rewardToken) external sphereXGuardExternal(0xbbb3f715) {
         require(
             msg.sender == timelock || msg.sender == strategist,
             "!timelock"
@@ -109,7 +111,7 @@ abstract contract StrategyEthStargateFarmBase is StrategyBase {
 
     // **** State Mutations ****
 
-    function harvest() public override onlyBenevolent {
+    function harvest() public override onlyBenevolent sphereXGuardPublic(0x22c6abe5, 0x4641257d) {
         // Collects Reward tokens
         ILPStaking(lpStaking).deposit(poolId, 0);
 

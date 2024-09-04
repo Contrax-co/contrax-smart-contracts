@@ -3,7 +3,9 @@ pragma solidity 0.8.4;
 
 import "../strategy-base.sol";
 import "../../interfaces/minichefv2.sol";
-import "../../interfaces/IRewarder.sol";
+import "../../interfaces/IRewarder.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategySushiDoubleFarmBase is StrategyBase {
     using SafeERC20 for IERC20;
@@ -72,7 +74,7 @@ abstract contract StrategySushiDoubleFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function deposit() public override {
+    function deposit() public override sphereXGuardPublic(0xb64c43f9, 0xd0e30db0) {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
             IERC20(want).safeApprove(miniChef, 0);
@@ -84,7 +86,7 @@ abstract contract StrategySushiDoubleFarmBase is StrategyBase {
     function _withdrawSome(uint256 _amount)
         internal
         override
-        returns (uint256)
+        sphereXGuardInternal(0x4badd197) returns (uint256)
     {
         IMiniChefV2(miniChef).withdraw(poolId, _amount, address(this));
         return _amount;
@@ -92,17 +94,17 @@ abstract contract StrategySushiDoubleFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keep) external {
+    function setKeep(uint256 _keep) external sphereXGuardExternal(0xa4e08192) {
         require(msg.sender == timelock, "!timelock");
         keep = _keep;
     }
 
-    function setKeepReward(uint256 _keepReward) external {
+    function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0x7aa1b952) {
         require(msg.sender == timelock, "!timelock");
         keepReward = _keepReward;
     }
 
-    function setRewardToken(address _rewardToken) external {
+    function setRewardToken(address _rewardToken) external sphereXGuardExternal(0xc27ae587) {
         require(
             msg.sender == timelock || msg.sender == strategist,
             "!timelock"
@@ -112,7 +114,7 @@ abstract contract StrategySushiDoubleFarmBase is StrategyBase {
 
     // **** State Mutations ****
 
-    function harvest() public override onlyBenevolent {
+    function harvest() public override onlyBenevolent sphereXGuardPublic(0x30a729b0, 0x4641257d) {
         // Collects SUSHI tokens
         IMiniChefV2(miniChef).harvest(poolId, address(this));
         uint256 _sushi = IERC20(sushi).balanceOf(address(this));

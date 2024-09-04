@@ -12,9 +12,11 @@ import "../interfaces/vault.sol";
 import "../interfaces/vault-converter.sol";
 import "../interfaces/onesplit.sol";
 import "../interfaces/strategy.sol";
-import "../interfaces/converter.sol";
+import "../interfaces/converter.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
-contract HopController {
+contract HopController is SphereXProtected {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -55,43 +57,43 @@ contract HopController {
         treasury = _treasury;
     }
 
-    function setDevFund(address _devfund) public {
+    function setDevFund(address _devfund) public sphereXGuardPublic(0xfd51e2ce, 0xae4db919) {
         require(msg.sender == governance, "!governance");
         devfund = _devfund;
     }
 
-    function setTreasury(address _treasury) public {
+    function setTreasury(address _treasury) public sphereXGuardPublic(0x07ad30b3, 0xf0f44260) {
         require(msg.sender == governance, "!governance");
         treasury = _treasury;
     }
 
-    function setStrategist(address _strategist) public {
+    function setStrategist(address _strategist) public sphereXGuardPublic(0xe982b845, 0xc7b9d530) {
         require(msg.sender == governance, "!governance");
         strategist = _strategist;
     }
 
-    function setSplit(uint256 _split) public {
+    function setSplit(uint256 _split) public sphereXGuardPublic(0x4558ff37, 0x674e694f) {
         require(msg.sender == governance, "!governance");
         require(_split <= max, "numerator cannot be greater than denominator");
         split = _split;
     }
 
-    function setOneSplit(address _onesplit) public {
+    function setOneSplit(address _onesplit) public sphereXGuardPublic(0xc4e36f79, 0x8da1df4d) {
         require(msg.sender == governance, "!governance");
         onesplit = _onesplit;
     }
 
-    function setGovernance(address _governance) public {
+    function setGovernance(address _governance) public sphereXGuardPublic(0xcbe82ff4, 0xab033ea9) {
         require(msg.sender == governance, "!governance");
         governance = _governance;
     }
 
-    function setTimelock(address _timelock) public {
+    function setTimelock(address _timelock) public sphereXGuardPublic(0x799b2928, 0xbdacb303) {
         require(msg.sender == timelock, "!timelock");
         timelock = _timelock;
     }
 
-    function setVault(address _token, address _vault) public {
+    function setVault(address _token, address _vault) public sphereXGuardPublic(0xe61d7323, 0x714ccf7b) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!strategist"
@@ -100,33 +102,33 @@ contract HopController {
         vaults[_token] = _vault;
     }
 
-    function approveVaultConverter(address _converter) public {
+    function approveVaultConverter(address _converter) public sphereXGuardPublic(0x3bc1faae, 0xa87dda14) {
         require(msg.sender == governance, "!governance");
         approvedVaultConverters[_converter] = true;
     }
 
-    function revokeVaultConverter(address _converter) public {
+    function revokeVaultConverter(address _converter) public sphereXGuardPublic(0x94a135b2, 0x326a3cdc) {
         require(msg.sender == governance, "!governance");
         approvedVaultConverters[_converter] = false;
     }
 
-    function approveStrategy(address _token, address _strategy) public {
+    function approveStrategy(address _token, address _strategy) public sphereXGuardPublic(0xa6888366, 0xc494448e) {
         require(msg.sender == timelock, "!timelock");
         approvedStrategies[_token][_strategy] = true;
     }
 
-    function revokeStrategy(address _token, address _strategy) public {
+    function revokeStrategy(address _token, address _strategy) public sphereXGuardPublic(0xc83d835d, 0x590bbb60) {
         require(msg.sender == governance, "!governance");
         require(strategies[_token] != _strategy, "cannot revoke active strategy");
         approvedStrategies[_token][_strategy] = false;
     }
 
-    function setConvenienceFee(uint256 _convenienceFee) external {
+    function setConvenienceFee(uint256 _convenienceFee) external sphereXGuardExternal(0x477404b1) {
         require(msg.sender == timelock, "!timelock");
         convenienceFee = _convenienceFee;
     }
 
-    function setStrategy(address _token, address _strategy) public {
+    function setStrategy(address _token, address _strategy) public sphereXGuardPublic(0x87936db2, 0x72cb5d97) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!strategist"
@@ -140,7 +142,7 @@ contract HopController {
         strategies[_token] = _strategy;
     }
 
-    function earn(address _token, uint256 _amount) public {
+    function earn(address _token, uint256 _amount) public sphereXGuardPublic(0xc4e08624, 0xb02bf4b9) {
         address _strategy = strategies[_token];
         address _want = IStrategy(_strategy).want();
         if (_want != _token) {
@@ -158,7 +160,7 @@ contract HopController {
         return IStrategy(strategies[_token]).balanceOf();
     }
 
-    function withdrawAll(address _token) public {
+    function withdrawAll(address _token) public sphereXGuardPublic(0xcf472c7b, 0xfa09e630) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!strategist"
@@ -166,7 +168,7 @@ contract HopController {
         IStrategy(strategies[_token]).withdrawAll();
     }
 
-    function inCaseTokensGetStuck(address _token, uint256 _amount) public {
+    function inCaseTokensGetStuck(address _token, uint256 _amount) public sphereXGuardPublic(0x52101e9d, 0xc6d758cb) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!governance"
@@ -176,7 +178,7 @@ contract HopController {
 
     function inCaseStrategyTokenGetStuck(address _strategy, address _token)
         public
-    {
+    sphereXGuardPublic(0x69705d7d, 0x197baa6d) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!governance"
@@ -205,7 +207,7 @@ contract HopController {
         address _strategy,
         address _token,
         uint256 parts
-    ) public {
+    ) public sphereXGuardPublic(0xe7ede7ab, 0x04209f48) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!governance"
@@ -242,14 +244,14 @@ contract HopController {
         }
     }
 
-    function withdraw(address _token, uint256 _amount) public {
+    function withdraw(address _token, uint256 _amount) public sphereXGuardPublic(0x865bf049, 0xf3fef3a3) {
         require(msg.sender == vaults[_token], "!vault");
         IStrategy(strategies[_token]).withdraw(_amount);
     }
 
     function _execute(address _target, bytes memory _data)
         internal
-        returns (bytes memory response)
+        sphereXGuardInternal(0x8f5eb6ba) returns (bytes memory response)
     {
         require(_target != address(0), "!target");
 

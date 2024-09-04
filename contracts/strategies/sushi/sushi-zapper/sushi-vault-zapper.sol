@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./sushi-zapper-base.sol";
+import "./sushi-zapper-base.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 contract VaultZapperSushi is SushiZapperBase {
     using SafeERC20 for IERC20;
@@ -12,7 +14,7 @@ contract VaultZapperSushi is SushiZapperBase {
     constructor()
       SushiZapperBase(0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506){}
 
-    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override {
+    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override sphereXGuardPublic(0xee43f8c6, 0xf3cc669a) {
         (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
         address token0 = pair.token0();
         address token1 = pair.token1();
@@ -97,7 +99,7 @@ contract VaultZapperSushi is SushiZapperBase {
         _returnAssets(path2);
     }
 
-    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override {
+    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override sphereXGuardPublic(0xd4af6a4a, 0x02006da0) {
         (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
 
         address token0 = pair.token0();
@@ -147,7 +149,7 @@ contract VaultZapperSushi is SushiZapperBase {
 
     }
 
-    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override {
+    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override sphereXGuardPublic(0xb5478cf3, 0xb384bcbc) {
         (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
 
         (uint256 reserveA, uint256 reserveB, ) = pair.getReserves();

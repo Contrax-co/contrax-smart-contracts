@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "./hop-zapper-base.sol";
+import "./hop-zapper-base.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 contract VaultZapperHop is HopZapperBase {
     using SafeERC20 for IERC20;
@@ -12,7 +14,7 @@ contract VaultZapperHop is HopZapperBase {
     constructor()
         HopZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564, 0xCb410A689A03E06de0a6247b13C13D14237DecC8){}
 
-    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
+    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr) sphereXGuardPublic(0xa26a5fd0, 0xf3cc669a) {
         (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
         (address token0) = pair.getToken(0);
         (address token1) = pair.getToken(1); 
@@ -66,7 +68,7 @@ contract VaultZapperHop is HopZapperBase {
         
     }
 
-    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
+    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr) sphereXGuardPublic(0x499cdec5, 0x02006da0) {
         (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
 
         (address token0) = pair.getToken(0);
@@ -117,23 +119,32 @@ contract VaultZapperHop is HopZapperBase {
       
     }
 
-    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override onlyWhitelistedVaults(vault_addr){
-        (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
+        struct SwapAndStakeData{
+        IVault vault;
+        IHopSwap pair;
+        address token0;
+        address token1;
+    }
 
-        (address token0) = pair.getToken(0);
-        (address token1) = pair.getToken(1); 
+    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override onlyWhitelistedVaults(vault_addr) sphereXGuardPublic(0xb20722d6, 0xb384bcbc) {
+        SwapAndStakeData memory swapStakeData;
 
-        bool isInputA = token0 == tokenIn;
-        require(isInputA || token1 == tokenIn, "Input token not present in liquidity pair");
+        (swapStakeData.vault, swapStakeData.pair) = _getVaultPair(vault_addr);
 
-        (uint256 _tokenBalance0) = IHopSwap(pair).getTokenBalance(0);
-        (uint256 _tokenBalance1) = IHopSwap(pair).getTokenBalance(1);
+        (swapStakeData.token0) = swapStakeData.pair.getToken(0);
+        (swapStakeData.token1) = swapStakeData.pair.getToken(1); 
+
+        bool isInputA = swapStakeData.token0 == tokenIn;
+        require(isInputA || swapStakeData.token1 == tokenIn, "Input token not present in liquidity pair");
+
+        (uint256 _tokenBalance0) = IHopSwap(swapStakeData.pair).getTokenBalance(0);
+        (uint256 _tokenBalance1) = IHopSwap(swapStakeData.pair).getTokenBalance(1);
 
         if(_tokenBalance0 > _tokenBalance1){
           uint256 fullInvestment = IERC20(tokenIn).balanceOf(address(this));
-          _approveTokenIfNeeded(token0, address(pair)); 
+          _approveTokenIfNeeded(swapStakeData.token0, address(swapStakeData.pair)); 
 
-          IHopSwap(pair).swap(
+          IHopSwap(swapStakeData.pair).swap(
               0, 
               1, 
               fullInvestment, 
@@ -143,32 +154,32 @@ contract VaultZapperHop is HopZapperBase {
         }
 
         // Adds in liquidity for token0/token1
-        uint256 _token0 = IERC20(token0).balanceOf(address(this));
-        uint256 _token1 = IERC20(token1).balanceOf(address(this));
+        uint256 _token0 = IERC20(swapStakeData.token0).balanceOf(address(this));
+        uint256 _token1 = IERC20(swapStakeData.token1).balanceOf(address(this));
 
         uint256[] memory amounts;
         amounts = new uint256[](2);
         amounts[0] = _token0;
         amounts[1] = _token1;
         
-        _approveTokenIfNeeded(token0, address(pair));
-        _approveTokenIfNeeded(token1, address(pair));
+        _approveTokenIfNeeded(swapStakeData.token0, address(swapStakeData.pair));
+        _approveTokenIfNeeded(swapStakeData.token1, address(swapStakeData.pair));
 
-        uint256 amountLiquidity = IHopSwap(pair).addLiquidity(
+        uint256 amountLiquidity = IHopSwap(swapStakeData.pair).addLiquidity(
             amounts, 
             0, 
             block.timestamp
         );
 
-        _approveTokenIfNeeded(address(vault.token()), address(vault));
-        vault.deposit(amountLiquidity);
+        _approveTokenIfNeeded(address(swapStakeData.vault.token()), address(swapStakeData.vault));
+        swapStakeData.vault.deposit(amountLiquidity);
 
         //add to guage if possible instead of returning to user, and so no receipt token
-        vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
+        swapStakeData.vault.safeTransfer(msg.sender, swapStakeData.vault.balanceOf(address(this)));
 
         address[] memory path = new address[](2);
-        path[0] = token0;
-        path[1] = token1;
+        path[0] = swapStakeData.token0;
+        path[1] = swapStakeData.token1;
 
         _returnAssets(path);
     }

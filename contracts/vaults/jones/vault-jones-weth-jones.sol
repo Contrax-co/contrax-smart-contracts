@@ -5,7 +5,9 @@ pragma solidity 0.8.4;
 import "../../interfaces/controller.sol";
 
 import "../../lib/erc20.sol";
-import "../../lib/safe-math.sol";
+import "../../lib/safe-math.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 contract VaultJonesWethJones is ERC20 {
     using SafeERC20 for IERC20;
@@ -46,23 +48,23 @@ contract VaultJonesWethJones is ERC20 {
             );
     }
 
-    function setMin(uint256 _min) external {
+    function setMin(uint256 _min) external sphereXGuardExternal(0x8469380f) {
         require(msg.sender == governance, "!governance");
         require(_min <= max, "numerator cannot be greater than denominator");
         min = _min;
     }
 
-    function setGovernance(address _governance) public {
+    function setGovernance(address _governance) public sphereXGuardPublic(0x6b3e7666, 0xab033ea9) {
         require(msg.sender == governance, "!governance");
         governance = _governance;
     }
 
-    function setTimelock(address _timelock) public {
+    function setTimelock(address _timelock) public sphereXGuardPublic(0x80138719, 0xbdacb303) {
         require(msg.sender == timelock, "!timelock");
         timelock = _timelock;
     }
 
-    function setController(address _controller) public {
+    function setController(address _controller) public sphereXGuardPublic(0xa09de28b, 0x92eefe9b) {
         require(msg.sender == timelock, "!timelock");
         controller = _controller;
     }
@@ -73,17 +75,17 @@ contract VaultJonesWethJones is ERC20 {
         return token.balanceOf(address(this)).mul(min).div(max);
     }
 
-    function earn() public {
+    function earn() public sphereXGuardPublic(0xa9f553a9, 0xd389800f) {
         uint256 _bal = available();
         token.safeTransfer(controller, _bal);
         IController(controller).earn(address(token), _bal);
     }
 
-    function depositAll() external {
+    function depositAll() external sphereXGuardExternal(0x3ca72974) {
         deposit(token.balanceOf(msg.sender));
     }
 
-    function deposit(uint256 _amount) public {
+    function deposit(uint256 _amount) public sphereXGuardPublic(0xc6731ff1, 0xb6b55f25) {
         uint256 _pool = balance();
         uint256 _before = token.balanceOf(address(this));
         token.safeTransferFrom(msg.sender, address(this), _amount);
@@ -98,19 +100,19 @@ contract VaultJonesWethJones is ERC20 {
         _mint(msg.sender, shares);
     }
 
-    function withdrawAll() external {
+    function withdrawAll() external sphereXGuardExternal(0xf10b962b) {
         withdraw(balanceOf(msg.sender));
     }
 
     // Used to swap any borrowed reserve over the debt limit to liquidate to 'token'
-    function harvest(address reserve, uint256 amount) external {
+    function harvest(address reserve, uint256 amount) external sphereXGuardExternal(0x70ccda83) {
         require(msg.sender == controller, "!controller");
         require(reserve != address(token), "token");
         IERC20(reserve).safeTransfer(controller, amount);
     }
 
     // No rebalance implementation for lower fees and faster swaps
-    function withdraw(uint256 _shares) public {
+    function withdraw(uint256 _shares) public sphereXGuardPublic(0x066db2d9, 0x2e1a7d4d) {
         uint256 r = (balance().mul(_shares)).div(totalSupply());
         _burn(msg.sender, _shares);
 

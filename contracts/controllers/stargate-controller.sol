@@ -12,9 +12,11 @@ import "../interfaces/vault.sol";
 import "../interfaces/vault-converter.sol";
 import "../interfaces/onesplit.sol";
 import "../interfaces/strategy.sol";
-import "../interfaces/converter.sol";
+import "../interfaces/converter.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
-contract StargateController {
+contract StargateController is SphereXProtected {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -55,43 +57,43 @@ contract StargateController {
         treasury = _treasury;
     }
 
-    function setDevFund(address _devfund) public {
+    function setDevFund(address _devfund) public sphereXGuardPublic(0x5abc7bc6, 0xae4db919) {
         require(msg.sender == governance, "!governance");
         devfund = _devfund;
     }
 
-    function setTreasury(address _treasury) public {
+    function setTreasury(address _treasury) public sphereXGuardPublic(0x1b256275, 0xf0f44260) {
         require(msg.sender == governance, "!governance");
         treasury = _treasury;
     }
 
-    function setStrategist(address _strategist) public {
+    function setStrategist(address _strategist) public sphereXGuardPublic(0xa54c3178, 0xc7b9d530) {
         require(msg.sender == governance, "!governance");
         strategist = _strategist;
     }
 
-    function setSplit(uint256 _split) public {
+    function setSplit(uint256 _split) public sphereXGuardPublic(0x6071a81a, 0x674e694f) {
         require(msg.sender == governance, "!governance");
         require(_split <= max, "numerator cannot be greater than denominator");
         split = _split;
     }
 
-    function setOneSplit(address _onesplit) public {
+    function setOneSplit(address _onesplit) public sphereXGuardPublic(0x735b5171, 0x8da1df4d) {
         require(msg.sender == governance, "!governance");
         onesplit = _onesplit;
     }
 
-    function setGovernance(address _governance) public {
+    function setGovernance(address _governance) public sphereXGuardPublic(0x510f52b1, 0xab033ea9) {
         require(msg.sender == governance, "!governance");
         governance = _governance;
     }
 
-    function setTimelock(address _timelock) public {
+    function setTimelock(address _timelock) public sphereXGuardPublic(0xad60d963, 0xbdacb303) {
         require(msg.sender == timelock, "!timelock");
         timelock = _timelock;
     }
 
-    function setVault(address _token, address _vault) public {
+    function setVault(address _token, address _vault) public sphereXGuardPublic(0x7e6e7f21, 0x714ccf7b) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!strategist"
@@ -100,33 +102,33 @@ contract StargateController {
         vaults[_token] = _vault;
     }
 
-    function approveVaultConverter(address _converter) public {
+    function approveVaultConverter(address _converter) public sphereXGuardPublic(0x934308f0, 0xa87dda14) {
         require(msg.sender == governance, "!governance");
         approvedVaultConverters[_converter] = true;
     }
 
-    function revokeVaultConverter(address _converter) public {
+    function revokeVaultConverter(address _converter) public sphereXGuardPublic(0xd6d7ef6e, 0x326a3cdc) {
         require(msg.sender == governance, "!governance");
         approvedVaultConverters[_converter] = false;
     }
 
-    function approveStrategy(address _token, address _strategy) public {
+    function approveStrategy(address _token, address _strategy) public sphereXGuardPublic(0xca8c150a, 0xc494448e) {
         require(msg.sender == timelock, "!timelock");
         approvedStrategies[_token][_strategy] = true;
     }
 
-    function revokeStrategy(address _token, address _strategy) public {
+    function revokeStrategy(address _token, address _strategy) public sphereXGuardPublic(0x774b2079, 0x590bbb60) {
         require(msg.sender == governance, "!governance");
         require(strategies[_token] != _strategy, "cannot revoke active strategy");
         approvedStrategies[_token][_strategy] = false;
     }
 
-    function setConvenienceFee(uint256 _convenienceFee) external {
+    function setConvenienceFee(uint256 _convenienceFee) external sphereXGuardExternal(0x78ad18b3) {
         require(msg.sender == timelock, "!timelock");
         convenienceFee = _convenienceFee;
     }
 
-    function setStrategy(address _token, address _strategy) public {
+    function setStrategy(address _token, address _strategy) public sphereXGuardPublic(0x88712e72, 0x72cb5d97) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!strategist"
@@ -140,7 +142,7 @@ contract StargateController {
         strategies[_token] = _strategy;
     }
 
-    function earn(address _token, uint256 _amount) public {
+    function earn(address _token, uint256 _amount) public sphereXGuardPublic(0xf7dde0c1, 0xb02bf4b9) {
         address _strategy = strategies[_token];
         address _want = IStrategy(_strategy).want();
         if (_want != _token) {
@@ -158,7 +160,7 @@ contract StargateController {
         return IStrategy(strategies[_token]).balanceOf();
     }
 
-    function withdrawAll(address _token) public {
+    function withdrawAll(address _token) public sphereXGuardPublic(0xe404a9d6, 0xfa09e630) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!strategist"
@@ -166,7 +168,7 @@ contract StargateController {
         IStrategy(strategies[_token]).withdrawAll();
     }
 
-    function inCaseTokensGetStuck(address _token, uint256 _amount) public {
+    function inCaseTokensGetStuck(address _token, uint256 _amount) public sphereXGuardPublic(0x78e052c8, 0xc6d758cb) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!governance"
@@ -176,7 +178,7 @@ contract StargateController {
 
     function inCaseStrategyTokenGetStuck(address _strategy, address _token)
         public
-    {
+    sphereXGuardPublic(0xc70b8c91, 0x197baa6d) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!governance"
@@ -205,7 +207,7 @@ contract StargateController {
         address _strategy,
         address _token,
         uint256 parts
-    ) public {
+    ) public sphereXGuardPublic(0x24ef2bce, 0x04209f48) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!governance"
@@ -242,10 +244,16 @@ contract StargateController {
         }
     }
 
-    function withdraw(address _token, uint256 _amount) public {
+    function withdraw(address _token, uint256 _amount) public sphereXGuardPublic(0x9c3cc3a4, 0xf3fef3a3) {
         require(msg.sender == vaults[_token], "!vault");
         IStrategy(strategies[_token]).withdraw(_amount);
     }
+    struct VaultSwapData {
+    address _fromVaultToken;
+    address _toVaultToken;
+    uint256 _fromVaultUnderlyingAmount;
+    uint256 _fromVaultAvailUnderlying;
+}
 
     // Function to swap between vault
     function swapExactVaultForVault(
@@ -255,7 +263,7 @@ contract StargateController {
         uint256 _toVaultMinAmount, // How much vault tokens you'd like at a minimum
         address payable[] calldata _targets,
         bytes[] calldata _data
-    ) external returns (uint256) {
+    ) external sphereXGuardExternal(0x4feb257b) returns (uint256) {
         require(_targets.length == _data.length, "!length");
 
         // Only return last response
@@ -264,8 +272,10 @@ contract StargateController {
             require(approvedVaultConverters[_targets[i]], "!converter");
         }
 
-        address _fromVaultToken = IVault(_fromVault).token();
-        address _toVaultToken = IVault(_toVault).token();
+        VaultSwapData memory swapData;
+
+        swapData._fromVaultToken = IVault(_fromVault).token();
+        swapData._toVaultToken = IVault(_toVault).token();
 
         // Get pTokens from msg.sender
         IERC20(_fromVault).safeTransferFrom(
@@ -276,7 +286,7 @@ contract StargateController {
 
         // Calculate how much underlying
         // is the amount of pTokens worth
-        uint256 _fromVaultUnderlyingAmount = _fromVaultAmount
+        swapData._fromVaultUnderlyingAmount = _fromVaultAmount
             .mul(IVault(_fromVault).getRatio())
             .div(10**uint256(IVault(_fromVault).decimals()));
 
@@ -284,12 +294,12 @@ contract StargateController {
         // doesn't have enough initial capital.
         // This has moves the funds from the strategy to the Vault's
         // 'earnable' amount. Enabling 'free' withdrawals
-        uint256 _fromVaultAvailUnderlying = IERC20(_fromVaultToken).balanceOf(
+        swapData._fromVaultAvailUnderlying = IERC20(swapData._fromVaultToken).balanceOf(
             _fromVault
         );
-        if (_fromVaultAvailUnderlying < _fromVaultUnderlyingAmount) {
-            IStrategy(strategies[_fromVaultToken]).withdrawForSwap(
-                _fromVaultUnderlyingAmount.sub(_fromVaultAvailUnderlying)
+        if (swapData._fromVaultAvailUnderlying < swapData._fromVaultUnderlyingAmount) {
+            IStrategy(strategies[swapData._fromVaultToken]).withdrawForSwap(
+                swapData._fromVaultUnderlyingAmount.sub(swapData._fromVaultAvailUnderlying)
             );
         }
 
@@ -301,7 +311,7 @@ contract StargateController {
         IVault(_fromVault).withdraw(_fromVaultAmount);
 
         // Calculate fee
-        uint256 _fromUnderlyingBalance = IERC20(_fromVaultToken).balanceOf(
+        uint256 _fromUnderlyingBalance = IERC20(swapData._fromVaultToken).balanceOf(
             address(this)
         );
         uint256 _convenienceFee = _fromUnderlyingBalance.mul(convenienceFee).div(
@@ -309,8 +319,8 @@ contract StargateController {
         );
 
         if (_convenienceFee > 1) {
-            IERC20(_fromVaultToken).safeTransfer(devfund, _convenienceFee.div(2));
-            IERC20(_fromVaultToken).safeTransfer(treasury, _convenienceFee.div(2));
+            IERC20(swapData._fromVaultToken).safeTransfer(devfund, _convenienceFee.div(2));
+            IERC20(swapData._fromVaultToken).safeTransfer(treasury, _convenienceFee.div(2));
         }
 
         // Executes sequence of logic
@@ -319,9 +329,9 @@ contract StargateController {
         }
 
         // Deposit into new Vault
-        uint256 _toBal = IERC20(_toVaultToken).balanceOf(address(this));
-        IERC20(_toVaultToken).safeApprove(_toVault, 0);
-        IERC20(_toVaultToken).safeApprove(_toVault, _toBal);
+        uint256 _toBal = IERC20(swapData._toVaultToken).balanceOf(address(this));
+        IERC20(swapData._toVaultToken).safeApprove(_toVault, 0);
+        IERC20(swapData._toVaultToken).safeApprove(_toVault, _toBal);
         IVault(_toVault).deposit(_toBal);
 
         // Send Vault Tokens to user
@@ -337,7 +347,7 @@ contract StargateController {
 
     function _execute(address _target, bytes memory _data)
         internal
-        returns (bytes memory response)
+        sphereXGuardInternal(0x98ad2c58) returns (bytes memory response)
     {
         require(_target != address(0), "!target");
 

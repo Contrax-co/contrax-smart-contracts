@@ -4,7 +4,9 @@ pragma solidity 0.8.4;
 import "../../strategy-base.sol";
 import "../../../interfaces/plutus.sol";
 
-import "hardhat/console.sol";
+import "hardhat/console.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyPlutusPlsDpxFarmBase is StrategyBase {
   using SafeERC20 for IERC20;
@@ -54,7 +56,7 @@ abstract contract StrategyPlutusPlsDpxFarmBase is StrategyBase {
     return (_pendingPls, _pendingPlsDpx, _pendingPlsJones, _pendingDpx);
   }
 
-  function deposit() public override {
+  function deposit() public override sphereXGuardPublic(0xff41fc2c, 0xd0e30db0) {
     uint256 _want = IERC20(want).balanceOf(address(this));
     console.log("before deposit", _want);
     if (_want > 0) {
@@ -67,23 +69,23 @@ abstract contract StrategyPlutusPlsDpxFarmBase is StrategyBase {
     console.log("after deposit", _want);
   }
 
-  function _withdrawSome(uint256 _amount) internal override returns (uint256) {
+  function _withdrawSome(uint256 _amount) internal override sphereXGuardInternal(0x487f19bb) returns (uint256) {
     IPlsDpxChef(plsDpxChef).withdraw(uint96(_amount));
     return _amount;
   }
 
   // **** Setters ****
-  function setKeep(uint256 _keepSUSHI) external {
+  function setKeep(uint256 _keepSUSHI) external sphereXGuardExternal(0x3b423b27) {
       require(msg.sender == timelock, "!timelock");
       keep = _keepSUSHI;
   }
 
-  function setKeepReward(uint256 _keepReward) external {
+  function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0xaeaf360c) {
       require(msg.sender == timelock, "!timelock");
       keepReward = _keepReward;
   }
 
-  function setRewardToken(address _rewardToken) external {
+  function setRewardToken(address _rewardToken) external sphereXGuardExternal(0x15a85a06) {
       require(
           msg.sender == timelock || msg.sender == strategist,
           "!timelock"
@@ -91,7 +93,7 @@ abstract contract StrategyPlutusPlsDpxFarmBase is StrategyBase {
       rewardToken = _rewardToken;
   }
 
-  function harvest() public override onlyBenevolent {
+  function harvest() public override onlyBenevolent sphereXGuardPublic(0xc3c63ae8, 0x4641257d) {
     IPlsDpxChef(plsDpxChef).harvest();
 
     uint256 _pls = IERC20(pls).balanceOf(address(this));

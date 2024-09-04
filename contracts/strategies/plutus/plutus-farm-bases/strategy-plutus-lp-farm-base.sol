@@ -4,7 +4,9 @@ pragma solidity 0.8.4;
 import "../../strategy-base.sol";
 import "../../../interfaces/plutus.sol";
 
-import "hardhat/console.sol";
+import "hardhat/console.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyPlutusFarmBase is StrategyBase {
   using SafeERC20 for IERC20;
@@ -48,7 +50,7 @@ abstract contract StrategyPlutusFarmBase is StrategyBase {
     return (_pendingPls);
   }
 
-  function deposit() public override {
+  function deposit() public override sphereXGuardPublic(0x8464b469, 0xd0e30db0) {
     uint256 _want = IERC20(want).balanceOf(address(this));
     console.log("before deposit", _want);
     if (_want > 0) {
@@ -61,23 +63,23 @@ abstract contract StrategyPlutusFarmBase is StrategyBase {
     console.log("after deposit", _want);
   }
 
-  function _withdrawSome(uint256 _amount) internal override returns (uint256) {
+  function _withdrawSome(uint256 _amount) internal override sphereXGuardInternal(0x198cd59d) returns (uint256) {
     IPlutusChef(plutusChef).withdraw(uint96(_amount));
     return _amount;
   }
 
   // **** Setters ****
-  function setKeep(uint256 _keep) external {
+  function setKeep(uint256 _keep) external sphereXGuardExternal(0x9f807c6b) {
       require(msg.sender == timelock, "!timelock");
       keep = _keep;
   }
 
-  function setKeepReward(uint256 _keepReward) external {
+  function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0x1de792f2) {
       require(msg.sender == timelock, "!timelock");
       keepReward = _keepReward;
   }
 
-  function setRewardToken(address _rewardToken) external {
+  function setRewardToken(address _rewardToken) external sphereXGuardExternal(0x72cf3fe7) {
       require(
           msg.sender == timelock || msg.sender == strategist,
           "!timelock"
@@ -85,7 +87,7 @@ abstract contract StrategyPlutusFarmBase is StrategyBase {
       rewardToken = _rewardToken;
   }
 
-  function harvest() public override onlyBenevolent {
+  function harvest() public override onlyBenevolent sphereXGuardPublic(0x0bee6850, 0x4641257d) {
     IPlutusChef(plutusChef).harvest();
 
     uint256 _pls = IERC20(pls).balanceOf(address(this));

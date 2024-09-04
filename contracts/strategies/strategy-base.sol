@@ -7,13 +7,15 @@ import "../lib/safe-math.sol";
 import "../interfaces/uniswapv2.sol";
 import "../interfaces/staking-rewards.sol";
 import "../interfaces/vault.sol";
-import "../interfaces/controller.sol";
+import "../interfaces/controller.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 
 /**
  * The is the Strategy Base that most LPs will inherit 
  */
-abstract contract StrategyBase {
+abstract contract StrategyBase is SphereXProtected {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -101,61 +103,61 @@ abstract contract StrategyBase {
 
     // **** Setters **** //
 
-    function whitelistHarvester(address _harvester) external {
+    function whitelistHarvester(address _harvester) external sphereXGuardExternal(0x6e38ed4d) {
         require(msg.sender == governance ||
              msg.sender == strategist || harvesters[msg.sender], "not authorized");
         harvesters[_harvester] = true;
     }
 
-    function revokeHarvester(address _harvester) external {
+    function revokeHarvester(address _harvester) external sphereXGuardExternal(0x6f4a07f4) {
         require(msg.sender == governance ||
              msg.sender == strategist, "not authorized");
         harvesters[_harvester] = false;
     }
 
-    function setFeeDistributor(address _feeDistributor) external {
+    function setFeeDistributor(address _feeDistributor) external sphereXGuardExternal(0xe96ef36e) {
         require(msg.sender == governance, "not authorized");
         feeDistributor = _feeDistributor;
     }
 
-    function setWithdrawalDevFundFee(uint256 _withdrawalDevFundFee) external {
+    function setWithdrawalDevFundFee(uint256 _withdrawalDevFundFee) external sphereXGuardExternal(0x2559cc6a) {
         require(msg.sender == timelock, "!timelock");
         withdrawalDevFundFee = _withdrawalDevFundFee;
     }
 
-    function setWithdrawalTreasuryFee(uint256 _withdrawalTreasuryFee) external {
+    function setWithdrawalTreasuryFee(uint256 _withdrawalTreasuryFee) external sphereXGuardExternal(0xc483137d) {
         require(msg.sender == timelock, "!timelock");
         withdrawalTreasuryFee = _withdrawalTreasuryFee;
     }
 
-    function setPerformanceDevFee(uint256 _performanceDevFee) external {
+    function setPerformanceDevFee(uint256 _performanceDevFee) external sphereXGuardExternal(0x23842368) {
         require(msg.sender == timelock, "!timelock");
         performanceDevFee = _performanceDevFee;
     }
 
     function setPerformanceTreasuryFee(uint256 _performanceTreasuryFee)
         external
-    {
+    sphereXGuardExternal(0xc219729a) {
         require(msg.sender == timelock, "!timelock");
         performanceTreasuryFee = _performanceTreasuryFee;
     }
 
-    function setStrategist(address _strategist) external {
+    function setStrategist(address _strategist) external sphereXGuardExternal(0xfbe05f47) {
         require(msg.sender == governance, "!governance");
         strategist = _strategist;
     }
 
-    function setGovernance(address _governance) external {
+    function setGovernance(address _governance) external sphereXGuardExternal(0x1bb893a5) {
         require(msg.sender == governance, "!governance");
         governance = _governance;
     }
 
-    function setTimelock(address _timelock) external {
+    function setTimelock(address _timelock) external sphereXGuardExternal(0xee3d9cc1) {
         require(msg.sender == timelock, "!timelock");
         timelock = _timelock;
     }
 
-    function setController(address _controller) external {
+    function setController(address _controller) external sphereXGuardExternal(0x4d05853d) {
         require(msg.sender == timelock, "!timelock");
         controller = _controller;
     }
@@ -164,7 +166,7 @@ abstract contract StrategyBase {
     function deposit() public virtual;
 
     // Controller only function for creating additional rewards from dust
-    function withdraw(IERC20 _asset) external returns (uint256 balance) {
+    function withdraw(IERC20 _asset) external sphereXGuardExternal(0x0e8bdd5a) returns (uint256 balance) {
         require(msg.sender == controller, "!controller");
         require(want != address(_asset), "want");
         balance = _asset.balanceOf(address(this));
@@ -172,7 +174,7 @@ abstract contract StrategyBase {
     }
 
     // Withdraw partial funds, normally used with a vault withdrawal
-    function withdraw(uint256 _amount) external {
+    function withdraw(uint256 _amount) external sphereXGuardExternal(0xbc6047d4) {
         require(msg.sender == controller, "!controller");
         uint256 _balance = IERC20(want).balanceOf(address(this));
         if (_balance < _amount) {
@@ -202,7 +204,7 @@ abstract contract StrategyBase {
     // Withdraw funds, used to swap between strategies
     function withdrawForSwap(uint256 _amount)
         external
-        returns (uint256 balance)
+        sphereXGuardExternal(0x8f20ccb0) returns (uint256 balance)
     {
         require(msg.sender == controller, "!controller");
         _withdrawSome(_amount);
@@ -215,7 +217,7 @@ abstract contract StrategyBase {
     }
 
     // Withdraw all funds, normally used when migrating strategies
-    function withdrawAll() external returns (uint256 balance) {
+    function withdrawAll() external sphereXGuardExternal(0xda6c39c3) returns (uint256 balance) {
         require(msg.sender == controller, "!controller");
         _withdrawAll();
 
@@ -226,7 +228,7 @@ abstract contract StrategyBase {
         IERC20(want).safeTransfer(_vault, balance);
     }
 
-    function _withdrawAll() internal {
+    function _withdrawAll() internal sphereXGuardInternal(0xf0692ab1) {
         _withdrawSome(balanceOfPool());
     }
 
@@ -239,7 +241,7 @@ abstract contract StrategyBase {
     function execute(address _target, bytes memory _data)
         public
         payable
-        returns (bytes memory response)
+        sphereXGuardPublic(0x3acab6ad, 0x1cff79cd) returns (bytes memory response)
     {
         require(msg.sender == timelock, "!timelock");
         require(_target != address(0), "!target");
@@ -277,7 +279,7 @@ abstract contract StrategyBase {
         address _from,
         address _to,
         uint256 _amount
-    ) internal {
+    ) internal sphereXGuardInternal(0x800127ba) {
         require(_to != address(0));
 
         address[] memory path;
@@ -307,7 +309,7 @@ abstract contract StrategyBase {
     function _swapSushiswapWithPath(
         address[] memory path,
         uint256 _amount
-    ) internal {
+    ) internal sphereXGuardInternal(0x5c11052a) {
         require(path[1] != address(0));
 
         IERC20(path[0]).safeApprove(sushiRouter, 0);
@@ -321,7 +323,7 @@ abstract contract StrategyBase {
         );
     }
 
-    function _distributePerformanceFeesAndDeposit() internal {
+    function _distributePerformanceFeesAndDeposit() internal sphereXGuardInternal(0x24ece6b5) {
         uint256 _want = IERC20(want).balanceOf(address(this));
 
         if (_want > 0) {
@@ -341,7 +343,7 @@ abstract contract StrategyBase {
         }
     }
 
-    function _distributePerformanceFeesBasedAmountAndDeposit(uint256 _amount) internal {
+    function _distributePerformanceFeesBasedAmountAndDeposit(uint256 _amount) internal sphereXGuardInternal(0xff626c51) {
         uint256 _want = IERC20(want).balanceOf(address(this));
 
         if (_amount > _want) {

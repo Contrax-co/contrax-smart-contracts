@@ -6,9 +6,11 @@ import "../../../lib/erc20.sol";
 import "../../../interfaces/uniswapv2.sol";
 import "../../../lib/square-root.sol";
 import "../../../interfaces/weth.sol";
-import "../../../interfaces/vault.sol";
+import "../../../interfaces/vault.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
-abstract contract SushiZapperBase {
+abstract contract SushiZapperBase is SphereXProtected {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -34,7 +36,7 @@ abstract contract SushiZapperBase {
     function _getSwapAmount(uint256 investmentA, uint256 reserveA, uint256 reserveB) public view virtual returns (uint256 swapAmount);
 
     //returns DUST
-    function _returnAssets(address[] memory tokens) internal {
+    function _returnAssets(address[] memory tokens) internal sphereXGuardInternal(0x84cf7e33) {
         uint256 balance;
         for (uint256 i; i < tokens.length; i++) {
             balance = IERC20(tokens[i]).balanceOf(address(this));
@@ -54,7 +56,7 @@ abstract contract SushiZapperBase {
 
     function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public virtual;
 
-    function zapInETH(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) external payable{
+    function zapInETH(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) external payable sphereXGuardExternal(0x2f5804f3) {
         require(msg.value >= minimumAmount, "Insignificant input amount");
 
         WETH(weth).deposit{value: msg.value}();
@@ -91,7 +93,7 @@ abstract contract SushiZapperBase {
     }
 
     // transfers tokens from msg.sender to this contract 
-    function zapIn(address vault_addr, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external {
+    function zapIn(address vault_addr, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external sphereXGuardExternal(0x916251e6) {
         require(tokenInAmount >= minimumAmount, "Insignificant input amount");
         require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
 
@@ -152,7 +154,7 @@ abstract contract SushiZapperBase {
 
     function zapOutAndSwapEth(address vault, uint256 withdrawAmount, uint256 desiredTokenOutMin) public virtual;
 
-    function _removeLiquidity(address pair, address to) internal {
+    function _removeLiquidity(address pair, address to) internal sphereXGuardInternal(0x570acd76) {
         IERC20(pair).safeTransfer(pair, IERC20(pair).balanceOf(address(this)));
         (uint256 amount0, uint256 amount1) = IUniswapV2Pair(pair).burn(to);
 
@@ -167,13 +169,13 @@ abstract contract SushiZapperBase {
         require(pair.factory() == IUniswapV2Pair(router).factory(), "Incompatible liquidity pair factory");
     }
 
-    function _approveTokenIfNeeded(address token, address spender) internal {
+    function _approveTokenIfNeeded(address token, address spender) internal sphereXGuardInternal(0x5aded1dc) {
         if (IERC20(token).allowance(address(this), spender) == 0) {
             IERC20(token).safeApprove(spender, type(uint256).max);
         }
     }
 
-    function zapOut(address vault_addr, uint256 withdrawAmount) external {
+    function zapOut(address vault_addr, uint256 withdrawAmount) external sphereXGuardExternal(0x421eac04) {
         (IVault vault, IUniswapV2Pair pair) = _getVaultPair(vault_addr);
 
         IERC20(vault_addr).safeTransferFrom(msg.sender, address(this), withdrawAmount);

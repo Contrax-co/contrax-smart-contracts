@@ -41,21 +41,21 @@ const config: HardhatUserConfig = {
           url: "https://arb1.arbitrum.io/rpc",
       },
     },
-    arbitrum: {
-      chainId: 42161,
-      url: "https://arb1.arbitrum.io/rpc",
-      accounts: [process.env.PRIVATE_KEY ?? '']
-    },
-    mainnet: {
-      chainId: 42161,
-      url: "https://arb1.arbitrum.io/rpc",
-      accounts: [process.env.PRIVATE_KEY ?? '']
-    },
-    testnet: {
-      chainId: 421611,
-      url: "https://rinkeby.arbitrum.io/rpc",
-      accounts: [process.env.PRIVATE_KEY ?? '']
-    },
+    // arbitrum: {
+    //   chainId: 42161,
+    //   url: "https://arb1.arbitrum.io/rpc",
+    //   accounts: [process.env.PRIVATE_KEY ?? '']
+    // },
+    // mainnet: {
+    //   chainId: 42161,
+    //   url: "https://arb1.arbitrum.io/rpc",
+    //   accounts: [process.env.PRIVATE_KEY ?? '']
+    // },
+    // testnet: {
+    //   chainId: 421611,
+    //   url: "https://rinkeby.arbitrum.io/rpc",
+    //   accounts: [process.env.PRIVATE_KEY ?? '']
+    // },
   },
   mocha: {
     timeout: 1000000

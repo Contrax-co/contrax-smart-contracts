@@ -9,13 +9,15 @@ import "../interfaces/staking-rewards.sol";
 import "../interfaces/vault.sol";
 import "../interfaces/controller.sol";
 import "../interfaces/uniswapv2.sol";
-import "../interfaces/uniswapv3.sol";
+import "../interfaces/uniswapv3.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 
 /**
  * The is the Strategy Base that most LPs will inherit 
  */
-abstract contract StrategyBaseV3 {
+abstract contract StrategyBaseV3 is SphereXProtected {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -103,61 +105,61 @@ abstract contract StrategyBaseV3 {
 
     // **** Setters **** //
 
-    function whitelistHarvester(address _harvester) external {
+    function whitelistHarvester(address _harvester) external sphereXGuardExternal(0x86fc9901) {
         require(msg.sender == governance ||
              msg.sender == strategist || harvesters[msg.sender], "not authorized");
         harvesters[_harvester] = true;
     }
 
-    function revokeHarvester(address _harvester) external {
+    function revokeHarvester(address _harvester) external sphereXGuardExternal(0x02b6e561) {
         require(msg.sender == governance ||
              msg.sender == strategist, "not authorized");
         harvesters[_harvester] = false;
     }
 
-    function setFeeDistributor(address _feeDistributor) external {
+    function setFeeDistributor(address _feeDistributor) external sphereXGuardExternal(0x97a57936) {
         require(msg.sender == governance, "not authorized");
         feeDistributor = _feeDistributor;
     }
 
-    function setWithdrawalDevFundFee(uint256 _withdrawalDevFundFee) external {
+    function setWithdrawalDevFundFee(uint256 _withdrawalDevFundFee) external sphereXGuardExternal(0xebd49d3d) {
         require(msg.sender == timelock, "!timelock");
         withdrawalDevFundFee = _withdrawalDevFundFee;
     }
 
-    function setWithdrawalTreasuryFee(uint256 _withdrawalTreasuryFee) external {
+    function setWithdrawalTreasuryFee(uint256 _withdrawalTreasuryFee) external sphereXGuardExternal(0xec74197e) {
         require(msg.sender == timelock, "!timelock");
         withdrawalTreasuryFee = _withdrawalTreasuryFee;
     }
 
-    function setPerformanceDevFee(uint256 _performanceDevFee) external {
+    function setPerformanceDevFee(uint256 _performanceDevFee) external sphereXGuardExternal(0x4018db58) {
         require(msg.sender == timelock, "!timelock");
         performanceDevFee = _performanceDevFee;
     }
 
     function setPerformanceTreasuryFee(uint256 _performanceTreasuryFee)
         external
-    {
+    sphereXGuardExternal(0xf779b846) {
         require(msg.sender == timelock, "!timelock");
         performanceTreasuryFee = _performanceTreasuryFee;
     }
 
-    function setStrategist(address _strategist) external {
+    function setStrategist(address _strategist) external sphereXGuardExternal(0xc1583d73) {
         require(msg.sender == governance, "!governance");
         strategist = _strategist;
     }
 
-    function setGovernance(address _governance) external {
+    function setGovernance(address _governance) external sphereXGuardExternal(0x9e0f0547) {
         require(msg.sender == governance, "!governance");
         governance = _governance;
     }
 
-    function setTimelock(address _timelock) external {
+    function setTimelock(address _timelock) external sphereXGuardExternal(0xf7019ba3) {
         require(msg.sender == timelock, "!timelock");
         timelock = _timelock;
     }
 
-    function setController(address _controller) external {
+    function setController(address _controller) external sphereXGuardExternal(0x630034b2) {
         require(msg.sender == timelock, "!timelock");
         controller = _controller;
     }
@@ -166,7 +168,7 @@ abstract contract StrategyBaseV3 {
     function deposit() public virtual;
 
     // Controller only function for creating additional rewards from dust
-    function withdraw(IERC20 _asset) external returns (uint256 balance) {
+    function withdraw(IERC20 _asset) external sphereXGuardExternal(0x5cc664c5) returns (uint256 balance) {
         require(msg.sender == controller, "!controller");
         require(want != address(_asset), "want");
         balance = _asset.balanceOf(address(this));
@@ -174,7 +176,7 @@ abstract contract StrategyBaseV3 {
     }
 
     // Withdraw partial funds, normally used with a vault withdrawal
-    function withdraw(uint256 _amount) external {
+    function withdraw(uint256 _amount) external sphereXGuardExternal(0xc7631565) {
         require(msg.sender == controller, "!controller");
         uint256 _balance = IERC20(want).balanceOf(address(this));
         if (_balance < _amount) {
@@ -204,7 +206,7 @@ abstract contract StrategyBaseV3 {
     // Withdraw funds, used to swap between strategies
     function withdrawForSwap(uint256 _amount)
         external
-        returns (uint256 balance)
+        sphereXGuardExternal(0xfa7277c5) returns (uint256 balance)
     {
         require(msg.sender == controller, "!controller");
         _withdrawSome(_amount);
@@ -217,7 +219,7 @@ abstract contract StrategyBaseV3 {
     }
 
     // Withdraw all funds, normally used when migrating strategies
-    function withdrawAll() external returns (uint256 balance) {
+    function withdrawAll() external sphereXGuardExternal(0x7d986e0b) returns (uint256 balance) {
         require(msg.sender == controller, "!controller");
         _withdrawAll();
 
@@ -228,7 +230,7 @@ abstract contract StrategyBaseV3 {
         IERC20(want).safeTransfer(_vault, balance);
     }
 
-    function _withdrawAll() internal {
+    function _withdrawAll() internal sphereXGuardInternal(0x4bf43ac1) {
         _withdrawSome(balanceOfPool());
     }
 
@@ -241,7 +243,7 @@ abstract contract StrategyBaseV3 {
     function execute(address _target, bytes memory _data)
         public
         payable
-        returns (bytes memory response)
+        sphereXGuardPublic(0xabbe62d5, 0x1cff79cd) returns (bytes memory response)
     {
         require(msg.sender == timelock, "!timelock");
         require(_target != address(0), "!target");
@@ -278,7 +280,7 @@ abstract contract StrategyBaseV3 {
         address _from,
         address _to,
         uint256 _amount
-    ) internal {
+    ) internal sphereXGuardInternal(0x8bc057a0) {
         require(_to != address(0));
 
         address[] memory path;
@@ -308,7 +310,7 @@ abstract contract StrategyBaseV3 {
     function _swapSushiswapWithPath(
         address[] memory path,
         uint256 _amount
-    ) internal {
+    ) internal sphereXGuardInternal(0x40d0c7c3) {
         require(path[1] != address(0));
 
         IERC20(path[0]).safeApprove(sushiRouter, 0);
@@ -331,7 +333,7 @@ abstract contract StrategyBaseV3 {
         address _from,
         address _to,
         uint256 _amount
-    ) internal returns (uint256 amountOut){
+    ) internal sphereXGuardInternal(0xb738a882) returns (uint256 amountOut){
 
         IERC20(_from).safeApprove(uniswapRouterV3, 0);
         IERC20(_from).safeApprove(uniswapRouterV3, _amount);
@@ -355,7 +357,7 @@ abstract contract StrategyBaseV3 {
     function _swapUniswapWithPath(
         address[] memory path,
         uint256 _amount
-    ) internal returns (uint256 amountOut){
+    ) internal sphereXGuardInternal(0x3e0426f6) returns (uint256 amountOut){
 
         IERC20(path[0]).safeApprove(uniswapRouterV3, 0);
         IERC20(path[0]).safeApprove(uniswapRouterV3, _amount);
@@ -373,7 +375,7 @@ abstract contract StrategyBaseV3 {
         amountOut = ISwapRouter(uniswapRouterV3).exactInput(params);
     }
 
-    function _distributePerformanceFeesAndDeposit() internal {
+    function _distributePerformanceFeesAndDeposit() internal sphereXGuardInternal(0x5770305f) {
         uint256 _want = IERC20(want).balanceOf(address(this));
 
         if (_want > 0) {
@@ -393,7 +395,7 @@ abstract contract StrategyBaseV3 {
         }
     }
 
-    function _distributePerformanceFeesBasedAmountAndDeposit(uint256 _amount) internal {
+    function _distributePerformanceFeesBasedAmountAndDeposit(uint256 _amount) internal sphereXGuardInternal(0x76d32f0a) {
         uint256 _want = IERC20(want).balanceOf(address(this));
 
         if (_amount > _want) {

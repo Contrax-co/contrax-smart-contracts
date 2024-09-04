@@ -6,9 +6,11 @@ import "../../lib/safe-math.sol";
 
 import "../../interfaces/uniswapv2.sol";
 import "../../interfaces/controller.sol";
-import "../../interfaces/weth.sol";
+import "../../interfaces/weth.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
-contract SushiExchange {
+contract SushiExchange is SphereXProtected {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -31,7 +33,7 @@ contract SushiExchange {
 
     function swapFromEthToToken(
         address _to
-    ) external payable {
+    ) external payable sphereXGuardExternal(0xcc045914) {
         require(msg.value >= minimumAmount, "Insignificant input amount");
 
         WETH(weth).deposit{value: msg.value}();
@@ -67,7 +69,7 @@ contract SushiExchange {
     function swapFromTokenToEth(
         address _from, 
         uint256 _amount
-    ) public {
+    ) public sphereXGuardPublic(0x089e1194, 0x7fd97024) {
         require(_from != address(0));
 
         IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
@@ -86,7 +88,7 @@ contract SushiExchange {
     function swapFromTokenToWethInternal(
         address _from, 
         uint256 _amount
-    ) internal {
+    ) internal sphereXGuardInternal(0x25aa95ce) {
         address[] memory path;
         
         path = new address[](2);
@@ -110,7 +112,7 @@ contract SushiExchange {
         address _from, 
         address _to, 
         uint256 _amount
-    ) public {
+    ) public sphereXGuardPublic(0xecc4ba93, 0x46ec8522) {
         require(_to != address(0));
         require(_amount >= minimumAmount, "Insignificant input amount");
 
@@ -150,7 +152,7 @@ contract SushiExchange {
         address _from, 
         address _to, 
         uint256 _amount
-    ) internal {
+    ) internal sphereXGuardInternal(0x7a9aad24) {
         require(_to != address(0));
 
         address[] memory path;
@@ -180,7 +182,7 @@ contract SushiExchange {
 
     }
 
-    function swapEthForPair(address _to) external payable {
+    function swapEthForPair(address _to) external payable sphereXGuardExternal(0xb835dee0) {
         require(msg.value >= minimumAmount, "Insignificant input amount");
 
         WETH(weth).deposit{value: msg.value}();
@@ -195,7 +197,7 @@ contract SushiExchange {
         address _from, 
         address _to, 
         uint256 _amount
-    ) internal {
+    ) internal sphereXGuardInternal(0x99778ee5) {
         address token0 = IUniswapV2Pair(_to).token0();
         address token1 = IUniswapV2Pair(_to).token1();
 
@@ -248,7 +250,7 @@ contract SushiExchange {
         address _from, 
         address _to, 
         uint256 _amount
-    ) public {
+    ) public sphereXGuardPublic(0xe7f80212, 0x60629de3) {
         require(_to != address(0));
         require(_amount >= minimumAmount, "Insignificant input amount");
 
@@ -301,7 +303,7 @@ contract SushiExchange {
         IERC20(_to).safeTransfer(msg.sender, _toBal);
     }
 
-    function swapPairForEth(address _from, uint256 _amount) public {
+    function swapPairForEth(address _from, uint256 _amount) public sphereXGuardPublic(0x759566fa, 0x8212b373) {
         swapPairForWeth(_from, _amount);
 
         uint256 _weth = IERC20(weth).balanceOf(address(this)); 
@@ -309,7 +311,7 @@ contract SushiExchange {
         WETH(weth).withdrawTo(msg.sender, _weth);
     }
 
-    function swapPairForWeth(address _from, uint256 _amount) internal {
+    function swapPairForWeth(address _from, uint256 _amount) internal sphereXGuardInternal(0xf34ed4c2) {
 
         IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
         uint256 _liquidity = IERC20(_from).balanceOf(address(this));
@@ -348,7 +350,7 @@ contract SushiExchange {
         address _from, 
         address _to, 
         uint256 _amount
-    ) public {
+    ) public sphereXGuardPublic(0xf191d8c0, 0x2df6d7c4) {
         require(_to != address(0));
 
         IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);
@@ -386,7 +388,7 @@ contract SushiExchange {
         IERC20(_to).safeTransfer(msg.sender, _toBal);
     }
 
-    function removeLiquidityInternal(address _from, uint256 _amount) internal {
+    function removeLiquidityInternal(address _from, uint256 _amount) internal sphereXGuardInternal(0x733e900b) {
         address token0 = IUniswapV2Pair(_from).token0();
         address token1 = IUniswapV2Pair(_from).token1();
 
@@ -416,7 +418,7 @@ contract SushiExchange {
         }
     }
 
-    function addLiquidityInternal(address token0, address token1) internal {
+    function addLiquidityInternal(address token0, address token1) internal sphereXGuardInternal(0xe2f53984) {
         // Adds in liquidity for token0/token1
         uint256 _token0 = IERC20(token0).balanceOf(address(this));
         uint256 _token1 = IERC20(token1).balanceOf(address(this));
@@ -455,7 +457,7 @@ contract SushiExchange {
         address _from, 
         address _to, 
         uint256 _amount
-    ) public {
+    ) public sphereXGuardPublic(0xfca6ddce, 0xe0954698) {
         require(_to != address(0));
 
         IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);

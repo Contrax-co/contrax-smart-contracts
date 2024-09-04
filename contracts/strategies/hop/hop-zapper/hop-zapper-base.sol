@@ -7,9 +7,11 @@ import "../../../interfaces/hop.sol";
 import "../../../lib/square-root.sol";
 import "../../../interfaces/weth.sol";
 import "../../../interfaces/vault.sol";
-import "../../../interfaces/uniswapv3.sol";
+import "../../../interfaces/uniswapv3.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
-abstract contract HopZapperBase {
+abstract contract HopZapperBase is SphereXProtected {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -58,17 +60,17 @@ abstract contract HopZapperBase {
     }
     
     // Function to add a vault to the whitelist
-    function addToWhitelist(address _vault) external onlyGovernance {
+    function addToWhitelist(address _vault) external onlyGovernance sphereXGuardExternal(0x2dc7019b) {
         whitelistedVaults[_vault] = true;
     }
 
     // Function to remove a vault from the whitelist
-    function removeFromWhitelist(address _vault) external onlyGovernance {
+    function removeFromWhitelist(address _vault) external onlyGovernance sphereXGuardExternal(0xf3f1986d) {
         whitelistedVaults[_vault] = false;
     }
 
     //returns DUST
-    function _returnAssets(address[] memory tokens) internal {
+    function _returnAssets(address[] memory tokens) internal sphereXGuardInternal(0x5ec368d0) {
         uint256 balance;
         for (uint256 i; i < tokens.length; i++) {
             balance = IERC20(tokens[i]).balanceOf(address(this));
@@ -88,7 +90,7 @@ abstract contract HopZapperBase {
 
     function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual;
 
-    function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable onlyWhitelistedVaults(vault){
+    function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable onlyWhitelistedVaults(vault) sphereXGuardExternal(0x734cdde6) {
         require(msg.value >= minimumAmount, "Insignificant input amount");
 
         WETH(weth).deposit{value: msg.value}();
@@ -132,7 +134,7 @@ abstract contract HopZapperBase {
 
 
     // transfers tokens from msg.sender to this contract 
-    function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external onlyWhitelistedVaults(vault){
+    function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external onlyWhitelistedVaults(vault) sphereXGuardExternal(0x18cbbf6b) {
         require(tokenInAmount >= minimumAmount, "Insignificant input amount");
         require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
 
@@ -177,7 +179,7 @@ abstract contract HopZapperBase {
 
     function zapOutAndSwapEth(address vault, uint256 withdrawAmount, uint256 desiredTokenOutMin) public virtual;
 
-    function _removeLiquidity(address token, IHopSwap pair) internal {
+    function _removeLiquidity(address token, IHopSwap pair) internal sphereXGuardInternal(0xcf2e6bd6) {
         _approveTokenIfNeeded(token, address(pair));
 
         uint256[] memory amounts;
@@ -195,13 +197,13 @@ abstract contract HopZapperBase {
         require(ILPToken(vault.token()).swap() != address(0), "Liquidity pool address cannot be the zero address");
     }
 
-    function _approveTokenIfNeeded(address token, address spender) internal {
+    function _approveTokenIfNeeded(address token, address spender) internal sphereXGuardInternal(0x2c208429) {
         if (IERC20(token).allowance(address(this), spender) == 0) {
             IERC20(token).safeApprove(spender, type(uint256).max);
         }
     }
 
-    function zapOut(address vault_addr, uint256 withdrawAmount) external onlyWhitelistedVaults(vault_addr){
+    function zapOut(address vault_addr, uint256 withdrawAmount) external onlyWhitelistedVaults(vault_addr) sphereXGuardExternal(0x9c3b0ddf) {
         (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
 
         IERC20(vault_addr).safeTransferFrom(msg.sender, address(this), withdrawAmount);

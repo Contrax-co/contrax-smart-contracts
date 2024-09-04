@@ -12,9 +12,11 @@ import "../interfaces/vault.sol";
 import "../interfaces/vault-converter.sol";
 import "../interfaces/onesplit.sol";
 import "../interfaces/strategy.sol";
-import "../interfaces/converter.sol";
+import "../interfaces/converter.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
-contract FishController {
+contract FishController is SphereXProtected {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -55,43 +57,43 @@ contract FishController {
         treasury = _treasury;
     }
 
-    function setDevFund(address _devfund) public {
+    function setDevFund(address _devfund) public sphereXGuardPublic(0x2fd32ce6, 0xae4db919) {
         require(msg.sender == governance, "!governance");
         devfund = _devfund;
     }
 
-    function setTreasury(address _treasury) public {
+    function setTreasury(address _treasury) public sphereXGuardPublic(0x0d2dea1a, 0xf0f44260) {
         require(msg.sender == governance, "!governance");
         treasury = _treasury;
     }
 
-    function setStrategist(address _strategist) public {
+    function setStrategist(address _strategist) public sphereXGuardPublic(0xc7b1a254, 0xc7b9d530) {
         require(msg.sender == governance, "!governance");
         strategist = _strategist;
     }
 
-    function setSplit(uint256 _split) public {
+    function setSplit(uint256 _split) public sphereXGuardPublic(0x6899a34c, 0x674e694f) {
         require(msg.sender == governance, "!governance");
         require(_split <= max, "numerator cannot be greater than denominator");
         split = _split;
     }
 
-    function setOneSplit(address _onesplit) public {
+    function setOneSplit(address _onesplit) public sphereXGuardPublic(0xbf7892f4, 0x8da1df4d) {
         require(msg.sender == governance, "!governance");
         onesplit = _onesplit;
     }
 
-    function setGovernance(address _governance) public {
+    function setGovernance(address _governance) public sphereXGuardPublic(0xdb127426, 0xab033ea9) {
         require(msg.sender == governance, "!governance");
         governance = _governance;
     }
 
-    function setTimelock(address _timelock) public {
+    function setTimelock(address _timelock) public sphereXGuardPublic(0x8f41fd25, 0xbdacb303) {
         require(msg.sender == timelock, "!timelock");
         timelock = _timelock;
     }
 
-    function setVault(address _token, address _vault) public {
+    function setVault(address _token, address _vault) public sphereXGuardPublic(0x244053eb, 0x714ccf7b) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!strategist"
@@ -100,33 +102,33 @@ contract FishController {
         vaults[_token] = _vault;
     }
 
-    function approveVaultConverter(address _converter) public {
+    function approveVaultConverter(address _converter) public sphereXGuardPublic(0xa9d9d041, 0xa87dda14) {
         require(msg.sender == governance, "!governance");
         approvedVaultConverters[_converter] = true;
     }
 
-    function revokeVaultConverter(address _converter) public {
+    function revokeVaultConverter(address _converter) public sphereXGuardPublic(0xff73b247, 0x326a3cdc) {
         require(msg.sender == governance, "!governance");
         approvedVaultConverters[_converter] = false;
     }
 
-    function approveStrategy(address _token, address _strategy) public {
+    function approveStrategy(address _token, address _strategy) public sphereXGuardPublic(0xe4a1da56, 0xc494448e) {
         require(msg.sender == timelock, "!timelock");
         approvedStrategies[_token][_strategy] = true;
     }
 
-    function revokeStrategy(address _token, address _strategy) public {
+    function revokeStrategy(address _token, address _strategy) public sphereXGuardPublic(0xb042a30a, 0x590bbb60) {
         require(msg.sender == governance, "!governance");
         require(strategies[_token] != _strategy, "cannot revoke active strategy");
         approvedStrategies[_token][_strategy] = false;
     }
 
-    function setConvenienceFee(uint256 _convenienceFee) external {
+    function setConvenienceFee(uint256 _convenienceFee) external sphereXGuardExternal(0x0cc221db) {
         require(msg.sender == timelock, "!timelock");
         convenienceFee = _convenienceFee;
     }
 
-    function setStrategy(address _token, address _strategy) public {
+    function setStrategy(address _token, address _strategy) public sphereXGuardPublic(0x7c66a37b, 0x72cb5d97) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!strategist"
@@ -140,7 +142,7 @@ contract FishController {
         strategies[_token] = _strategy;
     }
 
-    function earn(address _token, uint256 _amount) public {
+    function earn(address _token, uint256 _amount) public sphereXGuardPublic(0x64c4c169, 0xb02bf4b9) {
         address _strategy = strategies[_token];
         address _want = IStrategy(_strategy).want();
         if (_want != _token) {
@@ -158,7 +160,7 @@ contract FishController {
         return IStrategy(strategies[_token]).balanceOf();
     }
 
-    function withdrawAll(address _token) public {
+    function withdrawAll(address _token) public sphereXGuardPublic(0xa0c613ca, 0xfa09e630) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!strategist"
@@ -166,7 +168,7 @@ contract FishController {
         IStrategy(strategies[_token]).withdrawAll();
     }
 
-    function inCaseTokensGetStuck(address _token, uint256 _amount) public {
+    function inCaseTokensGetStuck(address _token, uint256 _amount) public sphereXGuardPublic(0xb7f785c1, 0xc6d758cb) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!governance"
@@ -176,7 +178,7 @@ contract FishController {
 
     function inCaseStrategyTokenGetStuck(address _strategy, address _token)
         public
-    {
+    sphereXGuardPublic(0x5013e155, 0x197baa6d) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!governance"
@@ -205,7 +207,7 @@ contract FishController {
         address _strategy,
         address _token,
         uint256 parts
-    ) public {
+    ) public sphereXGuardPublic(0x1bebc177, 0x04209f48) {
         require(
             msg.sender == strategist || msg.sender == governance,
             "!governance"
@@ -242,9 +244,16 @@ contract FishController {
         }
     }
 
-    function withdraw(address _token, uint256 _amount) public {
+    function withdraw(address _token, uint256 _amount) public sphereXGuardPublic(0x8426b63e, 0xf3fef3a3) {
         require(msg.sender == vaults[_token], "!vault");
         IStrategy(strategies[_token]).withdraw(_amount);
+    }
+
+    struct VaultSwapData{
+        address _fromVaultToken;
+        address _toVaultToken;
+        uint256 _fromVaultUnderlyingAmount;
+        uint256 _fromVaultAvailUnderlying;
     }
 
     // Function to swap between vault
@@ -255,7 +264,7 @@ contract FishController {
         uint256 _toVaultMinAmount, // How much vault tokens you'd like at a minimum
         address payable[] calldata _targets,
         bytes[] calldata _data
-    ) external returns (uint256) {
+    ) external sphereXGuardExternal(0x5b9628b8) returns (uint256) {
         require(_targets.length == _data.length, "!length");
 
         // Only return last response
@@ -264,8 +273,10 @@ contract FishController {
             require(approvedVaultConverters[_targets[i]], "!converter");
         }
 
-        address _fromVaultToken = IVault(_fromVault).token();
-        address _toVaultToken = IVault(_toVault).token();
+        VaultSwapData memory swapData;
+
+        swapData._fromVaultToken = IVault(_fromVault).token();
+        swapData._toVaultToken = IVault(_toVault).token();
 
         // Get pTokens from msg.sender
         IERC20(_fromVault).safeTransferFrom(
@@ -276,7 +287,7 @@ contract FishController {
 
         // Calculate how much underlying
         // is the amount of pTokens worth
-        uint256 _fromVaultUnderlyingAmount = _fromVaultAmount
+        swapData._fromVaultUnderlyingAmount = _fromVaultAmount
             .mul(IVault(_fromVault).getRatio())
             .div(10**uint256(IVault(_fromVault).decimals()));
 
@@ -284,12 +295,12 @@ contract FishController {
         // doesn't have enough initial capital.
         // This has moves the funds from the strategy to the Vault's
         // 'earnable' amount. Enabling 'free' withdrawals
-        uint256 _fromVaultAvailUnderlying = IERC20(_fromVaultToken).balanceOf(
+        swapData._fromVaultAvailUnderlying = IERC20(swapData._fromVaultToken).balanceOf(
             _fromVault
         );
-        if (_fromVaultAvailUnderlying < _fromVaultUnderlyingAmount) {
-            IStrategy(strategies[_fromVaultToken]).withdrawForSwap(
-                _fromVaultUnderlyingAmount.sub(_fromVaultAvailUnderlying)
+        if (swapData._fromVaultAvailUnderlying < swapData._fromVaultUnderlyingAmount) {
+            IStrategy(strategies[swapData._fromVaultToken]).withdrawForSwap(
+                swapData._fromVaultUnderlyingAmount.sub(swapData._fromVaultAvailUnderlying)
             );
         }
 
@@ -301,7 +312,7 @@ contract FishController {
         IVault(_fromVault).withdraw(_fromVaultAmount);
 
         // Calculate fee
-        uint256 _fromUnderlyingBalance = IERC20(_fromVaultToken).balanceOf(
+        uint256 _fromUnderlyingBalance = IERC20(swapData._fromVaultToken).balanceOf(
             address(this)
         );
         uint256 _convenienceFee = _fromUnderlyingBalance.mul(convenienceFee).div(
@@ -309,8 +320,8 @@ contract FishController {
         );
 
         if (_convenienceFee > 1) {
-            IERC20(_fromVaultToken).safeTransfer(devfund, _convenienceFee.div(2));
-            IERC20(_fromVaultToken).safeTransfer(treasury, _convenienceFee.div(2));
+            IERC20(swapData._fromVaultToken).safeTransfer(devfund, _convenienceFee.div(2));
+            IERC20(swapData._fromVaultToken).safeTransfer(treasury, _convenienceFee.div(2));
         }
 
         // Executes sequence of logic
@@ -319,9 +330,9 @@ contract FishController {
         }
 
         // Deposit into new Vault
-        uint256 _toBal = IERC20(_toVaultToken).balanceOf(address(this));
-        IERC20(_toVaultToken).safeApprove(_toVault, 0);
-        IERC20(_toVaultToken).safeApprove(_toVault, _toBal);
+        uint256 _toBal = IERC20(swapData._toVaultToken).balanceOf(address(this));
+        IERC20(swapData._toVaultToken).safeApprove(_toVault, 0);
+        IERC20(swapData._toVaultToken).safeApprove(_toVault, _toBal);
         IVault(_toVault).deposit(_toBal);
 
         // Send Vault Tokens to user
@@ -337,7 +348,7 @@ contract FishController {
 
     function _execute(address _target, bytes memory _data)
         internal
-        returns (bytes memory response)
+        sphereXGuardInternal(0x981d8c76) returns (bytes memory response)
     {
         require(_target != address(0), "!target");
 

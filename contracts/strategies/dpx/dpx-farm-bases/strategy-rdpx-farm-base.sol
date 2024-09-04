@@ -2,7 +2,9 @@
 pragma solidity 0.8.4;
 
 import "../../strategy-base.sol";
-import "../../../interfaces/dpx-staking-rewards.sol";
+import "../../../interfaces/dpx-staking-rewards.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 
 abstract contract StrategyRdpxFarmBase is StrategyBase {
@@ -56,7 +58,7 @@ abstract contract StrategyRdpxFarmBase is StrategyBase {
     }
 
     // **** Setters ****
-    function deposit() public override {
+    function deposit() public override sphereXGuardPublic(0x3e8e0aa9, 0xd0e30db0) {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
             IERC20(want).safeApprove(stakingRewards, 0);
@@ -68,7 +70,7 @@ abstract contract StrategyRdpxFarmBase is StrategyBase {
     function _withdrawSome(uint256 _amount)
         internal
         override
-        returns (uint256)
+        sphereXGuardInternal(0xe5e66af3) returns (uint256)
     {
         IStakingRewardsV3(stakingRewards).unstake(_amount);
         return _amount;
@@ -76,17 +78,17 @@ abstract contract StrategyRdpxFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keepDPX) external {
+    function setKeep(uint256 _keepDPX) external sphereXGuardExternal(0x987aaca1) {
         require(msg.sender == timelock, "!timelock");
         keep = _keepDPX;
     }
 
-    function setKeepReward(uint256 _keepReward) external {
+    function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0x53786b9f) {
         require(msg.sender == timelock, "!timelock");
         keepReward = _keepReward;
     }
 
-    function setRewardToken(address _rewardToken) external {
+    function setRewardToken(address _rewardToken) external sphereXGuardExternal(0x3c457b04) {
         require(
             msg.sender == timelock || msg.sender == strategist,
             "!timelock"
@@ -96,7 +98,7 @@ abstract contract StrategyRdpxFarmBase is StrategyBase {
 
     // **** State Mutations ****
 
-    function harvest() public override onlyBenevolent {
+    function harvest() public override onlyBenevolent sphereXGuardPublic(0xd55667fc, 0x4641257d) {
         // Collects Reward tokens
         IStakingRewardsV3(stakingRewards).claim();
         uint256 _dpx = IERC20(dpx).balanceOf(address(this));

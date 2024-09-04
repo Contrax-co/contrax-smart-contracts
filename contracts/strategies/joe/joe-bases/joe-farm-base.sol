@@ -2,7 +2,9 @@
 pragma solidity 0.8.4;
 
 import "../../strategy-base.sol";
-import "../../../interfaces/joeRouter.sol";
+import "../../../interfaces/joeRouter.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyJoeFarmBase is StrategyBase {
     using SafeERC20 for IERC20;
@@ -29,7 +31,7 @@ abstract contract StrategyJoeFarmBase is StrategyBase {
         token1 = _token1; 
     }
 
-    function harvest() public override onlyBenevolent {
+    function harvest() public override onlyBenevolent sphereXGuardPublic(0x80070c34, 0x4641257d) {
 
         uint256 _token0 = IERC20(token0).balanceOf(address(this));
         uint256 _token1 = IERC20(token1).balanceOf(address(this));

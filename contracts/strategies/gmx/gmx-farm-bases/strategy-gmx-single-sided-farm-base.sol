@@ -3,7 +3,9 @@ pragma solidity 0.8.4;
 
 import "../../strategy-base.sol";
 import "../../../interfaces/gmx-reward-router.sol";
-import "../../../interfaces/IRewarder.sol";
+import "../../../interfaces/IRewarder.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyGMXFarmBase is StrategyBase {
     using SafeERC20 for IERC20;
@@ -47,7 +49,7 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
     }
 
     // **** Setters ****
-    function deposit() public override {
+    function deposit() public override sphereXGuardPublic(0xf17c7dd1, 0xd0e30db0) {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
             IERC20(want).safeApprove(rewardTracker, 0);
@@ -59,7 +61,7 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
     function _withdrawSome(uint256 _amount)
         internal
         override
-        returns (uint256)
+        sphereXGuardInternal(0xd590a4cf) returns (uint256)
     {
         IRewardRouterV2(rewardRouter).unstakeGmx(_amount);
         return _amount;
@@ -67,17 +69,17 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keep) external {
+    function setKeep(uint256 _keep) external sphereXGuardExternal(0xc8cb0b2d) {
         require(msg.sender == timelock, "!timelock");
         keep = _keep;
     }
 
-    function setKeepReward(uint256 _keepReward) external {
+    function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0xc17aaabb) {
         require(msg.sender == timelock, "!timelock");
         keepReward = _keepReward;
     }
 
-    function setRewardToken(address _rewardToken) external {
+    function setRewardToken(address _rewardToken) external sphereXGuardExternal(0xda1d4798) {
         require(
             msg.sender == timelock || msg.sender == strategist,
             "!timelock"
@@ -90,7 +92,7 @@ abstract contract StrategyGMXFarmBase is StrategyBase {
     // Declare a Harvest Event
     event Harvest(uint _timestamp, uint _value); 
 
-    function harvest() public override onlyBenevolent {
+    function harvest() public override onlyBenevolent sphereXGuardPublic(0x815c0123, 0x4641257d) {
         //  Collects rewards 
         IRewardRouterV2(rewardRouter).handleRewards(
             true, 

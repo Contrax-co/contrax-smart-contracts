@@ -2,7 +2,9 @@
 pragma solidity 0.8.4;
 
 import "../../strategy-uni-base.sol";
-import "../../../interfaces/swapfish.sol";
+import "../../../interfaces/swapfish.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategyFishFarmBase is StrategyUniBase {
     using SafeERC20 for IERC20;
@@ -65,7 +67,7 @@ abstract contract StrategyFishFarmBase is StrategyUniBase {
 
     // **** Setters ****
 
-    function deposit() public override {
+    function deposit() public override sphereXGuardPublic(0x74ce8aad, 0xd0e30db0) {
         uint256 _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
             IERC20(want).safeApprove(masterChef, 0);
@@ -77,7 +79,7 @@ abstract contract StrategyFishFarmBase is StrategyUniBase {
     function _withdrawSome(uint256 _amount)
         internal
         override
-        returns (uint256)
+        sphereXGuardInternal(0xed6c9707) returns (uint256)
     {
         IMasterChef(masterChef).withdraw(poolId, _amount);
         return _amount;
@@ -85,17 +87,17 @@ abstract contract StrategyFishFarmBase is StrategyUniBase {
 
     // **** Setters ****
 
-    function setKeep(uint256 _keep) external {
+    function setKeep(uint256 _keep) external sphereXGuardExternal(0xe75cbb10) {
         require(msg.sender == timelock, "!timelock");
         keep = _keep;
     }
 
-    function setKeepReward(uint256 _keepReward) external {
+    function setKeepReward(uint256 _keepReward) external sphereXGuardExternal(0x81e69a6e) {
         require(msg.sender == timelock, "!timelock");
         keepReward = _keepReward;
     }
 
-    function setRewardToken(address _rewardToken) external {
+    function setRewardToken(address _rewardToken) external sphereXGuardExternal(0xeede765b) {
         require(
             msg.sender == timelock || msg.sender == strategist,
             "!timelock"
@@ -105,7 +107,7 @@ abstract contract StrategyFishFarmBase is StrategyUniBase {
 
     // **** State Mutations ****
 
-    function harvest() public override onlyBenevolent {
+    function harvest() public override onlyBenevolent sphereXGuardPublic(0xe5b6e31c, 0x4641257d) {
         
         IMasterChef(masterChef).deposit(poolId, 0); 
 

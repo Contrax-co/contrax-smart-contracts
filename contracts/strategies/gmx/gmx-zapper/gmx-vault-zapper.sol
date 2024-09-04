@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "./gmx-zapper-base.sol";
+import "./gmx-zapper-base.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 contract VaultZapperGmx is GmxZapperBase {
     using SafeERC20 for IERC20;
@@ -15,7 +17,7 @@ contract VaultZapperGmx is GmxZapperBase {
     constructor()
         GmxZapperBase(0xE592427A0AEce92De3Edee1F18E0157C05861564, 0xCb410A689A03E06de0a6247b13C13D14237DecC8){}
 
-    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
+    function zapOutAndSwap(address vault_addr, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr) sphereXGuardPublic(0x5e00a40a, 0xf3cc669a) {
         (IVault vault, address token) = _getVaultPair(vault_addr);
 
         vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
@@ -55,7 +57,7 @@ contract VaultZapperGmx is GmxZapperBase {
         
     }
 
-    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr){
+    function zapOutAndSwapEth(address vault_addr, uint256 withdrawAmount, uint256 desiredTokenOutMin) public override onlyWhitelistedVaults(vault_addr) sphereXGuardPublic(0x9ca6787f, 0x02006da0) {
         (IVault vault, address token) = _getVaultPair(vault_addr);
 
         vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
@@ -90,7 +92,7 @@ contract VaultZapperGmx is GmxZapperBase {
       
     }
 
-    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override onlyWhitelistedVaults(vault_addr){
+    function _swapAndStake(address vault_addr, uint256 tokenAmountOutMin, address tokenIn) public override onlyWhitelistedVaults(vault_addr) sphereXGuardPublic(0xd7fad04f, 0xb384bcbc) {
         (IVault vault, address token) = _getVaultPair(vault_addr);
 
         bool isInputA = token == tokenIn;
