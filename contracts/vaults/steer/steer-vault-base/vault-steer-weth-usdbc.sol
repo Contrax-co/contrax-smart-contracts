@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "../vault-steer-base.sol";
 
-// Vault address for steer sushi WETH-USDC pool
+// Vault address for steer sushi WETH-USDBC pool
 // 0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3
 
 contract VaultSteerSushiWethUsdbc is VaultSteerBase {
