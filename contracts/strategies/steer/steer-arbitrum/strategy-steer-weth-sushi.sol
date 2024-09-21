@@ -15,7 +15,8 @@ contract StrategySteerWethSushi is StrategySteerBase {
     address _timelock,
     address _weth,
     address _V3Factory,
-    address _steerPeriphery
+    address _steerPeriphery,
+    address _weth_usdc_pool
   )
     StrategySteerBase(
       0x6723b8E1B28E924857C02F96f7B23041758AfA98,
@@ -25,7 +26,8 @@ contract StrategySteerWethSushi is StrategySteerBase {
       _timelock,
       _weth,
       _V3Factory,
-      _steerPeriphery
+      _steerPeriphery,
+      _weth_usdc_pool
     )
   {}
 

@@ -15,7 +15,8 @@ contract StrategySteerUsdcUsdt is StrategySteerBase {
     address _timelock,
     address _weth,
     address _V3Factory,
-    address _steerPeriphery
+    address _steerPeriphery,
+    address _weth_usdc_pool
   )
     StrategySteerBase(
       0x5DbAD371890C3A89f634e377c1e8Df987F61fB64,
@@ -25,7 +26,8 @@ contract StrategySteerUsdcUsdt is StrategySteerBase {
       _timelock,
       _weth,
       _V3Factory,
-      _steerPeriphery
+      _steerPeriphery,
+      _weth_usdc_pool
     )
   {}
 

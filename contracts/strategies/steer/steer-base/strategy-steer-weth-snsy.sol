@@ -4,8 +4,9 @@ pragma solidity 0.8.4;
 import "../strategy-steer-base.sol";
 import "../../../interfaces/uniswapv3.sol";
 
-// Vault address for steer sushi WETH-USDBC pool base
-// 0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3
+
+// Vault address for steer sushi WETH-SNSY vault
+// 0x3c88c76783a9f2975c6d58f2aa1437f1e8229335
 // V3 Factory sushi => 0xc35DADB65012eC5796536bD9864eD8773aBc74C4
 
 contract StrategySteerUsdbcWeth is StrategySteerBase {
@@ -20,7 +21,7 @@ contract StrategySteerUsdbcWeth is StrategySteerBase {
     address _weth_usdc_pool
   )
     StrategySteerBase(
-      0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3,
+      0x3c88c76783a9f2975c6d58f2aa1437f1e8229335,
       _governance,
       _strategist,
       _controller,

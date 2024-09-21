@@ -4,8 +4,10 @@ pragma solidity 0.8.4;
 import "../strategy-steer-base.sol";
 import "../../../interfaces/uniswapv3.sol";
 
-// Vault address for steer sushi WETH-USDBC pool base
-// 0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3
+
+// Vault address for steer sushi WETH-cbBTC vault
+// 0xd5a49507197c243895972782c01700ca27090ee1
+
 // V3 Factory sushi => 0xc35DADB65012eC5796536bD9864eD8773aBc74C4
 
 contract StrategySteerUsdbcWeth is StrategySteerBase {
@@ -20,7 +22,7 @@ contract StrategySteerUsdbcWeth is StrategySteerBase {
     address _weth_usdc_pool
   )
     StrategySteerBase(
-      0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3,
+      0xd5a49507197c243895972782c01700ca27090ee1,
       _governance,
       _strategist,
       _controller,
@@ -32,8 +34,8 @@ contract StrategySteerUsdbcWeth is StrategySteerBase {
     )
   {}
 
-  // Dex
-  address public constant router = 0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f;
+  // Dex base v3 router
+  address public constant router = 0x1B8eea9315bE495187D873DA7773a874545D9D48;
 
   function _swap(address tokenIn, address tokenOut, uint256 amountIn) internal override {
     address[] memory path = new address[](2);

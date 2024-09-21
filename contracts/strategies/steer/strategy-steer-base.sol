@@ -23,8 +23,9 @@ abstract contract StrategySteerBase is StrategySteer {
     address _timelock,
     address _weth,
     address _V3Factory,
-    address _steerPeriphery
-  ) StrategySteer(_want, _governance, _strategist, _controller, _timelock, _weth) {
+    address _steerPeriphery,
+    address _weth_usdc_pool
+  ) StrategySteer(_want, _governance, _strategist, _controller, _timelock, _weth, _weth_usdc_pool) {
     require(_V3Factory != address(0));
     V3FACTORY = _V3Factory;
     STEER_PERIPHERY = _steerPeriphery;
