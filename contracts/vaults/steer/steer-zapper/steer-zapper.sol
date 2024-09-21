@@ -35,8 +35,9 @@ contract SteerZapperBase is PriceCalculatorV3 {
     address _router,
     address _V3Factory,
     address _steerPeriphery,
+    address _weth_usdc_pool,
     address[] memory _vaults
-  ) PriceCalculatorV3(_governance) {
+  ) PriceCalculatorV3(_governance, _weth_usdc_pool) {
     weth = _weth;
     router = _router;
     V3Factory = _V3Factory;

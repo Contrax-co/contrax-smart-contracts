@@ -18,11 +18,11 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
   using SafeMath for uint256;
   using SafeERC20 for IVault;
 
-  address public constant router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // suhsi V2 router
-  address public constant steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
-  address public constant sushiFactory = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
-  address public constant sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
-  address public constant uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+  address public router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // suhsi V2 router
+  address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
+  address public sushiFactory = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
+  address public sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
+  address public uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
   address weth;
   // Define a mapping to store whether an address is whitelisted or not
@@ -33,7 +33,15 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
 
   uint256 public constant minimumAmount = 1000;
 
-  constructor(address _governance,address _weth, address[] memory _vaults) PriceCalculatorV3(_governance) {
+  constructor(
+    address _governance,
+    address _weth,
+    address _router,
+    address _V3Factory,
+    address _steerPeriphery,
+    address _weth_usdc_pool,
+    address[] memory _vaults
+  ) PriceCalculatorV3(_governance, _weth_usdc_pool) {
     weth = _weth;
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
@@ -146,9 +154,7 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
     UniswapRouterV2(router).swapExactTokensForTokens(amountIn, 0, path, address(this), block.timestamp);
   }
 
-  function calculateSteerVaultTokensPrices(
-    IVault vault
-  ) internal returns (uint256 token0Price, uint256 token1Price) {
+  function calculateSteerVaultTokensPrices(IVault vault) internal returns (uint256 token0Price, uint256 token1Price) {
     (address token0, address token1) = steerVaultTokens(vault);
 
     bool isToken0Stable = isStableToken(token0);
