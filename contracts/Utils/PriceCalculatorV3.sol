@@ -13,7 +13,7 @@ contract PriceCalculatorV3 {
 
   uint256 public constant PRECISION = 10_000_000;
 
-  uint24[] public poolsFee = [3000, 500, 100, 10000];
+  uint24[] public poolsFee = [3000, 500, 100, 350, 10000];
 
   // Array of stable tokens
   address[] public stableTokens = [
@@ -22,8 +22,7 @@ contract PriceCalculatorV3 {
     // 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8
   ];
 
-  // address public constant WETH_USDC_POOLV3_ARB = 0xC6962004f452bE9203591991D15f6b388e09E8D0;
-  address public constant WETH_USDC_POOLV3_BASE = 0xd0b53D9277642d899DF5C87A3966A349A798F224;
+  address public WETH_USDC_POOLV3_BASE;
 
   // Modifier to restrict access to governance only
   modifier onlyGovernance() {
@@ -31,9 +30,11 @@ contract PriceCalculatorV3 {
     _;
   }
 
-  constructor(address _governance) {
+  constructor(address _governance, address _weth_usdc_pool) {
     require(_governance != address(0));
+    require(_weth_usdc_pool != address(0));
     governance = _governance;
+    WETH_USDC_POOLV3_BASE = _weth_usdc_pool;
   }
 
   function setPoolFees(uint24 _fee) external onlyGovernance {
