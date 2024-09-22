@@ -10,14 +10,15 @@ import "../../../interfaces/uniswapv3.sol";
 import "../../../interfaces/ISteerPeriphery.sol";
 import "../../../interfaces/ISushiMultiPositionLiquidityManager.sol";
 import "../../../Utils/PriceCalculatorV3.sol";
+import "hardhat/console.sol";
 
-contract SteerZapperBase is PriceCalculatorV3 {
+contract SteerZapperMultipath is PriceCalculatorV3 {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
   using SafeERC20 for IVault;
 
-  address router; // V3 router
+  address router; // uniswap V3 router
   address STEER_PERIPHERY;
   address V3Factory;
   address weth;
@@ -152,6 +153,34 @@ contract SteerZapperBase is PriceCalculatorV3 {
     _returnAssets(tokens);
   }
 
+  function multiPathSwapV3(address tokenIn, address tokenOut, uint256 amountIn) internal {
+    if (tokenIn == weth || tokenOut == weth) {
+      _swap(tokenIn, tokenOut, amountIn);
+      return;
+    }
+
+    address[] memory path = new address[](3);
+    path[0] = tokenIn;
+    path[1] = weth;
+    path[2] = tokenOut;
+
+    if (poolFees[weth][tokenOut] == 0) fetchPool(weth, tokenOut, V3Factory);
+    if (poolFees[tokenIn][weth] == 0) fetchPool(tokenIn, weth, V3Factory);
+
+    _approveTokenIfNeeded(path[0], address(router));
+
+    ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
+      path: abi.encodePacked(path[0], getPoolFee(path[0], path[1]), path[1], getPoolFee(path[1], path[2]), path[2]),
+      recipient: address(this),
+      deadline: block.timestamp,
+      amountIn: amountIn,
+      amountOutMinimum: 0
+    });
+
+    // Executes the swap
+    ISwapRouter(router).exactInput(params);
+  }
+
   function _swap(address tokenIn, address tokenOut, uint256 amountIn) private {
     address[] memory path = new address[](2);
     path[0] = tokenIn;
@@ -259,8 +288,8 @@ contract SteerZapperBase is PriceCalculatorV3 {
     require(_amountIn >= tokenInAmount, "Insignificant token in amounts");
 
     if (tokenIn != token0 && tokenIn != token1) {
-      _swap(weth, token0, tokenInAmount0);
-      _swap(weth, token1, tokenInAmount1);
+      multiPathSwapV3(weth, token0, tokenInAmount0);
+      multiPathSwapV3(weth, token1, tokenInAmount1);
     } else {
       address tokenOut = token0;
       uint256 amountToSwap = tokenInAmount0;
@@ -268,7 +297,7 @@ contract SteerZapperBase is PriceCalculatorV3 {
         tokenOut = token1;
         amountToSwap = tokenInAmount1;
       }
-      _swap(weth, tokenOut, amountToSwap);
+      multiPathSwapV3(weth, tokenOut, amountToSwap);
     }
 
     deposit(vault, IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), tokenAmountOutMin);
@@ -292,8 +321,8 @@ contract SteerZapperBase is PriceCalculatorV3 {
 
     //Note : tokenIn pair must exist withsteerVaultTokens
     if (token0 != tokenIn && token1 != tokenIn) {
-      _swap(tokenIn, token0, tokenInAmount0);
-      _swap(tokenIn, token1, tokenInAmount1);
+      multiPathSwapV3(tokenIn, token0, tokenInAmount0);
+      multiPathSwapV3(tokenIn, token1, tokenInAmount1);
     } else {
       address tokenOut = token0;
       uint256 amountToSwap = tokenInAmount0;
@@ -301,7 +330,7 @@ contract SteerZapperBase is PriceCalculatorV3 {
         tokenOut = token1;
         amountToSwap = tokenInAmount1;
       }
-      _swap(tokenIn, tokenOut, amountToSwap);
+      multiPathSwapV3(tokenIn, tokenOut, amountToSwap);
     }
 
     deposit(vault, IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), tokenAmountOutMin);
@@ -326,11 +355,11 @@ contract SteerZapperBase is PriceCalculatorV3 {
 
     // Swapping
     if (token0 != desiredToken) {
-      _swap(token0, desiredToken, amount0);
+      multiPathSwapV3(token0, desiredToken, amount0);
     }
 
     if (token1 != desiredToken) {
-      _swap(token1, desiredToken, amount1);
+      multiPathSwapV3(token1, desiredToken, amount1);
     }
 
     address[] memory path = new address[](3);
@@ -362,11 +391,11 @@ contract SteerZapperBase is PriceCalculatorV3 {
 
     // Swapping
     if (token0 != weth) {
-      _swap(token0, weth, amount0);
+      multiPathSwapV3(token0, weth, amount0);
     }
 
     if (token1 != weth) {
-      _swap(token1, weth, amount1);
+      multiPathSwapV3(token1, weth, amount1);
     }
 
     address[] memory path = new address[](3);

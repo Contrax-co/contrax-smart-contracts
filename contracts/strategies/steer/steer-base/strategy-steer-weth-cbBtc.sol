@@ -8,9 +8,7 @@ import "../../../interfaces/uniswapv3.sol";
 // Vault address for steer sushi WETH-cbBTC vault
 // 0xd5a49507197c243895972782c01700ca27090ee1
 
-// V3 Factory sushi => 0xc35DADB65012eC5796536bD9864eD8773aBc74C4
-
-contract StrategySteerUsdbcWeth is StrategySteerBase {
+contract StrategySteerWethcbBtc is StrategySteerBase {
   constructor(
     address _governance,
     address _strategist,
@@ -22,7 +20,7 @@ contract StrategySteerUsdbcWeth is StrategySteerBase {
     address _weth_usdc_pool
   )
     StrategySteerBase(
-      0xd5a49507197c243895972782c01700ca27090ee1,
+      0xD5A49507197c243895972782C01700ca27090Ee1,
       _governance,
       _strategist,
       _controller,

@@ -18,12 +18,11 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
   using SafeMath for uint256;
   using SafeERC20 for IVault;
 
-  address public router = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // suhsi V2 router
-  address public steerPeriphery = 0x806c2240793b3738000fcb62C66BF462764B903F;
-  address public sushiFactory = 0xc35DADB65012eC5796536bD9864eD8773aBc74C4;
   address public sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
-  address public uniV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
+  address router; // uniswap V3 router
+  address STEER_PERIPHERY;
+  address V3Factory;
   address weth;
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
@@ -43,6 +42,9 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
     address[] memory _vaults
   ) PriceCalculatorV3(_governance, _weth_usdc_pool) {
     weth = _weth;
+    router = _router;
+    V3Factory = _V3Factory;
+    STEER_PERIPHERY = _steerPeriphery;
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
@@ -102,13 +104,13 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
 
     //Deposit tokens to steer vault tokens
     //approve both tokens to Steer Periphery contract
-    _approveTokenIfNeeded(token0, steerPeriphery);
-    _approveTokenIfNeeded(token1, steerPeriphery);
+    _approveTokenIfNeeded(token0, STEER_PERIPHERY);
+    _approveTokenIfNeeded(token1, STEER_PERIPHERY);
 
     //get steer vault from local vault
     address _steerVault = vault.token();
     //deposit to Steer Periphery contract
-    ISteerPeriphery(steerPeriphery).deposit(_steerVault, amount0, amount1, 0, 0, address(this));
+    ISteerPeriphery(STEER_PERIPHERY).deposit(_steerVault, amount0, amount1, 0, 0, address(this));
 
     //get steer vault balance
     uint256 balance = IERC20(_steerVault).balanceOf(address(this));
@@ -189,12 +191,12 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
       // get pair address from factory contract for weth and desired token
       address pair;
       if (token == token0) {
-        pair = fetchPool(token0, weth, uniV3Factory);
+        pair = fetchPool(token0, weth, V3Factory);
 
         return calculateTokenPriceInUsd(token0, pair);
       }
 
-      pair = fetchPool(token1, weth, uniV3Factory);
+      pair = fetchPool(token1, weth, V3Factory);
 
       return calculateTokenPriceInUsd(token1, pair);
     }

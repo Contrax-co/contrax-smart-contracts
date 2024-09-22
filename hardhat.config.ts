@@ -39,6 +39,7 @@ const config: HardhatUserConfig = {
       chainId: 8453,
       forking: {
         url: `https://base-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`, //"https://base.llamarpc.com",
+        blockNumber: 20059845,
       },
     },
 

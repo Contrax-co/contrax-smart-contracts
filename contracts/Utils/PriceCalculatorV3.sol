@@ -13,7 +13,7 @@ contract PriceCalculatorV3 {
 
   uint256 public constant PRECISION = 10_000_000;
 
-  uint24[] public poolsFee = [3000, 500, 100, 350, 10000];
+  uint24[] public poolsFee = [3000, 500, 100, 350, 80, 10000];
 
   // Array of stable tokens
   address[] public stableTokens = [

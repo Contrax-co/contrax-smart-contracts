@@ -9,7 +9,7 @@ import "../../../interfaces/uniswapv3.sol";
 // 0x3c88c76783a9f2975c6d58f2aa1437f1e8229335
 // V3 Factory sushi => 0xc35DADB65012eC5796536bD9864eD8773aBc74C4
 
-contract StrategySteerUsdbcWeth is StrategySteerBase {
+contract StrategySteerWethSnsy is StrategySteerBase {
   constructor(
     address _governance,
     address _strategist,
@@ -21,7 +21,7 @@ contract StrategySteerUsdbcWeth is StrategySteerBase {
     address _weth_usdc_pool
   )
     StrategySteerBase(
-      0x3c88c76783a9f2975c6d58f2aa1437f1e8229335,
+      0x3C88c76783a9f2975C6d58F2aa1437f1E8229335,
       _governance,
       _strategist,
       _controller,

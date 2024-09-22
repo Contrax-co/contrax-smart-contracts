@@ -28,9 +28,8 @@ let timelockSigner: Signer;
 const WETH_USDC_POOL_BASE = "0xd0b53D9277642d899DF5C87A3966A349A798F224";
 const WETH_USDC_POOL_ARB = "0xC6962004f452bE9203591991D15f6b388e09E8D0";
 
-let wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+let wethArb = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 let usdcArb = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
-
 
 const wethBase = "0x4200000000000000000000000000000000000006";
 const usdcBase = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -38,10 +37,11 @@ const usdcBase = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const sushiV3Factory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
 const baseV3Factory = "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B";
 
+
 const sushiV3Router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
 const baseV3Router = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
 
-const steerVaultAddrresswethUsdbc = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
+const steerVaultAddressWethSnsy = "0x3C88c76783a9f2975C6d58F2aa1437f1E8229335";
 const steerVaultAddressWethcbBtc = "0xD5A49507197c243895972782C01700ca27090Ee1";
 
 const steerPeripheryArb = "0x806c2240793b3738000fcb62C66BF462764B903F";
@@ -49,8 +49,8 @@ const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
 
 const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
-const vaultName = "VaultSteerBaseWethcbBTC";
-const strategyName = "StrategySteerWethcbBtc";
+const vaultName = "VaultSteerSushiWethSnsy";
+const strategyName = "StrategySteerWethSnsy";
 
 describe("Steer Zapper Test", async () => {
   // These reset the state after each test is executed
@@ -106,14 +106,14 @@ describe("Steer Zapper Test", async () => {
         controllerAdd,
         timelockSigner.getAddress(),
         wethBase,
-        baseV3Factory,
+        sushiV3Factory,
         steerPeripheryBase,
         WETH_USDC_POOL_BASE
       );
 
     const approveStrategy = await controllerContract
       .connect(timelockSigner)
-      .approveStrategy(steerVaultAddressWethcbBtc, startegyContract.address);
+      .approveStrategy(steerVaultAddressWethSnsy, startegyContract.address);
     const tx_approveStrategy = await approveStrategy.wait(1);
 
     if (!tx_approveStrategy.status) {
@@ -126,23 +126,23 @@ describe("Steer Zapper Test", async () => {
       strategyName,
       controllerContract,
       timelockSigner,
-      steerVaultAddressWethcbBtc,
+      steerVaultAddressWethSnsy,
       startegyContract.address
     );
 
     // set Vault in controller
 
-    await controllerContract.connect(timelockSigner).setVault(steerVaultAddressWethcbBtc, vaultContract.address);
+    await controllerContract.connect(timelockSigner).setVault(steerVaultAddressWethSnsy, vaultContract.address);
 
     // deploy zapper
-    const zapperFactory = await ethers.getContractFactory("SteerZapperBase");
+    const zapperFactory = await ethers.getContractFactory("SteerZapperMultipath");
     zapperContract = await zapperFactory
       .connect(walletSigner)
       .deploy(
         walletSigner.getAddress(),
         wethBase,
-        baseV3Router,
-        baseV3Factory,
+        sushiV3Router,
+        sushiV3Factory,
         steerPeripheryBase,
         WETH_USDC_POOL_BASE,
         [vaultContract.address]
@@ -152,7 +152,7 @@ describe("Steer Zapper Test", async () => {
     await overwriteTokenAmount(usdcBase, walletAddress, zapInUsdcAmount, 9);
 
     console.log(`Deployed Usdc: ${usdcContract.address}`);
-    // await overwriteTokenAmount(steerVaultAddrresswethUsdbc, startegyContract.address, strategySteerVaultAmount, 9);
+    // await overwriteTokenAmount(steerVaultAddressWethSnsy, startegyContract.address, strategySteerVaultAmount, 9);
   });
 
   const zapInETH = async () => {
