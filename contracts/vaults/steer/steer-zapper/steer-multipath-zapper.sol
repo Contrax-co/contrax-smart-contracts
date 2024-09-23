@@ -12,7 +12,7 @@ import "../../../interfaces/ISushiMultiPositionLiquidityManager.sol";
 import "../../../Utils/PriceCalculatorV3.sol";
 import "hardhat/console.sol";
 
-contract SteerZapperMultipath is PriceCalculatorV3 {
+contract SteerZapperMultiPath is PriceCalculatorV3 {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -158,7 +158,7 @@ contract SteerZapperMultipath is PriceCalculatorV3 {
       _swap(tokenIn, tokenOut, amountIn);
       return;
     }
-
+ 
     address[] memory path = new address[](3);
     path[0] = tokenIn;
     path[1] = weth;

@@ -69,8 +69,8 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
   return contract;
 };
 
-const WETH_USDC_POOL_BASE =  "0xd0b53D9277642d899DF5C87A3966A349A798F224"
-const WETH_USDC_POOL_ARB = "0xC6962004f452bE9203591991D15f6b388e09E8D0"
+const WETH_USDC_POOL_BASE = "0xd0b53D9277642d899DF5C87A3966A349A798F224";
+const WETH_USDC_POOL_ARB = "0xC6962004f452bE9203591991D15f6b388e09E8D0";
 
 const governance = "0xcb6123060C52aFA2EF3a5F70e3d1253078d84B2f";
 const timelock = governance;
@@ -79,17 +79,18 @@ const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d";
 const v3SushiFactory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
 
 const wethBase = "0x4200000000000000000000000000000000000006";
+
 const sushiV3Router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
 const baseV3Router = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
 
 const WethUsdbcPool = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
-const steerPeripheryArb = "0x806c2240793b3738000fcb62C66BF462764B903F";
+const steerVaultAddressWethSnsy = "0x3C88c76783a9f2975C6d58F2aa1437f1E8229335";
 
+const steerPeripheryArb = "0x806c2240793b3738000fcb62C66BF462764B903F";
 const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
 
 const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
-// const poolFees = [
 //   {
 //     poolFee: 100,
 //     token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
@@ -126,22 +127,31 @@ async function main() {
     contractPath: "contracts/controllers/steer-controller.sol:SteerController",
   });
 
-  const StrategySteerUsdbcWeth = await deploy({
-    name: "StrategySteerUsdbcWeth",
-    args: [governance, governance, steerController.address, governance, wethBase, v3SushiFactory, steerPeripheryBase],
-    contractPath: "contracts/strategies/steer/steer-base/strategy-steer-wethBase-usdbc.sol:StrategySteerUsdbcWeth",
+  const StrategySteerWethSnsy = await deploy({
+    name: "StrategySteerWethSnsy",
+    args: [
+      governance,
+      governance,
+      steerController.address,
+      governance,
+      wethBase,
+      v3SushiFactory,
+      steerPeripheryBase,
+      WETH_USDC_POOL_BASE,
+    ],
+    contractPath: "contracts/strategies/steer/steer-base/strategy-steer-weth-snsy.sol:StrategySteerWethSnsy",
   });
 
-  const VaultSteerSushiWethUsdbc = await deploy({
-    name: "VaultSteerSushiWethUsdbc",
+  const VaultSteerSushiWethSnsy = await deploy({
+    name: "VaultSteerSushiWethSnsy",
     args: [governance, timelock, steerController.address],
-    contractPath: "contracts/vaults/steer/steer-vault-base/vault-steer-wethBase-usdbc.sol:VaultSteerSushiWethUsdbc",
+    contractPath: "contracts/vaults/steer/steer-vault-base/vault-steer-weth-snsy.sol:VaultSteerSushiWethSnsy",
   });
 
-  const SteerZapperBase = await deploy({
-    name: "SteerZapperBase",
-    args: [governance, wethBase, sushiV3Router, v3SushiFactory, steerPeripheryBase, [VaultSteerSushiWethUsdbc.address]],
-    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
+  const SteerZapperMultiPath = await deploy({
+    name: "SteerZapperMultiPath",
+    args: [governance, wethBase, sushiV3Router, v3SushiFactory, steerPeripheryBase, WETH_USDC_POOL_BASE,[VaultSteerSushiWethSnsy.address]],
+    contractPath: "contracts/vaults/steer/steer-zapper/steer-multipath-zapper.sol:SteerZapperMultiPath",
   });
 
   /** Setup Steer contracts
@@ -152,22 +162,16 @@ async function main() {
    **/
 
   // Set Reward Token
-  await StrategySteerUsdbcWeth.connect(deployer).setRewardToken(baseToken);
+  await StrategySteerWethSnsy.connect(deployer).setRewardToken(baseToken);
   await sleep(10);
   // Set Vault controller
-  await steerController.connect(deployer).setVault(WethUsdbcPool, VaultSteerSushiWethUsdbc.address);
+  await steerController.connect(deployer).setVault(steerVaultAddressWethSnsy, VaultSteerSushiWethSnsy.address);
   await sleep(10);
   // Approve Strategy
-  await steerController.connect(deployer).approveStrategy(WethUsdbcPool, StrategySteerUsdbcWeth.address);
+  await steerController.connect(deployer).approveStrategy(steerVaultAddressWethSnsy, StrategySteerWethSnsy.address);
   await sleep(10);
   // Set Strategy
-  await steerController.connect(deployer).setStrategy(WethUsdbcPool, StrategySteerUsdbcWeth.address);
-
-  // const SteerSushiZapperBase = await deploy({
-  //   name: "SteerSushiZapperBase",
-  //   args: [governance, ["0x9EfA1F99c86F6Ff0Fa0886775B436281b99e3f26"]],
-  //   contractPath: "contracts/vaults/steer/steer-zapper/steer-sushi-zapper.sol:SteerSushiZapperBase",
-  // });
+  await steerController.connect(deployer).setStrategy(steerVaultAddressWethSnsy, StrategySteerWethSnsy.address);
 }
 
 main()
@@ -176,4 +180,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-
