@@ -85,8 +85,7 @@ const wethBase = "0x4200000000000000000000000000000000000006";
 const sushiV3Router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
 const baseV3Router = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
 
-const WethUsdbcPool = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
-
+const steerVaultAddressWethUsdbcPool = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
 const steerVaultAddressWethSnsy = "0x3C88c76783a9f2975C6d58F2aa1437f1E8229335";
 const steerVaultAddressWethcbBtc = "0xD5A49507197c243895972782C01700ca27090Ee1";
 
@@ -95,32 +94,6 @@ const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
 
 const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
-//   {
-//     poolFee: 100,
-//     token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-//     token1: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
-//   }, // usdc-usdce
-//   {
-//     poolFee: 500,
-//     token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-//     token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-//   }, // usdc-wethBase
-//   {
-//     poolFee: 100,
-//     token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-//     token1: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-//   }, // usdc-usdt
-//   {
-//     poolFee: 500,
-//     token0: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-//     token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-//   }, // usdt-wethBase
-//   {
-//     poolFee: 500,
-//     token0: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
-//     token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-//   }, // usdce-wethBase
-// ];
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -164,7 +137,9 @@ async function main() {
       baseV3Factory,
       steerPeripheryBase,
       WETH_USDC_POOL_BASE,
-      [VaultSteerBaseWethcbBTC.address],
+      [VaultSteerBaseWethcbBTC.address, 
+        "0x76512AB6a1DEDD45B75dee47841eB9feD2411789"
+      ],
     ],
     contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
   });
