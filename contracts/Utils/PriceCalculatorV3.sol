@@ -10,8 +10,9 @@ contract PriceCalculatorV3 {
   using SafeERC20 for IERC20;
 
   address public governance;
+  address weth;
 
-  uint256 public constant PRECISION = 10_000_000;
+  uint256 public constant PRECISION = 1_000_000_000;
 
   uint24[] public poolsFee = [3000, 500, 100, 350, 80, 10000];
 
@@ -30,11 +31,13 @@ contract PriceCalculatorV3 {
     _;
   }
 
-  constructor(address _governance, address _weth_usdc_pool) {
+  constructor(address _governance, address _weth_usdc_pool, address _weth) {
     require(_governance != address(0));
     require(_weth_usdc_pool != address(0));
+    require(_weth != address(0));
     governance = _governance;
     WETH_USDC_POOLV3_BASE = _weth_usdc_pool;
+    weth = _weth;
   }
 
   function setPoolFees(uint24 _fee) external onlyGovernance {
@@ -51,32 +54,46 @@ contract PriceCalculatorV3 {
     (, int24 tick, , , , , ) = pool.slot0();
 
     address token0 = pool.token0();
+    address token1 = pool.token1();
 
-    uint256 lpPriceInWei;
+    //get token0 decimals
+    uint256 token0base = 10 ** uint256(IERC20(token0).decimals());
+    //get token1 decimals
+    uint256 token1base = 10 ** uint256(IERC20(token1).decimals());
+
+    uint256 priceAgainstEthInToken;
     if (_token == token0) {
-      lpPriceInWei = getPriceInTermsOfToken0(tick);
+      priceAgainstEthInToken = getPriceInTermsOfToken1(tick);
     } else {
-      lpPriceInWei = getPriceInTermsOfToken1(tick);
+      priceAgainstEthInToken = getPriceInTermsOfToken0(tick);
     }
-    uint256 lpPriceInEth = (lpPriceInWei * PRECISION) / 1e18;
+    uint256 ethPriceInToken = (priceAgainstEthInToken * PRECISION) / (_token == token0 ? token0base : token1base);
+
+    // Inverse the price to get BTC price in terms of ETH
+    uint256 tokenPriceInEth = (PRECISION * PRECISION) / ethPriceInToken;
+
     uint256 ethPriceInUsd = calculateEthPriceInUsdc();
-    ethPriceInUsd = ethPriceInUsd / PRECISION;
-    return lpPriceInEth * ethPriceInUsd;
+
+    uint256 tokenPriceInUsd = (tokenPriceInEth * ethPriceInUsd) / PRECISION;
+
+    return tokenPriceInUsd;
   }
 
   function getPriceInTermsOfToken0(int24 tick) public pure returns (uint256 priceU18) {
+   
     priceU18 = OracleLibrary.getQuoteAtTick(
       tick,
-      1e18, // fixed point to 18 decimals
+      1e18,
       address(0), // since we want the price in terms of token1/token0
       address(1)
     );
   }
 
   function getPriceInTermsOfToken1(int24 tick) public pure returns (uint256 priceU18) {
+   
     priceU18 = OracleLibrary.getQuoteAtTick(
       tick,
-      1e18, // fixed point to 18 decimals
+      1e18,
       address(1), // since we want the price in terms of token0/token1
       address(0)
     );
@@ -87,7 +104,6 @@ contract PriceCalculatorV3 {
     (, int24 tick, , , , , ) = pool.slot0();
 
     uint256 PriceFromOracle = getPriceInTermsOfToken0(tick);
-
     //removing usdc decimals
     return (PriceFromOracle * PRECISION) / 1e6;
   }

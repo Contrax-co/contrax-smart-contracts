@@ -10,6 +10,7 @@ import "../../../interfaces/uniswapv3.sol";
 import "../../../interfaces/ISteerPeriphery.sol";
 import "../../../interfaces/ISushiMultiPositionLiquidityManager.sol";
 import "../../../Utils/PriceCalculatorV3.sol";
+import "hardhat/console.sol";
 
 contract SteerZapperBase is PriceCalculatorV3 {
   using SafeERC20 for IERC20;
@@ -20,7 +21,7 @@ contract SteerZapperBase is PriceCalculatorV3 {
   address router; // V3 router
   address STEER_PERIPHERY;
   address V3Factory;
-  address weth;
+  
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
@@ -37,8 +38,7 @@ contract SteerZapperBase is PriceCalculatorV3 {
     address _steerPeriphery,
     address _weth_usdc_pool,
     address[] memory _vaults
-  ) PriceCalculatorV3(_governance, _weth_usdc_pool) {
-    weth = _weth;
+  ) PriceCalculatorV3(_governance, _weth_usdc_pool, _weth) {
     router = _router;
     V3Factory = _V3Factory;
     STEER_PERIPHERY = _steerPeriphery;
@@ -389,7 +389,7 @@ contract SteerZapperBase is PriceCalculatorV3 {
 
     uint256 totalValue = token0Value + token1Value;
     uint256 token0Amount = (_amountIn * token0Value) / totalValue;
-    uint256 token1Amount = _amountIn - token0Amount;
+    uint256 token1Amount = _amountIn - token0Amount; 
 
     return (token0Amount, token1Amount);
   }

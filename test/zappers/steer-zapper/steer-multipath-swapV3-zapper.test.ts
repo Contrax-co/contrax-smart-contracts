@@ -135,7 +135,7 @@ describe("Steer Zapper Test", async () => {
     await controllerContract.connect(timelockSigner).setVault(steerVaultAddressWethSnsy, vaultContract.address);
 
     // deploy zapper
-    const zapperFactory = await ethers.getContractFactory("SteerZapperMultipath");
+    const zapperFactory = await ethers.getContractFactory("SteerZapperMultiPath");
     zapperContract = await zapperFactory
       .connect(walletSigner)
       .deploy(

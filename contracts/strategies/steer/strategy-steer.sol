@@ -19,7 +19,6 @@ abstract contract StrategySteer is PriceCalculatorV3 {
   address public want;
   address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
   
-  address weth;
   ISushiMultiPositionLiquidityManager public steerVault;
 
   // Perfomance fees - start with 10%
@@ -57,15 +56,14 @@ abstract contract StrategySteer is PriceCalculatorV3 {
     address _timelock,
     address _weth,
     address _weth_usdc_pool
-  ) PriceCalculatorV3(_governance, _weth_usdc_pool) {
+  ) PriceCalculatorV3(_governance, _weth_usdc_pool, _weth) {
     require(_want != address(0));
     require(_governance != address(0));
     require(_strategist != address(0));
     require(_controller != address(0));
     require(_timelock != address(0));
     require(_weth != address(0));
-
-    weth = _weth;
+    
     want = _want;
     governance = _governance;
     strategist = _strategist;

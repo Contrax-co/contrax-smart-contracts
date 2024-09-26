@@ -23,7 +23,7 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
   address router; // uniswap V3 router
   address STEER_PERIPHERY;
   address V3Factory;
-  address weth;
+  
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
 
@@ -40,8 +40,7 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
     address _steerPeriphery,
     address _weth_usdc_pool,
     address[] memory _vaults
-  ) PriceCalculatorV3(_governance, _weth_usdc_pool) {
-    weth = _weth;
+  ) PriceCalculatorV3(_governance, _weth_usdc_pool, _weth) {
     router = _router;
     V3Factory = _V3Factory;
     STEER_PERIPHERY = _steerPeriphery;
