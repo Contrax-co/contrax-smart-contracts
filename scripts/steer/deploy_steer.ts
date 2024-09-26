@@ -86,6 +86,7 @@ const sushiV3Router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
 const baseV3Router = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
 
 const WethUsdbcPool = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
+
 const steerVaultAddressWethSnsy = "0x3C88c76783a9f2975C6d58F2aa1437f1E8229335";
 const steerVaultAddressWethcbBtc = "0xD5A49507197c243895972782C01700ca27090Ee1";
 
@@ -94,41 +95,78 @@ const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
 
 const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
+//   {
+//     poolFee: 100,
+//     token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+//     token1: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+//   }, // usdc-usdce
+//   {
+//     poolFee: 500,
+//     token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+//     token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+//   }, // usdc-wethBase
+//   {
+//     poolFee: 100,
+//     token0: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+//     token1: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+//   }, // usdc-usdt
+//   {
+//     poolFee: 500,
+//     token0: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+//     token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+//   }, // usdt-wethBase
+//   {
+//     poolFee: 500,
+//     token0: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+//     token1: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+//   }, // usdce-wethBase
+// ];
 
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  const steerController = await deploy({
-    name: "SteerController",
-    args: [governance, governance, governance, governance, governance],
-    contractPath: "contracts/controllers/steer-controller.sol:SteerController",
-  });
+  // const steerController = await deploy({
+  //   name: "SteerController",
+  //   args: [governance, governance, governance, governance, governance],
+  //   contractPath: "contracts/controllers/steer-controller.sol:SteerController",
+  // });
 
-  const StrategySteerWethSnsy = await deploy({
-    name: "StrategySteerWethSnsy",
+  const steerControllerFactory = await ethers.getContractFactory("SteerController");
+  const steerController = await steerControllerFactory.attach(controller);
+
+  const StrategySteerWethcbBtc = await deploy({
+    name: "StrategySteerWethcbBtc",
     args: [
       governance,
       governance,
-      steerController.address,
+      controller,
       governance,
       wethBase,
-      v3SushiFactory,
+      baseV3Factory,
       steerPeripheryBase,
       WETH_USDC_POOL_BASE,
     ],
-    contractPath: "contracts/strategies/steer/steer-base/strategy-steer-weth-snsy.sol:StrategySteerWethSnsy",
+    contractPath: "contracts/strategies/steer/steer-base/strategy-steer-weth-cbBtc.sol:StrategySteerWethcbBtc",
   });
 
-  const VaultSteerSushiWethSnsy = await deploy({
-    name: "VaultSteerSushiWethSnsy",
-    args: [governance, timelock, steerController.address],
-    contractPath: "contracts/vaults/steer/steer-vault-base/vault-steer-weth-snsy.sol:VaultSteerSushiWethSnsy",
+  const VaultSteerBaseWethcbBTC = await deploy({
+    name: "VaultSteerBaseWethcbBTC",
+    args: [governance, timelock, controller],
+    contractPath: "contracts/vaults/steer/steer-vault-base/vault-steer-weth-cbBTC.sol:VaultSteerBaseWethcbBTC",
   });
 
-  const SteerZapperMultiPath = await deploy({
-    name: "SteerZapperMultiPath",
-    args: [governance, wethBase, sushiV3Router, v3SushiFactory, steerPeripheryBase, WETH_USDC_POOL_BASE,[VaultSteerSushiWethSnsy.address]],
-    contractPath: "contracts/vaults/steer/steer-zapper/steer-multipath-zapper.sol:SteerZapperMultiPath",
+  const SteerZapperBase = await deploy({
+    name: "SteerZapperBase",
+    args: [
+      governance,
+      wethBase,
+      baseV3Router,
+      baseV3Factory,
+      steerPeripheryBase,
+      WETH_USDC_POOL_BASE,
+      [VaultSteerBaseWethcbBTC.address],
+    ],
+    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
   });
 
   /** Setup Steer contracts
@@ -139,16 +177,18 @@ async function main() {
    **/
 
   // Set Reward Token
-  await StrategySteerWethSnsy.connect(deployer).setRewardToken(baseToken);
+  await StrategySteerWethcbBtc.connect(deployer).setRewardToken(baseToken);
   await sleep(10);
   // Set Vault controller
-  await steerController.connect(deployer).setVault(steerVaultAddressWethSnsy, VaultSteerSushiWethSnsy.address);
+  await steerController.connect(deployer).setVault(steerVaultAddressWethcbBtc, VaultSteerBaseWethcbBTC.address);
   await sleep(10);
   // Approve Strategy
-  await steerController.connect(deployer).approveStrategy(steerVaultAddressWethSnsy, StrategySteerWethSnsy.address);
+  await steerController.connect(deployer).approveStrategy(steerVaultAddressWethcbBtc, StrategySteerWethcbBtc.address);
   await sleep(10);
   // Set Strategy
-  await steerController.connect(deployer).setStrategy(steerVaultAddressWethSnsy, StrategySteerWethSnsy.address);
+  await steerController.connect(deployer).setStrategy(steerVaultAddressWethcbBtc, StrategySteerWethcbBtc.address);
+
+  console.log("DEPLOYED SUCCESS");
 }
 
 main()
@@ -157,3 +197,4 @@ main()
     console.error(error);
     process.exit(1);
   });
+
