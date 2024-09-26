@@ -85,7 +85,7 @@ const wethBase = "0x4200000000000000000000000000000000000006";
 const sushiV3Router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
 const baseV3Router = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
 
-const steerVaultAddressWethUsdbcPool = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
+const steerVaultAddressWethUsdbc = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
 const steerVaultAddressWethSnsy = "0x3C88c76783a9f2975C6d58F2aa1437f1E8229335";
 const steerVaultAddressWethcbBtc = "0xD5A49507197c243895972782C01700ca27090Ee1";
 
@@ -137,9 +137,7 @@ async function main() {
       baseV3Factory,
       steerPeripheryBase,
       WETH_USDC_POOL_BASE,
-      [VaultSteerBaseWethcbBTC.address, 
-        "0x76512AB6a1DEDD45B75dee47841eB9feD2411789"
-      ],
+      [VaultSteerBaseWethcbBTC.address],
     ],
     contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
   });
