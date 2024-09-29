@@ -12,9 +12,11 @@ import "../interfaces/vault.sol";
 import "../interfaces/vault-converter.sol";
 import "../interfaces/onesplit.sol";
 import "../interfaces/strategy.sol";
-import "../interfaces/converter.sol";
+import "../interfaces/converter.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
-contract SteerController {
+contract SteerController is SphereXProtected {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -52,51 +54,51 @@ contract SteerController {
     treasury = _treasury;
   }
 
-  function setDevFund(address _devfund) public onlyGovernance {
+  function setDevFund(address _devfund) public onlyGovernance sphereXGuardPublic(0x45017197, 0xae4db919) {
     devfund = _devfund;
   }
 
-  function setTreasury(address _treasury) public onlyGovernance {
+  function setTreasury(address _treasury) public onlyGovernance sphereXGuardPublic(0xac5e8a54, 0xf0f44260) {
     treasury = _treasury;
   }
 
-  function setStrategist(address _strategist) public onlyGovernance {
+  function setStrategist(address _strategist) public onlyGovernance sphereXGuardPublic(0xffbb4da6, 0xc7b9d530) {
     strategist = _strategist;
   }
 
-  function setGovernance(address _governance) public onlyGovernance {
+  function setGovernance(address _governance) public onlyGovernance sphereXGuardPublic(0x4de60dc3, 0xab033ea9) {
     governance = _governance;
   }
 
-  function setTimelock(address _timelock) public onlyGovernance {
+  function setTimelock(address _timelock) public onlyGovernance sphereXGuardPublic(0x135f259e, 0xbdacb303) {
     require(msg.sender == timelock, "!timelock");
     timelock = _timelock;
   }
 
-  function setVault(address _token, address _vault) public onlyGovernance {
+  function setVault(address _token, address _vault) public onlyGovernance sphereXGuardPublic(0xd66a0eaf, 0x714ccf7b) {
     require(vaults[_token] == address(0), "vault");
     vaults[_token] = _vault;
   }
 
-  function approveVaultConverter(address _converter) public onlyGovernance {
+  function approveVaultConverter(address _converter) public onlyGovernance sphereXGuardPublic(0x0b702728, 0xa87dda14) {
     approvedVaultConverters[_converter] = true;
   }
 
-  function revokeVaultConverter(address _converter) public onlyGovernance {
+  function revokeVaultConverter(address _converter) public onlyGovernance sphereXGuardPublic(0x0e4d09e7, 0x326a3cdc) {
     approvedVaultConverters[_converter] = false;
   }
 
-  function approveStrategy(address _token, address _strategy) public {
+  function approveStrategy(address _token, address _strategy) public sphereXGuardPublic(0xd695a682, 0xc494448e) {
     require(msg.sender == timelock, "!timelock");
     approvedStrategies[_token][_strategy] = true;
   }
 
-  function revokeStrategy(address _token, address _strategy) public onlyGovernance {
+  function revokeStrategy(address _token, address _strategy) public onlyGovernance sphereXGuardPublic(0xc5a2d3b1, 0x590bbb60) {
     require(strategies[_token] != _strategy, "cannot revoke active strategy");
     approvedStrategies[_token][_strategy] = false;
   }
 
-  function setStrategy(address _token, address _strategy) public onlyGovernance {
+  function setStrategy(address _token, address _strategy) public onlyGovernance sphereXGuardPublic(0x6c58ae0f, 0x72cb5d97) {
     require(approvedStrategies[_token][_strategy], "!approved");
 
     address _current = strategies[_token];
@@ -110,25 +112,25 @@ contract SteerController {
     return IStrategy(strategies[_token]).balanceOf();
   }
 
-  function earn(address _token, uint256 _amount) public {
+  function earn(address _token, uint256 _amount) public sphereXGuardPublic(0x6ff7d338, 0xb02bf4b9) {
     address _strategy = strategies[_token];
     require(_strategy != address(0), "invalid strategy");
     IERC20(_token).safeTransfer(_strategy, _amount);
   }
 
-  function withdrawAll(address _token) public {
+  function withdrawAll(address _token) public sphereXGuardPublic(0xc61facdd, 0xfa09e630) {
     IStrategy(strategies[_token]).withdrawAll();
   }
 
-  function inCaseTokensGetStuck(address _token, uint256 _amount) public onlyGovernance {
+  function inCaseTokensGetStuck(address _token, uint256 _amount) public onlyGovernance sphereXGuardPublic(0xd39eb81a, 0xc6d758cb) {
     IERC20(_token).safeTransfer(msg.sender, _amount);
   }
 
-  function inCaseStrategyTokenGetStuck(address _strategy, address _token) public onlyGovernance {
+  function inCaseStrategyTokenGetStuck(address _strategy, address _token) public onlyGovernance sphereXGuardPublic(0x940ae9e9, 0x197baa6d) {
     IStrategy(_strategy).withdraw(_token);
   }
 
-  function withdraw(address _token, uint256 _amount) public {
+  function withdraw(address _token, uint256 _amount) public sphereXGuardPublic(0xfc08fb0a, 0xf3fef3a3) {
     require(msg.sender == vaults[_token], "!vault");
     IStrategy(strategies[_token]).withdraw(_amount);
   }
