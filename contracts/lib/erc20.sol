@@ -6,7 +6,7 @@
 pragma solidity 0.8.4;
 
 import "./safe-math.sol";
-import "./context.sol";  
+import "./context.sol"; 
 
 // File: contracts/token/ERC20/IERC20.sol
 
@@ -430,7 +430,7 @@ contract ERC20 is Context, IERC20 {
      * - `recipient` cannot be the zero address.
      * - `sender` must have a balance of at least `amount`.
      */
-    function _transfer(address sender, address recipient, uint256 amount) internal virtual{
+    function _transfer(address sender, address recipient, uint256 amount) internal virtual {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
@@ -450,7 +450,7 @@ contract ERC20 is Context, IERC20 {
      *
      * - `to` cannot be the zero address.
      */
-    function _mint(address account, uint256 amount) internal virtual{
+    function _mint(address account, uint256 amount) internal virtual {
         require(account != address(0), "ERC20: mint to the zero address");
 
         _beforeTokenTransfer(address(0), account, amount);
@@ -471,7 +471,7 @@ contract ERC20 is Context, IERC20 {
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens.
      */
-    function _burn(address account, uint256 amount) internal virtual{
+    function _burn(address account, uint256 amount) internal virtual {
         require(account != address(0), "ERC20: burn from the zero address");
 
         _beforeTokenTransfer(account, address(0), amount);
@@ -494,7 +494,7 @@ contract ERC20 is Context, IERC20 {
      * - `owner` cannot be the zero address.
      * - `spender` cannot be the zero address.
      */
-    function _approve(address owner, address spender, uint256 amount) internal virtual{
+    function _approve(address owner, address spender, uint256 amount) internal virtual {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -509,7 +509,7 @@ contract ERC20 is Context, IERC20 {
      * applications that interact with token contracts will not expect
      * {decimals} to ever change, and may work incorrectly if it does.
      */
-    function _setupDecimals(uint8 decimals_) internal{
+    function _setupDecimals(uint8 decimals_) internal {
         _decimals = decimals_;
     }
 
