@@ -19,10 +19,10 @@
     "hardhat": "^2.22.2"
   },
   "dependencies": {
+    "@spherex-xyz/contracts": "^2.2.3",
     "@uniswap/v3-core": "^1.0.1",
     "@uniswap/v3-periphery": "^1.4.3",
     "dotenv": "^16.0.1",
     "slot20": "^0.0.3"
   }
 }
-
