@@ -3,7 +3,9 @@ pragma solidity 0.8.4;
 
 import "./strategy-steer.sol";
 import "../../interfaces/ISteerPeriphery.sol";
-import "../../interfaces/vault.sol";
+import "../../interfaces/vault.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
 abstract contract StrategySteerBase is StrategySteer {
   using SafeMath for uint256;
@@ -36,7 +38,7 @@ abstract contract StrategySteerBase is StrategySteer {
 
   function _swap(address, address, uint256) internal virtual;
 
-  function harvest() public override onlyBenevolent {
+  function harvest() public override onlyBenevolent sphereXGuardPublic(0xc0d2c698, 0x4641257d) {
     require(rewardToken != address(0), "!rewardToken");
     uint256 _reward = IERC20(rewardToken).balanceOf(address(this));
     require(_reward > 0, "!reward");
@@ -77,7 +79,7 @@ abstract contract StrategySteerBase is StrategySteer {
     emit Harvest(block.timestamp, afterBal.sub(beforeBal));
   }
 
-  function depositToSteerVault(uint256 _amount0, uint256 _amount1) internal override {
+  function depositToSteerVault(uint256 _amount0, uint256 _amount1) internal override sphereXGuardInternal(0xf2f01eff) {
     (address token0, address token1) = steerVaultTokens();
 
     //approve both tokens to Steer Periphery contract
@@ -95,7 +97,7 @@ abstract contract StrategySteerBase is StrategySteer {
     _returnAssets(tokens);
   }
 
-  function calculateSteerVaultTokensPrices() internal returns (uint256 token0Price, uint256 token1Price) {
+  function calculateSteerVaultTokensPrices() internal sphereXGuardInternal(0x78dd547f) returns (uint256 token0Price, uint256 token1Price) {
     (address token0, address token1) = steerVaultTokens();
 
     bool isToken0Stable = isStableToken(token0);
@@ -128,7 +130,7 @@ abstract contract StrategySteerBase is StrategySteer {
     return false;
   }
 
-  function getPrice(address token) internal returns (uint256) {
+  function getPrice(address token) internal sphereXGuardInternal(0xf32b18f4) returns (uint256) {
     if (token == weth) {
       return calculateEthPriceInUsdc();
     } else {
@@ -147,7 +149,7 @@ abstract contract StrategySteerBase is StrategySteer {
     }
   }
 
-  function fetchPool(address token0, address token1, address _uniV3Factory) internal returns (address) {
+  function fetchPool(address token0, address token1, address _uniV3Factory) internal sphereXGuardInternal(0xdbb0f839) returns (address) {
     address pairWithMaxLiquidity = address(0);
     uint256 maxLiquidity = 0;
 
@@ -169,18 +171,19 @@ abstract contract StrategySteerBase is StrategySteer {
     return pairWithMaxLiquidity;
   }
 
-  function calculateSteerVaultTokensRatio(uint256 _amountIn) internal returns (uint256, uint256) {
+function calculateSteerVaultTokensRatio(uint256 _amountIn) internal sphereXGuardInternal(0xbc836423) returns (uint256, uint256) {
+    uint256 token0Value;
+    uint256 token1Value;
+    {
     (address token0, address token1) = steerVaultTokens();
     (uint256 amount0, uint256 amount1) = getTotalAmounts();
     (uint256 token0Price, uint256 token1Price) = calculateSteerVaultTokensPrices();
-
-    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals())));
-    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals())));
-
+    token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals())));
+    token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals())));
+    }
     uint256 totalValue = token0Value + token1Value;
     uint256 token0Amount = (_amountIn * token0Value) / totalValue;
     uint256 token1Amount = _amountIn - token0Amount;
-
     return (token0Amount, token1Amount);
   }
 }

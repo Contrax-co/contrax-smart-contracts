@@ -4,9 +4,11 @@ pragma solidity 0.8.4;
 
 import "../lib/erc20.sol";
 import "../interfaces/uniswapv3.sol";
-import "../lib/OracleLibrary.sol";
+import "../lib/OracleLibrary.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
 
-contract PriceCalculatorV3 {
+contract PriceCalculatorV3 is SphereXProtected {
   using SafeERC20 for IERC20;
 
   address public governance;
@@ -40,12 +42,12 @@ contract PriceCalculatorV3 {
     weth = _weth;
   }
 
-  function setPoolFees(uint24 _fee) external onlyGovernance {
+  function setPoolFees(uint24 _fee) external onlyGovernance sphereXGuardExternal(0x65a8940c) {
     poolsFee.push(_fee);
   }
 
   // set func to add stable tokens address in the array
-  function setStableTokens(address _stableTokens) external onlyGovernance {
+  function setStableTokens(address _stableTokens) external onlyGovernance sphereXGuardExternal(0x6edb969e) {
     stableTokens.push(_stableTokens);
   }
 
