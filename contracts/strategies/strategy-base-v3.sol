@@ -163,7 +163,7 @@ abstract contract StrategyBaseV3 is SphereXProtected {
         require(msg.sender == timelock, "!timelock");
         timelock = _timelock;
     }
-
+ 
     function setController(address _controller) external sphereXGuardExternal(0x630034b2) {
         require(msg.sender == timelock, "!timelock");
         controller = _controller;
@@ -206,7 +206,7 @@ abstract contract StrategyBaseV3 is SphereXProtected {
         require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
 
         IERC20(want).safeTransfer(_vault, _amount.sub(_feeDev).sub(_feeTreasury));
-    }
+    } 
 
     // Withdraw funds, used to swap between strategies
     function withdrawForSwap(uint256 _amount)

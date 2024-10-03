@@ -42,7 +42,7 @@ contract HopController is SphereXProtected {
 
     uint256 public split = 500;
     uint256 public constant max = 10000;
-
+ 
     constructor(
         address _governance,
         address _strategist,
