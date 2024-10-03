@@ -69,67 +69,61 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
   return contract;
 };
 
-
 const governance = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 const timelock = governance;
 
-const controller = "0x8121Fa4e27051DC3b86E4e7d6Fb2a02d62fe6F68";
-const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+const controller = "0xf3E4BC9F10521205fd1724E238B3eC6461Cdb915";
+const oldController = "0x8121Fa4e27051DC3b86E4e7d6Fb2a02d62fe6F68";
 
+const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+let newStrategyHopWeth = "0xABEb0f715e95Ab0CD10B93c5715e376Fc22ae702";
+let newStrategyHopDai = "0x3D59D64d33b0147Afb83Ecd17aa3ddC846DcFAf6";
 
 async function main() {
-    const [deployer] = await ethers.getSigners();
-  
-    // const steerController = await deploy({
-    //   name: "SteerController",
-    //   args: [governance, governance, governance, governance, governance],
-    //   contractPath: "contracts/controllers/steer-controller.sol:SteerController",
-    // });
-  
-    // const steerControllerFactory = await ethers.getContractFactory("SteerController");
-    // const steerController = await steerControllerFactory.attach(controller);
-  
-    const StrategyHopWeth = await deploy({
-      name: "StrategyHopWeth",
-      args: [
-        governance,
-        governance,
-        controller,
-        governance,
-      ],
-      contractPath: "contracts/strategies/hop/strategy-hop-weth.sol:StrategyHopWeth",
-    });
-  
+  const [deployer] = await ethers.getSigners();
 
+  // const HopController = await deploy({
+  //   name: "HopController",
+  //   args: [governance, governance, governance, governance, governance],
+  //   contractPath: "contracts/controllers/hop-controller.sol:HopController",
+  // });
 
-    /** Settings for updation of Strategy and Controller 
-     * =>> Set New strategy on old controller (call approveStrategy, setStrategy function on old controller)
-     * =>> Deploy new controller and set it on strategy (call setController function on strategy)
-     * =>> Call approveStrategy, setStrategy function on new controller
-     * =>> Set Vault on new controller
-     * =>> Set Controller on old Vault
-     */
-  
-    // // Set Reward Token
-    // await StrategySteerWethcbBtc.connect(deployer).setRewardToken(baseToken);
-    // await sleep(10);
-    // // Set Vault controller
-    // await steerController.connect(deployer).setVault(steerVaultAddressWethcbBtc, VaultSteerBaseWethcbBTC.address);
-    // await sleep(10);
-    // // Approve Strategy
-    // await steerController.connect(deployer).approveStrategy(steerVaultAddressWethcbBtc, StrategySteerWethcbBtc.address);
-    // await sleep(10);
-    // // Set Strategy
-    // await steerController.connect(deployer).setStrategy(steerVaultAddressWethcbBtc, StrategySteerWethcbBtc.address);
-  
-    console.log("DEPLOYED SUCCESS");
-  }
-  
-  main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error(error);
-      process.exit(1);
-    });
-  
-  
+  // const steerControllerFactory = await ethers.getContractFactory("SteerController");
+  // const steerController = await steerControllerFactory.attach(controller);
+
+  const StrategyHopDai = await deploy({
+    name: "StrategyHopDai",
+    args: [governance, governance, oldController, governance],
+    contractPath: "contracts/strategies/hop/strategy-hop-dai.sol:StrategyHopDai",
+  });
+
+  /** Settings for updation of Strategy and Controller
+   * =>> Set New strategy on old controller (call approveStrategy, setStrategy function on old controller)
+   * =>> Deploy new controller and set it on strategy (call setController function on strategy)
+   * =>> Call approveStrategy, setStrategy function on new controller
+   * =>> Set Vault on new controller
+   * =>> Set Controller on old Vault
+   */
+
+  // // Set Reward Token
+  // await StrategySteerWethcbBtc.connect(deployer).setRewardToken(baseToken);
+  // await sleep(10);
+  // // Set Vault controller
+  // await steerController.connect(deployer).setVault(steerVaultAddressWethcbBtc, VaultSteerBaseWethcbBTC.address);
+  // await sleep(10);
+  // // Approve Strategy
+  // await steerController.connect(deployer).approveStrategy(steerVaultAddressWethcbBtc, StrategySteerWethcbBtc.address);
+  // await sleep(10);
+  // // Set Strategy
+  // await steerController.connect(deployer).setStrategy(steerVaultAddressWethcbBtc, StrategySteerWethcbBtc.address);
+
+  console.log("DEPLOYED SUCCESS");
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+
