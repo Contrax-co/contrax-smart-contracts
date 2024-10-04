@@ -72,10 +72,16 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  const callerContract = await deploy({
-    name: "CallerContract",
+  // const callerContract = await deploy({
+  //   name: "CallerContract",
+  //   args: [],
+  //   contractPath: "contracts/Utils/CallerContract.sol:CallerContract",
+  // });
+
+  await deploy({
+    name: "CallerContractForHopStrategy",
     args: [],
-    contractPath: "contracts/Utils/CallerContract.sol:CallerContract",
+    contractPath: "contracts/Utils/CallerContractForHopStrategy.sol:CallerContractForHopStrategy",
   });
 }
 
