@@ -36,10 +36,12 @@ const usdcBase = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
 const sushiV3Factory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
 const baseV3Factory = "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B";
+const uniV3Factory = "0x33128a8fC17869897dcE68Ed026d694621f6FDfD";
 
 
 const sushiV3Router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
 const baseV3Router = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
+const uniV3Router = "0x2626664c2603336E57B271c5C0b26F421741e481";
 
 const steerVaultAddressWethSnsy = "0x3C88c76783a9f2975C6d58F2aa1437f1E8229335";
 const steerVaultAddressWethcbBtc = "0xD5A49507197c243895972782C01700ca27090Ee1";
@@ -49,8 +51,8 @@ const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
 
 const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
-const vaultName = "VaultSteerSushiWethSnsy";
-const strategyName = "StrategySteerWethSnsy";
+const vaultName = "VaultSteerBaseWethcbBTC";
+const strategyName = "StrategySteerWethcbBtc";
 
 describe("Steer Zapper Test", async () => {
   // These reset the state after each test is executed
@@ -106,14 +108,14 @@ describe("Steer Zapper Test", async () => {
         controllerAdd,
         timelockSigner.getAddress(),
         wethBase,
-        sushiV3Factory,
+        uniV3Factory,
         steerPeripheryBase,
         WETH_USDC_POOL_BASE
       );
 
     const approveStrategy = await controllerContract
       .connect(timelockSigner)
-      .approveStrategy(steerVaultAddressWethSnsy, startegyContract.address);
+      .approveStrategy(steerVaultAddressWethcbBtc, startegyContract.address);
     const tx_approveStrategy = await approveStrategy.wait(1);
 
     if (!tx_approveStrategy.status) {
@@ -126,13 +128,13 @@ describe("Steer Zapper Test", async () => {
       strategyName,
       controllerContract,
       timelockSigner,
-      steerVaultAddressWethSnsy,
+      steerVaultAddressWethcbBtc,
       startegyContract.address
     );
 
     // set Vault in controller
 
-    await controllerContract.connect(timelockSigner).setVault(steerVaultAddressWethSnsy, vaultContract.address);
+    await controllerContract.connect(timelockSigner).setVault(steerVaultAddressWethcbBtc, vaultContract.address);
 
     // deploy zapper
     const zapperFactory = await ethers.getContractFactory("SteerZapperMultiPath");
@@ -141,8 +143,8 @@ describe("Steer Zapper Test", async () => {
       .deploy(
         walletSigner.getAddress(),
         wethBase,
-        sushiV3Router,
-        sushiV3Factory,
+        uniV3Router,
+        uniV3Factory,
         steerPeripheryBase,
         WETH_USDC_POOL_BASE,
         [vaultContract.address]

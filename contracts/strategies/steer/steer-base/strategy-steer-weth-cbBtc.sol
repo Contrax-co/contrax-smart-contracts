@@ -5,7 +5,7 @@ import "../strategy-steer-base.sol";
 import "../../../interfaces/uniswapv3.sol";
 
 
-// Vault address for steer sushi WETH-cbBTC vault
+// Vault address for steer WETH-cbBTC vault
 // 0xd5a49507197c243895972782c01700ca27090ee1
 
 contract StrategySteerWethcbBtc is StrategySteerBase {

@@ -144,7 +144,7 @@ export async function fastForwardAWeek() {
         await increaseTime(60 * 60 * 24);
         await increaseBlock(60 * 60);
         i++;
-    } while (i < 8);
+    } while (i < 9);
 }
 
 export async function getBalancesETH(walletSigner: Signer) {
