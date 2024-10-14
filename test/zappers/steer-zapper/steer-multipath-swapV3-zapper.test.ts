@@ -108,7 +108,7 @@ describe("Steer Zapper Test", async () => {
         controllerAdd,
         timelockSigner.getAddress(),
         wethBase,
-        uniV3Factory,
+        baseV3Factory,
         steerPeripheryBase,
         WETH_USDC_POOL_BASE
       );
@@ -143,8 +143,8 @@ describe("Steer Zapper Test", async () => {
       .deploy(
         walletSigner.getAddress(),
         wethBase,
-        uniV3Router,
-        uniV3Factory,
+        baseV3Router,
+        baseV3Factory,
         steerPeripheryBase,
         WETH_USDC_POOL_BASE,
         [vaultContract.address]

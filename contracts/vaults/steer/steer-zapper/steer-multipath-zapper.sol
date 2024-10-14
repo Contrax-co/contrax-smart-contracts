@@ -11,6 +11,8 @@ import "../../../interfaces/ISteerPeriphery.sol";
 import "../../../interfaces/ISushiMultiPositionLiquidityManager.sol";
 import "../../../Utils/PriceCalculatorV3.sol";
 
+import "hardhat/console.sol";
+
 contract SteerZapperMultiPath is PriceCalculatorV3 {
   using SafeERC20 for IERC20;
   using Address for address;
@@ -279,6 +281,7 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
     (address token0, address token1) = steerVaultTokens(vault);
 
     (uint256 tokenInAmount0, uint256 tokenInAmount1) = calculateSteerVaultTokensRatio(vault, _amountIn);
+
 
     uint256 tokenInAmount = tokenInAmount0 + tokenInAmount1;
     require(_amountIn >= minimumAmount, "Insignificant input amount");

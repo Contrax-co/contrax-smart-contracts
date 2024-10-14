@@ -25,7 +25,7 @@ contract PriceCalculatorV3 is SphereXProtected {
     // 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8
   ];
 
-  address public WETH_USDC_POOLV3_BASE;
+  address public WETH_USDC_POOLV3;
 
   // Modifier to restrict access to governance only
   modifier onlyGovernance() {
@@ -38,7 +38,7 @@ contract PriceCalculatorV3 is SphereXProtected {
     require(_weth_usdc_pool != address(0));
     require(_weth != address(0));
     governance = _governance;
-    WETH_USDC_POOLV3_BASE = _weth_usdc_pool;
+    WETH_USDC_POOLV3 = _weth_usdc_pool;
     weth = _weth;
   }
 
@@ -71,7 +71,6 @@ contract PriceCalculatorV3 is SphereXProtected {
     }
     uint256 ethPriceInToken = (priceAgainstEthInToken * PRECISION) / (_token == token0 ? token0base : token1base);
 
-    // Inverse the price to get BTC price in terms of ETH
     uint256 tokenPriceInEth = (PRECISION * PRECISION) / ethPriceInToken;
 
     uint256 ethPriceInUsd = calculateEthPriceInUsdc();
@@ -102,7 +101,7 @@ contract PriceCalculatorV3 is SphereXProtected {
   }
 
   function calculateEthPriceInUsdc() public view returns (uint256) {
-    IUniswapV3Pool pool = IUniswapV3Pool(WETH_USDC_POOLV3_BASE);
+    IUniswapV3Pool pool = IUniswapV3Pool(WETH_USDC_POOLV3);
     (, int24 tick, , , , , ) = pool.slot0();
 
     uint256 PriceFromOracle = getPriceInTermsOfToken0(tick);
