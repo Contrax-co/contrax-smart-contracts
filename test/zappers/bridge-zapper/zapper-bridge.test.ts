@@ -41,24 +41,18 @@ let usdcArb = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 const wethBase = "0x4200000000000000000000000000000000000006";
 const usdcBase = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
-const sushiV3Factory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
-const baseV3Factory = "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B";
+let wCore = "0x40375C92d9FAf44d2f9db9Bd9ba41a3317a2404f";
+let usdcCore = "0xa4151B2B3e269645181dCcF2D426cE75fcbDeca9";
+
+const sushiV3FactoryBase = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
+const baseV3FactoryBase = "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B";
 const uniV3FactoryArb = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
+const coreXV3FactoryCore = "0x526190295AFB6b8736B14E4b42744FBd95203A3a";
 
-const sushiV3Router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
-const baseV3Router = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
+const sushiV3RouterBase = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
+const baseV3RouterBase = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
 const uniV3RouterArb = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
-
-const steerVaultAddrresswethUsdbc = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
-const steerVaultAddressWethcbBtc = "0xD5A49507197c243895972782C01700ca27090Ee1";
-
-const steerPeripheryArb = "0x806c2240793b3738000fcb62C66BF462764B903F";
-const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
-
-const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
-
-const vaultName = "VaultSteerBaseWethcbBTC";
-const strategyName = "StrategySteerWethcbBtc";
+const coreXV3RouterCore = "0xcc85A7870902f5e3dCef57E4d44F42b613c87a2E";
 
 describe("Steer Zapper Test", async () => {
   // These reset the state after each test is executed
@@ -90,73 +84,31 @@ describe("Steer Zapper Test", async () => {
     const zapperFactory = await ethers.getContractFactory("ZapperBridge");
     zapperContract = await zapperFactory
       .connect(walletSigner)
-      .deploy(walletSigner.getAddress(), wethArb, usdcArb, uniV3RouterArb, uniV3FactoryArb);
+      .deploy(walletSigner.getAddress(), wCore, usdcCore, coreXV3RouterCore, coreXV3FactoryCore);
 
-    usdcContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", usdcArb, walletSigner);
-    await overwriteTokenAmount(usdcArb, walletAddress, zapInUsdcAmount, 9);
+    usdcContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", usdcCore, walletSigner);
+    await overwriteTokenAmount(usdcCore, walletAddress, zapInUsdcAmount, 9);
 
     console.log(`Deployed Usdc: ${usdcContract.address}`);
     // await overwriteTokenAmount(steerVaultAddrresswethUsdbc, startegyContract.address, strategySteerVaultAmount, 9);
   });
 
-  // const zapInETH = async () => {
-  //   let _vaultBalanceBefore: BigNumber = await vaultContract
-  //     .connect(walletSigner)
-  //     .balanceOf(await walletSigner.getAddress());
-
-  //   await zapperContract.connect(walletSigner).zapInETH(vaultContract.address, 0, wethBase, {
-  //     value: zapInEthAmount,
-  //   });
-
-  //   let _vaultBalanceAfter: BigNumber = await vaultContract
-  //     .connect(walletSigner)
-  //     .balanceOf(await walletSigner.getAddress());
-
-  //   return [_vaultBalanceBefore, _vaultBalanceAfter];
-  // };
-
-  // const zapIn = async () => {
-  //   let _vaultBalanceBefore: BigNumber = await vaultContract
-  //     .connect(walletSigner)
-  //     .balanceOf(await walletSigner.getAddress());
-  //   let _usdcBalanceBefore: BigNumber = await usdcContract
-  //     .connect(walletSigner)
-  //     .balanceOf(await walletSigner.getAddress());
-
-  //   await usdcContract.connect(walletSigner).approve(zapperContract.address, zapInUsdcAmount);
-
-  //   await zapperContract.connect(walletSigner).zapIn(vaultContract.address, 0, usdcArb, zapInUsdcAmount);
-
-  //   let _vaultBalanceAfter: BigNumber = await vaultContract
-  //     .connect(walletSigner)
-  //     .balanceOf(await walletSigner.getAddress());
-
-  //   let _usdcBalanceAfter: BigNumber = await usdcContract
-  //     .connect(walletSigner)
-  //     .balanceOf(await walletSigner.getAddress());
-
-  //   return [_vaultBalanceBefore, _vaultBalanceAfter, _usdcBalanceBefore, _usdcBalanceAfter];
-  // };
-
-  it("User wallet contains usdc balance", async function () {
-    let usdcBalance: BigNumber = await usdcContract.balanceOf(await walletSigner.getAddress());
-    expect(usdcBalance.toNumber()).to.be.gt(0);
-    expect(usdcBalance.toString()).to.be.equals(zapInUsdcAmount);
-  });
-
-  // it("Should ZapIn with Eth", async function () {
-  //   let [_vaultBefore, _vaultAfter] = await zapInETH();
-  //   expect(_vaultAfter).to.be.gt(_vaultBefore);
+  // it("User wallet contains usdc balance", async function () {
+  //   let usdcBalance: BigNumber = await usdcContract.balanceOf(await walletSigner.getAddress());
+  //   expect(usdcBalance.toNumber()).to.be.gt(0);
+  //   expect(usdcBalance.toString()).to.be.equals(zapInUsdcAmount);
   // });
 
   it("Should ZapIn with USDC", async function () {
-    await usdcContract.connect(walletSigner).approve(zapperContract.address, zapInUsdcAmount);
+    // await usdcContract.connect(walletSigner).approve(zapperContract.address, zapInUsdcAmount);
 
     let usdcBalanceBefore = await usdcContract.connect(walletSigner).balanceOf(await walletSigner.getAddress());
 
     await zapperContract
       .connect(walletSigner)
-      .zapIn(bridgeContractArb, Data, usdcAmountToZap, ethAmountOut, usdcAmountIn);
+      .zapIn(bridgeContractArb, Data, usdcAmountToZap, ethAmountOut, usdcAmountIn, {
+        value: zapInEthAmount,
+      });
 
     let usdcBalanceAfter = await usdcContract.connect(walletSigner).balanceOf(await walletSigner.getAddress());
 
@@ -169,32 +121,4 @@ describe("Steer Zapper Test", async () => {
     expect(contractEthBalance).to.be.equals(0);
     expect(contractUsdcBalance).to.be.equals(0);
   });
-
-  // it("Should ZapOut and swap into ETH", async function () {
-  //   let [, _vaultAfter] = await zapInETH();
-
-  //   let ethBalanceBefore = await ethers.provider.getBalance(walletAddress);
-  //   await vaultContract.connect(walletSigner).approve(zapperContract.address, _vaultAfter);
-  //   await zapperContract.connect(walletSigner).zapOutAndSwapEth(vaultContract.address, _vaultAfter, 0);
-
-  //   _vaultAfter = await vaultContract.connect(walletSigner).balanceOf(walletAddress);
-  //   const ethBalanceAfter = await ethers.provider.getBalance(walletAddress);
-  //   expect(_vaultAfter).to.be.equals(BigNumber.from("0x0"));
-  //   expect(ethBalanceAfter).to.be.gt(ethBalanceBefore);
-  // });
-
-  // it("Should ZapOut and swap into USDC", async function () {
-  //   let [, _vaultAfter] = await zapIn();
-
-  //   let usdcBalanceBefore = await usdcContract.connect(walletSigner).balanceOf(await walletSigner.getAddress());
-
-  //   await vaultContract.connect(walletSigner).approve(zapperContract.address, _vaultAfter);
-  //   await zapperContract.connect(walletSigner).zapOutAndSwap(vaultContract.address, _vaultAfter, usdcArb, 0);
-
-  //   _vaultAfter = await vaultContract.connect(walletSigner).balanceOf(walletAddress);
-  //   const usdcBalanceAfter = await usdcContract.connect(walletSigner).balanceOf(await walletSigner.getAddress());
-
-  //   expect(_vaultAfter).to.be.equals(BigNumber.from("0x0"));
-  //   expect(usdcBalanceAfter).to.be.gt(usdcBalanceBefore);
-  // });
 });

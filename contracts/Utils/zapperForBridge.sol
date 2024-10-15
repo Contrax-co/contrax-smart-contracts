@@ -7,6 +7,7 @@ import "../lib/square-root.sol";
 import "../interfaces/weth.sol";
 import "../interfaces/uniswapv3.sol";
 
+
 contract ZapperBridge {
   using SafeERC20 for IERC20;
   using Address for address;
@@ -17,6 +18,8 @@ contract ZapperBridge {
   address USDC;
   address public governance;
   address weth;
+
+  address USDT_CORE = 0x900101d06A7426441Ae63e9AB3B9b0F63Be145F1;
 
   uint24[] public poolsFee = [3000, 500, 100, 350, 80, 10000];
   // tokenIn => tokenOut => poolFee
@@ -72,18 +75,22 @@ contract ZapperBridge {
   }
 
   function multiPathSwapV3(address tokenIn, address tokenOut, uint256 amountIn) internal {
-    if (tokenIn == weth || tokenOut == weth) {
-      _swap(tokenIn, tokenOut, amountIn, 0);
-      return;
+    address[] memory path = new address[](3);
+    if (tokenIn != weth && tokenOut != weth) {
+      path[0] = tokenIn;
+      path[1] = tokenOut;
+      path[2] = weth;
+
+      if (poolFees[weth][tokenOut] == 0) fetchPool(weth, tokenOut, V3Factory);
+    } else {
+      path[0] = tokenIn;
+      path[1] = tokenOut;
+      path[2] = USDC;
+
+      if (poolFees[USDC][tokenOut] == 0) fetchPool(USDC, tokenOut, V3Factory);
     }
 
-    address[] memory path = new address[](3);
-    path[0] = tokenIn;
-    path[1] = weth;
-    path[2] = tokenOut;
-
-    if (poolFees[weth][tokenOut] == 0) fetchPool(weth, tokenOut, V3Factory);
-    if (poolFees[tokenIn][weth] == 0) fetchPool(tokenIn, weth, V3Factory);
+    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, V3Factory);
 
     _approveTokenIfNeeded(path[0], address(router));
 
@@ -163,7 +170,7 @@ contract ZapperBridge {
 
     IERC20(USDC).safeTransferFrom(msg.sender, address(this), _usdcAmountIn + _usdcAmountToZap);
 
-    _swap(USDC, weth, _usdcAmountToZap, _ethAmountOut);
+    multiPathSwapV3(USDC, USDT_CORE, _usdcAmountToZap);
 
     uint256 wethBal = IERC20(weth).balanceOf(address(this));
 
@@ -180,14 +187,14 @@ contract ZapperBridge {
 
     wethBal = IERC20(weth).balanceOf(address(this));
 
-    _swap(weth, USDC, wethBal, 0);
+    multiPathSwapV3(weth, USDT_CORE, wethBal);
 
     address[] memory returnAssist = new address[](1);
     returnAssist[0] = USDC;
 
     _returnAssets(returnAssist);
 
-    emit UsdcTransferred(msg.sender, _usdcAmountIn + _usdcAmountToZap);
+    emit EthTransferred(_callingContractAddress, address(this).balance);
 
     return address(this).balance;
   }
