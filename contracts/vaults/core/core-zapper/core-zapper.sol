@@ -26,9 +26,13 @@ contract CoreZapperBase {
   address public constant coreXFactory = 0x526190295AFB6b8736B14E4b42744FBd95203A3a;
   address public constant coreXRouter = 0xcc85A7870902f5e3dCef57E4d44F42b613c87a2E; // uniswap V3 coreXRouter
 
+  address constant USDT = 0x900101d06A7426441Ae63e9AB3B9b0F63Be145F1;
+  address constant USDC = 0xa4151B2B3e269645181dCcF2D426cE75fcbDeca9;
+
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
 
+  uint24[] public poolsFee = [3000, 500, 100, 10000];
   // tokenIn => tokenOut => poolFee
   mapping(address => mapping(address => uint24)) public poolFees;
 
@@ -67,6 +71,29 @@ contract CoreZapperBase {
     _;
   }
 
+  function getPoolFee(address token0, address token1) public view returns (uint24) {
+    uint24 fee = poolFees[token0][token1];
+    require(fee > 0, "pool fee is not set");
+    return fee;
+  }
+
+  //returns DUST
+  function _returnAssets(address[] memory tokens) internal {
+    uint256 balance;
+    for (uint256 i; i < tokens.length; i++) {
+      balance = IERC20(tokens[i]).balanceOf(address(this));
+      if (balance > 0) {
+        if (tokens[i] == wCore) {
+          WETH(wCore).withdraw(balance);
+          (bool success, ) = msg.sender.call{value: balance}(new bytes(0));
+          require(success, "ETH transfer failed");
+        } else {
+          IERC20(tokens[i]).safeTransfer(msg.sender, balance);
+        }
+      }
+    }
+  }
+
   // Function to add a vault to the whitelist
   function addToWhitelist(address _vault) external onlyGovernance {
     whitelistedVaults[_vault] = true;
@@ -75,6 +102,59 @@ contract CoreZapperBase {
   // Function to remove a vault from the whitelist
   function removeFromWhitelist(address _vault) external onlyGovernance {
     whitelistedVaults[_vault] = false;
+  }
+
+  function multiPathSwapV3(address tokenIn, address tokenOut, uint256 amountIn) internal {
+    address[] memory path = new address[](3);
+    if (tokenIn != wCore && tokenOut != wCore) {
+      path[0] = tokenIn;
+      path[1] = tokenOut;
+      path[2] = wCore;
+
+      if (poolFees[wCore][tokenOut] == 0) fetchPool(wCore, tokenOut, coreXFactory);
+    } else {
+      path[0] = tokenIn;
+      path[1] = tokenOut;
+      path[2] = USDC;
+
+      if (poolFees[USDC][tokenOut] == 0) fetchPool(USDC, tokenOut, coreXFactory);
+    }
+
+    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, coreXFactory);
+
+    _approveTokenIfNeeded(path[0], address(coreXRouter));
+
+    ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
+      path: abi.encodePacked(path[0], getPoolFee(path[0], path[1]), path[1], getPoolFee(path[1], path[2]), path[2]),
+      recipient: address(this),
+      deadline: block.timestamp,
+      amountIn: amountIn,
+      amountOutMinimum: 0
+    });
+
+    // Executes the swap
+    ISwapRouter(coreXRouter).exactInput(params);
+  }
+
+  function fetchPool(address token0, address token1, address _uniV3Factory) internal returns (address) {
+    address pairWithMaxLiquidity = address(0);
+    uint256 maxLiquidity = 0;
+
+    for (uint256 i = 0; i < poolsFee.length; i++) {
+      address currentPair = IUniswapV3Factory(_uniV3Factory).getPool(token0, token1, poolsFee[i]);
+      if (currentPair != address(0)) {
+        uint256 currentLiquidity = IUniswapV3Pool(currentPair).liquidity();
+        if (currentLiquidity > maxLiquidity) {
+          maxLiquidity = currentLiquidity;
+          pairWithMaxLiquidity = currentPair;
+          poolFees[token0][token1] = poolsFee[i];
+          // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
+          poolFees[token1][token0] = poolsFee[i];
+        }
+      }
+    }
+    require(pairWithMaxLiquidity != address(0), "No pool found with sufficient liquidity");
+    return pairWithMaxLiquidity;
   }
 
   function deposit(
@@ -122,11 +202,9 @@ contract CoreZapperBase {
     // Call redeem on the user's staking contract
     require(amount > 1e18, "Insufficient stCore balance, core staking won't allow to redeem");
     UserStakingContract(payable(userContract)).redeem(amount);
-
-    emit Redeem(msg.sender, amount);
   }
 
-  function redeem(IVault vault, uint256 withdrawAmount) external {
+  function redeem(IVault vault, uint256 withdrawAmount) external returns (uint256 stCoreRedeemed) {
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
 
     uint256 stCoreBalBefore = IERC20(ST_CORE).balanceOf(address(this));
@@ -135,9 +213,11 @@ contract CoreZapperBase {
 
     uint256 stCoreBalAfter = IERC20(ST_CORE).balanceOf(address(this));
 
-    uint256 stCoreRedeemed = stCoreBalAfter - stCoreBalBefore;
+    stCoreRedeemed = stCoreBalAfter - stCoreBalBefore;
 
     _redeem(stCoreRedeemed);
+
+    emit Redeem(msg.sender, stCoreRedeemed);
   }
 
   function zapInETH(
@@ -150,6 +230,27 @@ contract CoreZapperBase {
     require(_amountIn >= minimumAmount, "Insignificant input amount");
 
     vaultBalance = deposit(vault, _amountIn, tokenAmountOutMin);
+  }
+
+  function zapIn(
+    IVault vault,
+    uint256 tokenAmountOutMin,
+    address tokenIn,
+    uint256 tokenInAmount
+  ) public onlyWhitelistedVaults(address(vault)) returns (uint256 vaultBalance) {
+    require(tokenInAmount >= minimumAmount, "Insignificant input amount");
+
+    require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
+    // transfer token
+    IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), tokenInAmount);
+
+    multiPathSwapV3(tokenIn, USDT, tokenInAmount);
+
+    uint256 wCoreBal = IERC20(wCore).balanceOf(address(this));
+
+    WETH(wCore).withdraw(wCoreBal);
+
+    vaultBalance = deposit(vault, address(this).balance, tokenAmountOutMin);
   }
 
   function zapOutAndSwapEth(IVault vault) public onlyWhitelistedVaults(address(vault)) returns (uint256 ethBalance) {
@@ -166,6 +267,32 @@ contract CoreZapperBase {
     require(sent, "Failed to send Ether");
 
     emit Withdraw(msg.sender, ethBalance);
+  }
+
+  function zapOutAndSwap(IVault vault) public onlyWhitelistedVaults(address(vault)) returns (uint256 tokenBalance) {
+    // Get the user's staking contract
+    address userContract = userStakingContracts[msg.sender];
+    require(userContract != address(0), "User has no staking contract");
+
+    //call withdraw on zapper
+    UserStakingContract(payable(userContract)).withdraw();
+
+    uint256 ethBalance = address(this).balance;
+
+    WETH(wCore).deposit{value: ethBalance}();
+
+    uint256 wCoreBal = IERC20(wCore).balanceOf(address(this));
+
+    multiPathSwapV3(wCore, USDT, wCoreBal);
+
+    address[] memory returnAssist = new address[](1);
+    returnAssist[0] = USDC;
+
+    _returnAssets(returnAssist);
+
+    tokenBalance = IERC20(USDC).balanceOf(msg.sender);
+
+    emit Withdraw(msg.sender, tokenBalance);
   }
 
   function _approveTokenIfNeeded(address token, address spender) internal {

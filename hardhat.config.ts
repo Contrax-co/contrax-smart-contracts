@@ -55,6 +55,12 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PRIVATE_KEY ?? ""],
     },
 
+    core: {
+      chainId: 1116,
+      url: "https://1rpc.io/core",
+      accounts: [process.env.PRIVATE_KEY ?? ""],
+    },
+
     base: {
       chainId: 8453,
       url: "https://base.llamarpc.com",
@@ -78,6 +84,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       base: process.env.BASE_API_KEY ?? "",
       arbitrum: process.env.ETHERSCAN_API_KEY ?? "",
+      core: process.env.CORE_API_KEY ?? "",
     },
     customChains: [
       {
@@ -94,6 +101,15 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api.arbiscan.io/api",
           browserURL: "https://arbiscan.io/",
+        },
+      },
+
+      {
+        network: "core",
+        chainId: 1116,
+        urls: {
+          apiURL: "https://openapi.coredao.org/api",
+          browserURL: "https://scan.coredao.org/",
         },
       },
     ],
