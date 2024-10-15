@@ -72,13 +72,12 @@ contract CoreZapperBase {
   function removeFromWhitelist(address _vault) external onlyGovernance {
     whitelistedVaults[_vault] = false;
   }
- 
 
   function deposit(
     IVault vault,
     uint256 amountIn,
     uint256 amountOutMin
-  ) public payable onlyWhitelistedVaults(address(vault)) {
+  ) public payable onlyWhitelistedVaults(address(vault)) returns (uint256) {
     // depoist Core to coreStaking
     ICoreStaking(CORE_STAKING).mint{value: amountIn}(CORE_VALIDATOR);
 
@@ -96,6 +95,8 @@ contract CoreZapperBase {
 
     //return vault tokens to user
     IERC20(address(vault)).safeTransfer(msg.sender, vaultBalance);
+
+    return vaultBalance;
   }
 
   function _redeem(uint256 amount) internal {
@@ -131,16 +132,19 @@ contract CoreZapperBase {
     _redeem(stCoreRedeemed);
   }
 
-  function zapInETH(IVault vault, uint256 tokenAmountOutMin) public payable onlyWhitelistedVaults(address(vault)) {
+  function zapInETH(
+    IVault vault,
+    uint256 tokenAmountOutMin
+  ) public payable onlyWhitelistedVaults(address(vault)) returns (uint256 vaultBalance) {
     //get tokenAmount
     uint256 _amountIn = msg.value;
 
     require(_amountIn >= minimumAmount, "Insignificant input amount");
 
-    deposit(vault, _amountIn, tokenAmountOutMin);
+    vaultBalance = deposit(vault, _amountIn, tokenAmountOutMin);
   }
 
-  function zapOutAndSwapEth(IVault vault) public onlyWhitelistedVaults(address(vault)) {
+  function zapOutAndSwapEth(IVault vault) public onlyWhitelistedVaults(address(vault)) returns (uint256 ethBalance) {
     // Get the user's staking contract
     address userContract = userStakingContracts[msg.sender];
     require(userContract != address(0), "User has no staking contract");
@@ -148,11 +152,11 @@ contract CoreZapperBase {
     //call withdraw on zapper
     UserStakingContract(payable(userContract)).withdraw();
 
+    ethBalance = address(this).balance;
     // send core(eth) to msg.sender
     (bool sent, ) = payable(msg.sender).call{value: address(this).balance}("");
     require(sent, "Failed to send Ether");
   }
-
 
   function _approveTokenIfNeeded(address token, address spender) internal {
     if (IERC20(token).allowance(address(this), spender) == 0) {

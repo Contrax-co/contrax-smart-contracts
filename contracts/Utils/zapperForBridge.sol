@@ -8,9 +8,11 @@ import "../interfaces/weth.sol";
 import "../interfaces/uniswapv3.sol";
 import "./PriceCalculatorV3.sol";
 
+import "hardhat/console.sol";
+
 // "0xd203eAB4E8c741473f7456A9f32Ce310d521fa41" WCORE/USDT POOL
 
-contract ZapperBridge is PriceCalculatorV3 {
+contract ZapperBridge {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -18,21 +20,19 @@ contract ZapperBridge is PriceCalculatorV3 {
   address router; // V3 router
   address V3Factory;
   address USDC;
+  address public governance;
+  address weth;
 
+  uint24[] public poolsFee = [3000, 500, 100, 350, 80, 10000];
   // tokenIn => tokenOut => poolFee
   mapping(address => mapping(address => uint24)) public poolFees;
 
-  constructor(
-    address _governance,
-    address _weth,
-    address _usdc,
-    address _router,
-    address _V3Factory,
-    address _weth_usdc_pool
-  ) PriceCalculatorV3(_governance, _weth_usdc_pool, _weth) {
+  constructor(address _governance, address _weth, address _usdc, address _router, address _V3Factory) {
     router = _router;
     V3Factory = _V3Factory;
     USDC = _usdc;
+    weth = _weth;
+    governance = _governance;
 
     // Safety checks to ensure WETH token address`
     WETH(weth).deposit{value: 0}();
@@ -40,7 +40,19 @@ contract ZapperBridge is PriceCalculatorV3 {
     governance = _governance;
   }
 
+  event EthTransferred(address indexed callingContract, uint256 amount);
+
+  event UsdcTransferred(address indexed recipient, uint256 usdcAmount);
+
+  event AssetsReturned(address[] assets);
+
   receive() external payable {}
+
+  // Modifier to restrict access to governance only
+  modifier onlyGovernance() {
+    require(msg.sender == governance, "Caller is not the governance");
+    _;
+  }
 
   function getPoolFee(address token0, address token1) public view returns (uint24) {
     uint24 fee = poolFees[token0][token1];
@@ -60,6 +72,7 @@ contract ZapperBridge is PriceCalculatorV3 {
           require(success, "ETH transfer failed");
         } else {
           IERC20(tokens[i]).safeTransfer(msg.sender, balance);
+          emit UsdcTransferred(msg.sender, balance);
         }
       }
     }
@@ -67,7 +80,7 @@ contract ZapperBridge is PriceCalculatorV3 {
 
   function multiPathSwapV3(address tokenIn, address tokenOut, uint256 amountIn) internal {
     if (tokenIn == weth || tokenOut == weth) {
-      _swap(tokenIn, tokenOut, amountIn);
+      _swap(tokenIn, tokenOut, amountIn, 0);
       return;
     }
 
@@ -93,7 +106,7 @@ contract ZapperBridge is PriceCalculatorV3 {
     ISwapRouter(router).exactInput(params);
   }
 
-  function _swap(address tokenIn, address tokenOut, uint256 amountIn) private {
+  function _swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin) private {
     address[] memory path = new address[](2);
     path[0] = tokenIn;
     path[1] = tokenOut;
@@ -108,7 +121,7 @@ contract ZapperBridge is PriceCalculatorV3 {
       recipient: address(this),
       deadline: block.timestamp,
       amountIn: amountIn,
-      amountOutMinimum: 0,
+      amountOutMinimum: amountOutMin,
       sqrtPriceLimitX96: 0
     });
 
@@ -140,30 +153,50 @@ contract ZapperBridge is PriceCalculatorV3 {
     address _callingContractAddress,
     bytes memory _data,
     uint256 _usdcAmountToZap,
+    uint256 _ethAmountOut,
     uint256 _usdcAmountIn
-  ) external {
-    require(IERC20(USDC).allowance(msg.sender, address(this)) >= _usdcAmountIn, "Input token is not approved");
-    require(_usdcAmountIn >= _usdcAmountToZap, "Input amount is not enough to zap");
-    IERC20(USDC).safeTransferFrom(msg.sender, address(this), _usdcAmountIn);
+  ) external payable returns (uint256) {
+    if (msg.value > 0) {
+      (bool _success, ) = payable(_callingContractAddress).call{value: msg.value}(_data);
+      require(_success, "Call failed on calling contract");
 
-    _swap(USDC, weth, _usdcAmountToZap);
+      emit EthTransferred(_callingContractAddress, msg.value);
+
+      return msg.value;
+    }
+    require(IERC20(USDC).allowance(msg.sender, address(this)) >= _usdcAmountIn, "Input token is not approved");
+
+    require(_usdcAmountIn >= _usdcAmountToZap, "Input amount is not enough to zap");
+
+    IERC20(USDC).safeTransferFrom(msg.sender, address(this), _usdcAmountIn + _usdcAmountToZap);
+
+    _swap(USDC, weth, _usdcAmountToZap, _ethAmountOut);
 
     uint256 wethBal = IERC20(weth).balanceOf(address(this));
+
+    if (wethBal > _ethAmountOut) {
+      uint256 diffAmount = wethBal - _ethAmountOut;
+      wethBal = wethBal - diffAmount;
+    }
 
     WETH(weth).withdraw(wethBal);
 
     (bool success, ) = payable(_callingContractAddress).call{value: address(this).balance}(_data);
 
-    require(success, "ETH transfer failed");
+    require(success, "Call failed on calling contract");
 
-    // address[] memory returnAssist = new address[](1);
-    // returnAssist[0] = USDC;
+    wethBal = IERC20(weth).balanceOf(address(this));
 
-    // _returnAssets(returnAssist);
-  }
+    _swap(weth, USDC, wethBal, 0);
 
-  function calculateEthAmountInUsdc(uint256 _wethAmountIn) public view returns (uint256) {
-    return (calculateEthPriceInUsdc() * _wethAmountIn) / 1e18;
+    address[] memory returnAssist = new address[](1);
+    returnAssist[0] = USDC;
+
+    _returnAssets(returnAssist);
+
+    emit UsdcTransferred(msg.sender, _usdcAmountIn + _usdcAmountToZap);
+
+    return address(this).balance;
   }
 
   function approveToken(address token, address spender) external onlyGovernance {

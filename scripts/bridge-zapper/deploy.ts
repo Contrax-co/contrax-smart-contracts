@@ -83,7 +83,7 @@ async function main() {
 
   await deploy({
     name: "ZapperBridge",
-    args: [deployer.address, wethArb, usdcArb, uniV3RouterArb, uniV3FactoryArb, WETH_USDC_POOL_ARB],
+    args: [deployer.address, wethArb, usdcArb, uniV3RouterArb, uniV3FactoryArb],
     contractPath: "contracts/Utils/zapperForBridge.sol:ZapperBridge",
   });
 }
