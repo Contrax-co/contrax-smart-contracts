@@ -6,11 +6,6 @@ import "../lib/erc20.sol";
 import "../lib/square-root.sol";
 import "../interfaces/weth.sol";
 import "../interfaces/uniswapv3.sol";
-import "./PriceCalculatorV3.sol";
-
-import "hardhat/console.sol";
-
-// "0xd203eAB4E8c741473f7456A9f32Ce310d521fa41" WCORE/USDT POOL
 
 contract ZapperBridge {
   using SafeERC20 for IERC20;
@@ -43,8 +38,6 @@ contract ZapperBridge {
   event EthTransferred(address indexed callingContract, uint256 amount);
 
   event UsdcTransferred(address indexed recipient, uint256 usdcAmount);
-
-  event AssetsReturned(address[] assets);
 
   receive() external payable {}
 
