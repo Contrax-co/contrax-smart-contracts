@@ -5,9 +5,14 @@ const WETH_USDC_POOL_ARB = "0xC6962004f452bE9203591991D15f6b388e09E8D0";
 let wethArb = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 let usdcArb = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 
+const wethBase = "0x4200000000000000000000000000000000000006";
+const usdcBase = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+
 const uniV3RouterArb = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+const sushiV3RouterBase = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
 
 const uniV3FactoryArb = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
+const sushiV3FactoryBase = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
 
 const sleep = async (s: number) => {
   for (let i = s; i > 0; i--) {
@@ -83,7 +88,7 @@ async function main() {
 
   await deploy({
     name: "ZapperBridge",
-    args: [deployer.address, wethArb, usdcArb, uniV3RouterArb, uniV3FactoryArb],
+    args: [deployer.address, wethBase, usdcBase, sushiV3RouterBase, sushiV3FactoryBase],
     contractPath: "contracts/Utils/zapperForBridge.sol:ZapperBridge",
   });
 }

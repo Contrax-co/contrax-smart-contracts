@@ -48,6 +48,10 @@ contract CoreZapperBase {
     }
   }
 
+  event Deposit(address indexed recipient, uint256 amountIn);
+  event Redeem(address indexed recipient, uint256 amountOut);
+  event Withdraw(address indexed recipient, uint256 amountOut);
+
   receive() external payable {}
 
   // **** Modifiers **** //
@@ -96,6 +100,8 @@ contract CoreZapperBase {
     //return vault tokens to user
     IERC20(address(vault)).safeTransfer(msg.sender, vaultBalance);
 
+    emit Deposit(msg.sender, vaultBalance);
+
     return vaultBalance;
   }
 
@@ -116,6 +122,8 @@ contract CoreZapperBase {
     // Call redeem on the user's staking contract
     require(amount > 1e18, "Insufficient stCore balance, core staking won't allow to redeem");
     UserStakingContract(payable(userContract)).redeem(amount);
+
+    emit Redeem(msg.sender, amount);
   }
 
   function redeem(IVault vault, uint256 withdrawAmount) external {
@@ -156,6 +164,8 @@ contract CoreZapperBase {
     // send core(eth) to msg.sender
     (bool sent, ) = payable(msg.sender).call{value: address(this).balance}("");
     require(sent, "Failed to send Ether");
+
+    emit Withdraw(msg.sender, ethBalance);
   }
 
   function _approveTokenIfNeeded(address token, address spender) internal {
