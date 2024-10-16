@@ -69,97 +69,66 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
   return contract;
 };
 
-const WETH_USDC_POOL_BASE = "0xd0b53D9277642d899DF5C87A3966A349A798F224";
-const WETH_USDC_POOL_ARB = "0xC6962004f452bE9203591991D15f6b388e09E8D0";
-
 const governance = "0xcb6123060C52aFA2EF3a5F70e3d1253078d84B2f";
 const timelock = governance;
 
-const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d"; 
-
-const v3SushiFactory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
-const baseV3Factory = "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B";
-
-const wethBase = "0x4200000000000000000000000000000000000006";
-
-const sushiV3Router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
-const baseV3Router = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
-
-const steerVaultAddressWethUsdbc = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
-const steerVaultAddressWethSnsy = "0x3C88c76783a9f2975C6d58F2aa1437f1E8229335";
-const steerVaultAddressWethcbBtc = "0xD5A49507197c243895972782C01700ca27090Ee1";
-
-const steerPeripheryArb = "0x806c2240793b3738000fcb62C66BF462764B903F";
-const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
-
-const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
+const stCore = "0xb3A8F0f0da9ffC65318aA39E55079796093029AD"
 
 
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  // const steerController = await deploy({
-  //   name: "SteerController",
-  //   args: [governance, governance, governance, governance, governance],
-  //   contractPath: "contracts/controllers/steer-controller.sol:SteerController",
-  // });
+  const coreController = await deploy({
+    name: "CoreController",
+    args: [governance, governance, governance, governance, governance],
+    contractPath: "contracts/controllers/core-controller.sol:CoreController",
+  });
 
-  const steerControllerFactory = await ethers.getContractFactory("SteerController");
-  const steerController = await steerControllerFactory.attach(controller);
+//   const steerControllerFactory = await ethers.getContractFactory("SteerController");
+//   const coreController = await steerControllerFactory.attach(controller);
 
-  const StrategySteerWethcbBtc = await deploy({
-    name: "StrategySteerWethcbBtc",
+  const StrategyCore = await deploy({
+    name: "StrategyCore",
+    args: [
+        stCore,
+        governance,
+        governance,
+        coreController.address,
+        governance
+    ],
+    contractPath: "contracts/strategies/core/strategy-core.sol:StrategyCore",
+  });
+
+  const VaultCoreBase = await deploy({
+    name: "VaultCoreBase",
+    args: [stCore,governance, timelock, coreController.address],
+    contractPath: "contracts/vaults/core/vault-core.sol:VaultCoreBase",
+  });
+
+  const CoreZapperBase = await deploy({
+    name: "CoreZapperBase",
     args: [
       governance,
-      governance,
-      controller,
-      governance,
-      wethBase,
-      baseV3Factory,
-      steerPeripheryBase,
-      WETH_USDC_POOL_BASE,
+      [VaultCoreBase.address],
     ],
-    contractPath: "contracts/strategies/steer/steer-base/strategy-steer-weth-cbBtc.sol:StrategySteerWethcbBtc",
+    contractPath: "contracts/vaults/core/core-zapper/core-zapper.sol:CoreZapperBase",
   });
 
-  const VaultSteerBaseWethcbBTC = await deploy({
-    name: "VaultSteerBaseWethcbBTC",
-    args: [governance, timelock, controller],
-    contractPath: "contracts/vaults/steer/steer-vault-base/vault-steer-weth-cbBTC.sol:VaultSteerBaseWethcbBTC",
-  });
-
-  const SteerZapperBase = await deploy({
-    name: "SteerZapperBase",
-    args: [
-      governance,
-      wethBase,
-      baseV3Router,
-      baseV3Factory,
-      steerPeripheryBase,
-      WETH_USDC_POOL_BASE,
-      [VaultSteerBaseWethcbBTC.address],
-    ],
-    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
-  });
-
-  /** Setup Steer contracts
-   * =>> Set Reward Token on Strategy
+  /** Setup Core contracts
    * =>> Set Vault on Controller
    * =>> Aprrove Strategy on controller
    * =>> Set Strategy on Controller
    **/
 
-  // Set Reward Token
-  await StrategySteerWethcbBtc.connect(deployer).setRewardToken(baseToken);
   await sleep(10);
   // Set Vault controller
-  await steerController.connect(deployer).setVault(steerVaultAddressWethcbBtc, VaultSteerBaseWethcbBTC.address);
+  await coreController.connect(deployer).setVault(stCore, VaultCoreBase.address);
   await sleep(10);
   // Approve Strategy
-  await steerController.connect(deployer).approveStrategy(steerVaultAddressWethcbBtc, StrategySteerWethcbBtc.address);
+  await coreController.connect(deployer).approveStrategy(stCore, StrategyCore.address);
   await sleep(10);
   // Set Strategy
-  await steerController.connect(deployer).setStrategy(steerVaultAddressWethcbBtc, StrategySteerWethcbBtc.address);
+  await coreController.connect(deployer).setStrategy(stCore, StrategyCore.address);
 
   console.log("DEPLOYED SUCCESS");
 }
@@ -170,4 +139,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-
