@@ -16,7 +16,8 @@ contract StrategySteerUsdcUsdt is StrategySteerBase {
     address _weth,
     address _V3Factory,
     address _steerPeriphery,
-    address _weth_usdc_pool
+    address _weth_usdc_pool,
+    address[] memory _stableTokens
   )
     StrategySteerBase(
       0x5DbAD371890C3A89f634e377c1e8Df987F61fB64,
@@ -27,7 +28,8 @@ contract StrategySteerUsdcUsdt is StrategySteerBase {
       _weth,
       _V3Factory,
       _steerPeriphery,
-      _weth_usdc_pool
+      _weth_usdc_pool,
+      _stableTokens
     )
   {}
 

@@ -57,8 +57,9 @@ abstract contract StrategySteer is PriceCalculatorV3 {
     address _controller,
     address _timelock,
     address _weth,
-    address _weth_usdc_pool
-  ) PriceCalculatorV3(_governance, _weth_usdc_pool, _weth) {
+    address _weth_usdc_pool,
+    address[] memory _stableTokens
+  ) PriceCalculatorV3(_governance, _weth_usdc_pool, _weth, _stableTokens) {
     require(_want != address(0));
     require(_governance != address(0));
     require(_strategist != address(0));

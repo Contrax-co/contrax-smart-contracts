@@ -17,7 +17,8 @@ contract StrategySteerWethcbBtc is StrategySteerBase {
     address _weth,
     address _V3Factory,
     address _steerPeriphery,
-    address _weth_usdc_pool
+    address _weth_usdc_pool,
+    address[] memory _stableTokens
   )
     StrategySteerBase(
       0xD5A49507197c243895972782C01700ca27090Ee1,
@@ -28,7 +29,8 @@ contract StrategySteerWethcbBtc is StrategySteerBase {
       _weth,
       _V3Factory,
       _steerPeriphery,
-      _weth_usdc_pool
+      _weth_usdc_pool,
+      _stableTokens
     )
   {}
 
