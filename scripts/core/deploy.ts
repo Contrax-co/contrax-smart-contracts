@@ -72,45 +72,36 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
 const governance = "0xcb6123060C52aFA2EF3a5F70e3d1253078d84B2f";
 const timelock = governance;
 
-const stCore = "0xb3A8F0f0da9ffC65318aA39E55079796093029AD"
-
+const stCore = "0xb3A8F0f0da9ffC65318aA39E55079796093029AD";
+const vaultAddress = "0xe41586C416D8fAb3ee01e8a29DaD6f3a8655097d";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  const coreController = await deploy({
-    name: "CoreController",
-    args: [governance, governance, governance, governance, governance],
-    contractPath: "contracts/controllers/core-controller.sol:CoreController",
-  });
+  // const coreController = await deploy({
+  //   name: "CoreController",
+  //   args: [governance, governance, governance, governance, governance],
+  //   contractPath: "contracts/controllers/core-controller.sol:CoreController",
+  // });
 
-//   const steerControllerFactory = await ethers.getContractFactory("SteerController");
-//   const coreController = await steerControllerFactory.attach(controller);
+  // //   const steerControllerFactory = await ethers.getContractFactory("SteerController");
+  // //   const coreController = await steerControllerFactory.attach(controller);
 
-  const StrategyCore = await deploy({
-    name: "StrategyCore",
-    args: [
-        stCore,
-        governance,
-        governance,
-        coreController.address,
-        governance
-    ],
-    contractPath: "contracts/strategies/core/strategy-core.sol:StrategyCore",
-  });
+  // const StrategyCore = await deploy({
+  //   name: "StrategyCore",
+  //   args: [stCore, governance, governance, coreController.address, governance],
+  //   contractPath: "contracts/strategies/core/strategy-core.sol:StrategyCore",
+  // });
 
-  const VaultCoreBase = await deploy({
-    name: "VaultCoreBase",
-    args: [stCore,governance, timelock, coreController.address],
-    contractPath: "contracts/vaults/core/vault-core.sol:VaultCoreBase",
-  });
+  // const VaultCoreBase = await deploy({
+  //   name: "VaultCoreBase",
+  //   args: [stCore, governance, timelock, coreController.address],
+  //   contractPath: "contracts/vaults/core/vault-core.sol:VaultCoreBase",
+  // });
 
   const CoreZapperBase = await deploy({
     name: "CoreZapperBase",
-    args: [
-      governance,
-      [VaultCoreBase.address],
-    ],
+    args: [governance, [vaultAddress]],
     contractPath: "contracts/vaults/core/core-zapper/core-zapper.sol:CoreZapperBase",
   });
 
@@ -120,15 +111,15 @@ async function main() {
    * =>> Set Strategy on Controller
    **/
 
-  await sleep(10);
-  // Set Vault controller
-  await coreController.connect(deployer).setVault(stCore, VaultCoreBase.address);
-  await sleep(10);
-  // Approve Strategy
-  await coreController.connect(deployer).approveStrategy(stCore, StrategyCore.address);
-  await sleep(10);
-  // Set Strategy
-  await coreController.connect(deployer).setStrategy(stCore, StrategyCore.address);
+  // await sleep(10);
+  // // Set Vault controller
+  // await coreController.connect(deployer).setVault(stCore, VaultCoreBase.address);
+  // await sleep(10);
+  // // Approve Strategy
+  // await coreController.connect(deployer).approveStrategy(stCore, StrategyCore.address);
+  // await sleep(10);
+  // // Set Strategy
+  // await coreController.connect(deployer).setStrategy(stCore, StrategyCore.address);
 
   console.log("DEPLOYED SUCCESS");
 }
@@ -139,3 +130,4 @@ main()
     console.error(error);
     process.exit(1);
   });
+

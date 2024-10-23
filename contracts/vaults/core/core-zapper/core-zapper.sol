@@ -228,7 +228,7 @@ contract CoreZapperBase {
     //get tokenAmount
     uint256 _amountIn = msg.value;
 
-    require(tokenIn == wCore, "Input token is not WETH");
+    require(tokenIn == wCore, "Invalid tokenIn address");
     require(_amountIn >= minimumAmount, "Insignificant input amount");
 
     vaultBalance = deposit(vault, _amountIn, tokenAmountOutMin);

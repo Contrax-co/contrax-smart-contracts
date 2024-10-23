@@ -7,7 +7,6 @@ import "../lib/square-root.sol";
 import "../interfaces/weth.sol";
 import "../interfaces/uniswapv3.sol";
 
-
 contract ZapperBridge {
   using SafeERC20 for IERC20;
   using Address for address;
@@ -18,8 +17,6 @@ contract ZapperBridge {
   address USDC;
   address public governance;
   address weth;
-
-  address USDT_CORE = 0x900101d06A7426441Ae63e9AB3B9b0F63Be145F1;
 
   uint24[] public poolsFee = [3000, 500, 100, 350, 80, 10000];
   // tokenIn => tokenOut => poolFee
@@ -72,38 +69,6 @@ contract ZapperBridge {
         }
       }
     }
-  }
-
-  function multiPathSwapV3(address tokenIn, address tokenOut, uint256 amountIn) internal {
-    address[] memory path = new address[](3);
-    if (tokenIn != weth && tokenOut != weth) {
-      path[0] = tokenIn;
-      path[1] = tokenOut;
-      path[2] = weth;
-
-      if (poolFees[weth][tokenOut] == 0) fetchPool(weth, tokenOut, V3Factory);
-    } else {
-      path[0] = tokenIn;
-      path[1] = tokenOut;
-      path[2] = USDC;
-
-      if (poolFees[USDC][tokenOut] == 0) fetchPool(USDC, tokenOut, V3Factory);
-    }
-
-    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, V3Factory);
-
-    _approveTokenIfNeeded(path[0], address(router));
-
-    ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
-      path: abi.encodePacked(path[0], getPoolFee(path[0], path[1]), path[1], getPoolFee(path[1], path[2]), path[2]),
-      recipient: address(this),
-      deadline: block.timestamp,
-      amountIn: amountIn,
-      amountOutMinimum: 0
-    });
-
-    // Executes the swap
-    ISwapRouter(router).exactInput(params);
   }
 
   function _swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin) private {
@@ -167,11 +132,9 @@ contract ZapperBridge {
     
     require(IERC20(USDC).allowance(msg.sender, address(this)) >= _usdcAmountIn, "Input token is not approved");
 
-    require(_usdcAmountIn >= _usdcAmountToZap, "Input amount is not enough to zap");
-
     IERC20(USDC).safeTransferFrom(msg.sender, address(this), _usdcAmountIn + _usdcAmountToZap);
 
-    multiPathSwapV3(USDC, USDT_CORE, _usdcAmountToZap);
+    _swap(USDC, weth, _usdcAmountToZap, _ethAmountOut);
 
     uint256 wethBal = IERC20(weth).balanceOf(address(this));
 
@@ -188,14 +151,14 @@ contract ZapperBridge {
 
     wethBal = IERC20(weth).balanceOf(address(this));
 
-    multiPathSwapV3(weth, USDT_CORE, wethBal);
+    _swap(weth, USDC, wethBal, 0);
 
     address[] memory returnAssist = new address[](1);
     returnAssist[0] = USDC;
 
     _returnAssets(returnAssist);
 
-    emit EthTransferred(_callingContractAddress, address(this).balance);
+    emit UsdcTransferred(msg.sender, _usdcAmountIn + _usdcAmountToZap);
 
     return address(this).balance;
   }

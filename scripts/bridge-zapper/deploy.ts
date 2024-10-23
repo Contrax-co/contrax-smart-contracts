@@ -8,11 +8,16 @@ let usdcArb = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 const wethBase = "0x4200000000000000000000000000000000000006";
 const usdcBase = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
+let wCore = "0x40375C92d9FAf44d2f9db9Bd9ba41a3317a2404f";
+let usdcCore = "0xa4151B2B3e269645181dCcF2D426cE75fcbDeca9";
+
 const uniV3RouterArb = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 const sushiV3RouterBase = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
+const coreXV3RouterCore = "0xcc85A7870902f5e3dCef57E4d44F42b613c87a2E";
 
 const uniV3FactoryArb = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
 const sushiV3FactoryBase = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
+const coreXFactoryCore = "0x526190295AFB6b8736B14E4b42744FBd95203A3a";
 
 const sleep = async (s: number) => {
   for (let i = s; i > 0; i--) {
@@ -86,11 +91,21 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  await deploy({
+  const zapper = await deploy({
     name: "ZapperBridge",
-    args: [deployer.address, wethBase, usdcBase, sushiV3RouterBase, sushiV3FactoryBase],
+    args: [deployer.address, wethArb, usdcArb, uniV3RouterArb, uniV3FactoryArb],
     contractPath: "contracts/Utils/zapperForBridge.sol:ZapperBridge",
   });
+
+  await sleep(10);
+
+  await zapper.connect(deployer).approveToken(usdcArb, "0xA45B5130f36CDcA45667738e2a258AB09f4A5f7F");
+
+  await zapper.connect(deployer).approveToken(usdcArb, "0xe8CDF27AcD73a434D661C84887215F7598e7d0d3");
+
+  await zapper.connect(deployer).approveToken(usdcArb, "0x29d096cD18C0dA7500295f082da73316d704031A");
+
+  console.log("done");
 }
 
 main()
@@ -99,3 +114,4 @@ main()
     console.error(error);
     process.exit(1);
   });
+
