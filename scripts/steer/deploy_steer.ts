@@ -72,23 +72,24 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
 const WETH_USDC_POOL_BASE = "0xd0b53D9277642d899DF5C87A3966A349A798F224";
 const WETH_USDC_POOL_ARB = "0xC6962004f452bE9203591991D15f6b388e09E8D0";
 
-const governance = "0xcb6123060C52aFA2EF3a5F70e3d1253078d84B2f";
+const governance = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 const timelock = governance;
 
 const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d"; 
 
-const v3SushiFactory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
-const baseV3Factory = "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B";
-const uniV3Factory = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
+const sushiV3FactoryArb = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
+const baseV3FactoryBase = "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B";
+const uniV3FactoryArb = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
 
 const wethBase = "0x4200000000000000000000000000000000000006";
 const wethArb = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 
 let usdcArb = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 
-const sushiV3Router = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
+const sushiV3RouterArb = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
 const baseV3RouterBase = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
 const uniV3RouterArb = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+const sushiV2RouterArb = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
 
 const steerVaultAddressWethUsdbc = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
 const steerVaultAddressWethSnsy = "0x3C88c76783a9f2975C6d58F2aa1437f1E8229335";
@@ -100,9 +101,7 @@ const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
 const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
 const steerArbVaults = [
-  "0x404148F0B94Bc1EA2fdFE98B0DbF36Ff3E015Bb5",
-  "0x84f35729fF344C76FA73989511735c85E1F7487D",
-  "0x79deCB182664B1E7809a7EFBb94B50Db4D183310"
+  "0x4fFD588241Fa9183f5cDd57C4CACCac3817A380d"
 ]
 
 
@@ -144,13 +143,13 @@ async function main() {
     args: [
       governance,
       wethArb,
-      uniV3RouterArb,
-      uniV3Factory,
+      sushiV2RouterArb,
+      sushiV3FactoryArb,
       steerPeripheryArb,
       WETH_USDC_POOL_ARB,
       steerArbVaults,
     ],
-    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
+    contractPath: "contracts/vaults/steer/steer-zapper/steer-sushi-zapper.sol:SteerSushiZapperBase",
   });
 
   /** Setup Steer contracts
