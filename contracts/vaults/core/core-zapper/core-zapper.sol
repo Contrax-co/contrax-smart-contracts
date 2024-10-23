@@ -222,11 +222,13 @@ contract CoreZapperBase {
 
   function zapInETH(
     IVault vault,
-    uint256 tokenAmountOutMin
+    uint256 tokenAmountOutMin,
+    address tokenIn
   ) public payable onlyWhitelistedVaults(address(vault)) returns (uint256 vaultBalance) {
     //get tokenAmount
     uint256 _amountIn = msg.value;
 
+    require(tokenIn == wCore, "Input token is not WETH");
     require(_amountIn >= minimumAmount, "Insignificant input amount");
 
     vaultBalance = deposit(vault, _amountIn, tokenAmountOutMin);

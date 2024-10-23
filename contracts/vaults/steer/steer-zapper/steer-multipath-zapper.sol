@@ -52,6 +52,9 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
     }
   }
 
+  event Deposit(address indexed recipient, uint256 amountIn);
+  event Withdraw(address indexed recipient, uint256 amountOut);
+
   receive() external payable {
     assert(msg.sender == weth);
   }
@@ -117,7 +120,7 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
     uint256 amount0,
     uint256 amount1,
     uint256 amountOutMin
-  ) public onlyWhitelistedVaults(address(vault)) {
+  ) public onlyWhitelistedVaults(address(vault)) returns (uint256) {
     (address token0, address token1) = steerVaultTokens(vault);
 
     //Deposit tokens to steer vault tokens
@@ -150,6 +153,10 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
     tokens[1] = token1;
 
     _returnAssets(tokens);
+
+    emit Deposit(msg.sender, vaultBalance);
+
+    return vaultBalance;
   }
 
   function multiPathSwapV3(address tokenIn, address tokenOut, uint256 amountIn) internal {
@@ -157,7 +164,7 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
       _swap(tokenIn, tokenOut, amountIn);
       return;
     }
- 
+
     address[] memory path = new address[](3);
     path[0] = tokenIn;
     path[1] = weth;
@@ -273,7 +280,7 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
     IVault vault,
     uint256 tokenAmountOutMin,
     address tokenIn
-  ) external payable onlyWhitelistedVaults(address(vault)) {
+  ) external payable onlyWhitelistedVaults(address(vault)) returns (uint256 vaultBalance) {
     //get tokenAmount
 
     WETH(weth).deposit{value: msg.value}();
@@ -281,7 +288,6 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
     (address token0, address token1) = steerVaultTokens(vault);
 
     (uint256 tokenInAmount0, uint256 tokenInAmount1) = calculateSteerVaultTokensRatio(vault, _amountIn);
-
 
     uint256 tokenInAmount = tokenInAmount0 + tokenInAmount1;
     require(_amountIn >= minimumAmount, "Insignificant input amount");
@@ -300,7 +306,12 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
       multiPathSwapV3(weth, tokenOut, amountToSwap);
     }
 
-    deposit(vault, IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), tokenAmountOutMin);
+    vaultBalance = deposit(
+      vault,
+      IERC20(token0).balanceOf(address(this)),
+      IERC20(token1).balanceOf(address(this)),
+      tokenAmountOutMin
+    );
   }
 
   function zapIn(
@@ -308,7 +319,7 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
     uint256 tokenAmountOutMin,
     address tokenIn,
     uint256 tokenInAmount
-  ) external onlyWhitelistedVaults(address(vault)) {
+  ) external onlyWhitelistedVaults(address(vault)) returns (uint256 vaultBalance) {
     require(tokenInAmount >= minimumAmount, "Insignificant input amount");
     require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
 
@@ -333,7 +344,12 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
       multiPathSwapV3(tokenIn, tokenOut, amountToSwap);
     }
 
-    deposit(vault, IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), tokenAmountOutMin);
+    vaultBalance = deposit(
+      vault,
+      IERC20(token0).balanceOf(address(this)),
+      IERC20(token1).balanceOf(address(this)),
+      tokenAmountOutMin
+    );
   }
 
   function zapOutAndSwap(
@@ -341,7 +357,7 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
     uint256 withdrawAmount,
     address desiredToken,
     uint256 desiredTokenOutMin
-  ) public onlyWhitelistedVaults(address(vault)) {
+  ) public onlyWhitelistedVaults(address(vault)) returns (uint256 tokenBalance) {
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
 
     ISushiMultiPositionLiquidityManager steerVault = ISushiMultiPositionLiquidityManager(vault.token());
@@ -367,16 +383,19 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
     path[1] = token1;
     path[2] = desiredToken;
 
-    require(IERC20(desiredToken).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
+    tokenBalance = IERC20(desiredToken).balanceOf(address(this));
+    require(tokenBalance >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
     _returnAssets(path);
+
+    emit Withdraw(msg.sender, tokenBalance);
   }
 
   function zapOutAndSwapEth(
     IVault vault,
     uint256 withdrawAmount,
     uint256 desiredTokenOutMin
-  ) public onlyWhitelistedVaults(address(vault)) {
+  ) public onlyWhitelistedVaults(address(vault)) returns (uint256 ethBalance) {
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
 
     ISushiMultiPositionLiquidityManager steerVault = ISushiMultiPositionLiquidityManager(vault.token());
@@ -403,9 +422,12 @@ contract SteerZapperMultiPath is PriceCalculatorV3 {
     path[1] = token1;
     path[2] = weth;
 
-    require(IERC20(weth).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
+    ethBalance = IERC20(weth).balanceOf(address(this));
+    require(ethBalance >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
     _returnAssets(path);
+
+    emit Withdraw(msg.sender, ethBalance);
   }
 
   function calculateSteerVaultTokensRatio(IVault vault, uint256 _amountIn) internal returns (uint256, uint256) {

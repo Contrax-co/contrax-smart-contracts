@@ -164,6 +164,7 @@ contract ZapperBridge {
 
       return msg.value;
     }
+    
     require(IERC20(USDC).allowance(msg.sender, address(this)) >= _usdcAmountIn, "Input token is not approved");
 
     require(_usdcAmountIn >= _usdcAmountToZap, "Input amount is not enough to zap");
