@@ -104,6 +104,12 @@ const steerArbVaults = [
   "0x4fFD588241Fa9183f5cDd57C4CACCac3817A380d"
 ]
 
+const stableTokens = [
+  "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+  "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+  "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
+]
+
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -148,6 +154,7 @@ async function main() {
       steerPeripheryArb,
       WETH_USDC_POOL_ARB,
       steerArbVaults,
+      stableTokens
     ],
     contractPath: "contracts/vaults/steer/steer-zapper/steer-sushi-zapper.sol:SteerSushiZapperBase",
   });

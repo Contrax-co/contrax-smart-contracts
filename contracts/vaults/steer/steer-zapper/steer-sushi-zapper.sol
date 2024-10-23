@@ -39,8 +39,9 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
     address _V3Factory,
     address _steerPeriphery,
     address _weth_usdc_pool,
-    address[] memory _vaults
-  ) PriceCalculatorV3(_governance, _weth_usdc_pool, _weth) {
+    address[] memory _vaults,
+    address[] memory _stableTokens
+  ) PriceCalculatorV3(_governance, _weth_usdc_pool, _weth, _stableTokens) {
     router = _router;
     V3Factory = _V3Factory;
     STEER_PERIPHERY = _steerPeriphery;
