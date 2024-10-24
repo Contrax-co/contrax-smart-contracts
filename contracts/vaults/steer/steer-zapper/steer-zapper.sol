@@ -17,9 +17,9 @@ contract SteerZapperBase is PriceCalculatorV3 {
   using SafeMath for uint256;
   using SafeERC20 for IVault;
 
-  address router; // V3 router
+  address public router; // V3 router
   address STEER_PERIPHERY;
-  address V3Factory;
+  address public V3Factory;
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;

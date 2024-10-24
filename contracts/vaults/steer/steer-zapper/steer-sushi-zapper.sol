@@ -20,9 +20,9 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
 
   address public sushi = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
 
-  address router; // uniswap V3 router
+  address public router; // uniswap V3 router
   address STEER_PERIPHERY;
-  address V3Factory;
+  address public V3Factory;
 
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
@@ -385,7 +385,7 @@ contract SteerSushiZapperBase is PriceCalculatorV3 {
     }
 
     if (token1 != weth) {
-      _swap(token1, weth, amount1); 
+      _swap(token1, weth, amount1);
     }
 
     address[] memory path = new address[](3);
