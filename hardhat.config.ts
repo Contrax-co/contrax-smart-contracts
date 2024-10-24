@@ -36,17 +36,17 @@ const config: HardhatUserConfig = {
       //   // blockNumber: 211889162,
       // },
 
-      // chainId: 8453,
-      // forking: {
-      //   url: `https://base-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`, //"https://base.llamarpc.com",
-      //   blockNumber: 20059845,
-      // },
-
-      chainId: 1116,
+      chainId: 8453,
       forking: {
-        url: "https://1rpc.io/core",
-        // blockNumber: 18385941,
+        url: `https://base-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`, //"https://base.llamarpc.com",
+        blockNumber: 20059845,
       },
+
+      // chainId: 1116,
+      // forking: {
+      //   url: "https://1rpc.io/core",
+      //   // blockNumber: 18385941,
+      // },
     },
 
     arbitrum: {

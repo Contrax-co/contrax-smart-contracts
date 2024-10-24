@@ -51,6 +51,9 @@ const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
 
 const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
+
+const stableTokensBase = ["0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA"];
+
 const vaultName = "VaultSteerBaseWethcbBTC";
 const strategyName = "StrategySteerWethcbBtc";
 
@@ -108,9 +111,10 @@ describe("Steer Zapper Test", async () => {
         controllerAdd,
         timelockSigner.getAddress(),
         wethBase,
-        baseV3Factory,
+        uniV3Factory,
         steerPeripheryBase,
-        WETH_USDC_POOL_BASE
+        WETH_USDC_POOL_BASE,
+        stableTokensBase
       );
 
     const approveStrategy = await controllerContract
@@ -137,17 +141,18 @@ describe("Steer Zapper Test", async () => {
     await controllerContract.connect(timelockSigner).setVault(steerVaultAddressWethcbBtc, vaultContract.address);
 
     // deploy zapper
-    const zapperFactory = await ethers.getContractFactory("SteerZapperMultiPath");
+    const zapperFactory = await ethers.getContractFactory("SteerZapperUniswapBase");
     zapperContract = await zapperFactory
       .connect(walletSigner)
       .deploy(
         walletSigner.getAddress(),
         wethBase,
-        baseV3Router,
-        baseV3Factory,
+        uniV3Router,
+        uniV3Factory,
         steerPeripheryBase,
         WETH_USDC_POOL_BASE,
-        [vaultContract.address]
+        [vaultContract.address],
+        stableTokensBase
       );
 
     usdcContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", usdcBase, walletSigner);

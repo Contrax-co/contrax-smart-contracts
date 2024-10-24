@@ -81,6 +81,7 @@ const sushiV3FactoryArb = "0x1af415a1EbA07a4986a52B6f2e7dE7003D82231e";
 const sushiV3FactoryBase = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
 const baseV3FactoryBase = "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B";
 const uniV3FactoryArb = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
+const uniV3FactoryBase = "0x33128a8fC17869897dcE68Ed026d694621f6FDfD";
 
 const wethBase = "0x4200000000000000000000000000000000000006";
 const wethArb = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
@@ -91,6 +92,7 @@ const sushiV3RouterBase = "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f";
 const baseV3RouterBase = "0x1B8eea9315bE495187D873DA7773a874545D9D48";
 const uniV3RouterArb = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 const sushiV2RouterArb = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
+const uniV3RouterBase = "0x2626664c2603336E57B271c5C0b26F421741e481";
 
 const steerVaultAddressWethUsdbc = "0x571A582064a07E0FA1d62Cb1cE4d1B7fcf9095d3";
 const steerVaultAddressWethSnsy = "0x3C88c76783a9f2975C6d58F2aa1437f1E8229335";
@@ -101,7 +103,10 @@ const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
 
 const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
-const steerBaseVaults = ["0x76512AB6a1DEDD45B75dee47841eB9feD2411789"];
+const steerBaseVaults = [
+  "0x76512AB6a1DEDD45B75dee47841eB9feD2411789",
+  "0x3736FEFbBC7E8F70b2d5E7f39834b2A9595da652"
+];
 
 const stableTokensArb = [
   "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
@@ -144,18 +149,18 @@ async function main() {
   // });
 
   const SteerZapperBase = await deploy({
-    name: "SteerZapperBase",
+    name: "SteerZapperUniswapBase",
     args: [
       governance,
       wethBase,
-      sushiV3RouterBase,
-      sushiV3FactoryBase,
+      uniV3RouterBase,
+      uniV3FactoryBase,
       steerPeripheryBase,
       WETH_USDC_POOL_BASE,
       steerBaseVaults,
       stableTokensBase,
     ],
-    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
+    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperUniswapBase",
   });
 
   /** Setup Steer contracts
