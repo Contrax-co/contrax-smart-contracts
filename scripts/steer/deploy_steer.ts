@@ -103,10 +103,7 @@ const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
 
 const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
-const steerBaseVaults = [
-  "0x76512AB6a1DEDD45B75dee47841eB9feD2411789",
-  "0x3736FEFbBC7E8F70b2d5E7f39834b2A9595da652"
-];
+const steerBaseVaults = ["0xF1C856646E42E717d73f3D8828ee4e76C4A506E5"];
 
 const stableTokensArb = [
   "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
@@ -149,18 +146,18 @@ async function main() {
   // });
 
   const SteerZapperBase = await deploy({
-    name: "SteerZapperUniswapBase",
+    name: "SteerZapperMultiPath",
     args: [
       governance,
       wethBase,
-      uniV3RouterBase,
-      uniV3FactoryBase,
+      sushiV3RouterBase,
+      sushiV3FactoryBase,
       steerPeripheryBase,
       WETH_USDC_POOL_BASE,
       steerBaseVaults,
       stableTokensBase,
     ],
-    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperUniswapBase",
+    contractPath: "contracts/vaults/steer/steer-zapper/steer-multipath-zapper.sol:SteerZapperMultiPath",
   });
 
   /** Setup Steer contracts
