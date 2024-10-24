@@ -78,7 +78,7 @@ const timelock = governance;
 const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d";
 
 const sushiV3FactoryArb = "0x1af415a1EbA07a4986a52B6f2e7dE7003D82231e";
-const sushiV2FactoryArb = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
+const sushiV3FactoryBase = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
 const baseV3FactoryBase = "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B";
 const uniV3FactoryArb = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
 
@@ -101,7 +101,7 @@ const steerPeripheryBase = "0x16BA7102271dC83Fff2f709691c2B601DAD7668e";
 
 const baseToken = "0xd07379a755A8f11B57610154861D694b2A0f615a";
 
-const steerArbVaults = ["0x4fFD588241Fa9183f5cDd57C4CACCac3817A380d"];
+const steerBaseVaults = ["0x76512AB6a1DEDD45B75dee47841eB9feD2411789"];
 
 const stableTokensArb = [
   "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
@@ -144,18 +144,18 @@ async function main() {
   // });
 
   const SteerZapperBase = await deploy({
-    name: "SteerSushiZapperBase",
+    name: "SteerZapperBase",
     args: [
       governance,
-      wethArb,
-      sushiV2RouterArb,
-      sushiV3FactoryArb,
-      steerPeripheryArb,
-      WETH_USDC_POOL_ARB,
-      steerArbVaults,
-      stableTokensArb,
+      wethBase,
+      sushiV3RouterBase,
+      sushiV3FactoryBase,
+      steerPeripheryBase,
+      WETH_USDC_POOL_BASE,
+      steerBaseVaults,
+      stableTokensBase,
     ],
-    contractPath: "contracts/vaults/steer/steer-zapper/steer-sushi-zapper.sol:SteerSushiZapperBase",
+    contractPath: "contracts/vaults/steer/steer-zapper/steer-zapper.sol:SteerZapperBase",
   });
 
   /** Setup Steer contracts
