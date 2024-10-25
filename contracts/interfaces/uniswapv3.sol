@@ -87,7 +87,7 @@ interface ICamelotRouterV3 {
     uint256 deadline;
     uint256 amountIn;
     uint256 amountOutMinimum;
-    uint160 sqrtPriceLimitX96;
+    uint160 limitSqrtPrice;
   }
 
   /// @notice Swaps `amountIn` of one token for as much as possible of another token

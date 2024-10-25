@@ -118,7 +118,7 @@ abstract contract PeapodsZapperBase {
       deadline: block.timestamp,
       amountIn: _amount,
       amountOutMinimum: 0,
-      sqrtPriceLimitX96: 0
+      limitSqrtPrice: 0
     });
 
     // The call to `exactInputSingle` executes the swap.

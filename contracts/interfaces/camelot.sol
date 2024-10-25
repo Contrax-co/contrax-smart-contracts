@@ -28,6 +28,7 @@ interface ICamelotRouter {
 
 interface ICamelotPair is IERC20 {
   function burn(address to) external returns (uint amount0, uint amount1);
+
   function factory() external view returns (address);
 
   function token0() external view returns (address);
@@ -35,5 +36,21 @@ interface ICamelotPair is IERC20 {
   function token1() external view returns (address);
 
   function getAmountOut(uint amountIn, address tokenIn) external view returns (uint);
-  function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint16 token0feePercent, uint16 token1FeePercent);
+
+  function getReserves()
+    external
+    view
+    returns (uint112 reserve0, uint112 reserve1, uint16 token0feePercent, uint16 token1FeePercent);
+}
+
+interface CamelotYakRouter {
+  struct Trade {
+    uint256 amountIn;
+    uint256 amountOut;
+    address[] path;
+    address[] adapters;
+    address[] recipients;
+  }
+
+  function swapNoSplit(Trade calldata _trade, uint256 _fee, address _to) external;
 }
