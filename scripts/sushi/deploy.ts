@@ -112,7 +112,7 @@ async function main() {
 
   const sushiZapper = await deploy({
     name: "ZapperSushi",
-    args: [governance, sushiVaults],
+    args: [sushiVaults],
     contractPath: "contracts/strategies/sushi/sushi-zapper/sushi-vault-zapper.sol:ZapperSushi",
   });
 }
@@ -122,3 +122,4 @@ main()
     console.error(error);
     process.exit(1);
   });
+
