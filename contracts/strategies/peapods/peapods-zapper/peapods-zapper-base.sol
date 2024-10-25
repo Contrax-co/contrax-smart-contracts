@@ -44,6 +44,9 @@ abstract contract PeapodsZapperBase {
     governance = _governance;
   }
 
+  event Deposit(address indexed recipient, uint256 amountIn);
+  event Withdraw(address indexed recipient, uint256 amountOut);
+
   receive() external payable {
     assert(msg.sender == weth);
   }
@@ -139,13 +142,13 @@ abstract contract PeapodsZapperBase {
     }
   }
 
-  function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual;
+  function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual returns (uint256);
 
   function zapInETH(
     address vault,
     uint256 tokenAmountOutMin,
     address tokenIn
-  ) external payable onlyWhitelistedVaults(vault) {
+  ) external payable onlyWhitelistedVaults(vault) returns (uint256 vaultBalance) {
     require(msg.value >= minimumAmount, "Insignificant input amount");
 
     WETH(weth).deposit{value: msg.value}();
@@ -172,9 +175,9 @@ abstract contract PeapodsZapperBase {
       IERC20(baseToken[apToken]).safeApprove(indexUtils, _want);
       IDecentralizedIndex(indexUtils).bond(apToken, baseToken[apToken], _want, 0);
 
-      _swapAndStake(vault, tokenAmountOutMin, apToken);
+      vaultBalance = _swapAndStake(vault, tokenAmountOutMin, apToken);
     } else {
-      _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+      vaultBalance = _swapAndStake(vault, tokenAmountOutMin, tokenIn);
     }
   }
 
@@ -184,7 +187,7 @@ abstract contract PeapodsZapperBase {
     uint256 tokenAmountOutMin,
     address tokenIn,
     uint256 tokenInAmount
-  ) external onlyWhitelistedVaults(vault) {
+  ) external onlyWhitelistedVaults(vault) returns (uint256 vaultBalance) {
     require(tokenInAmount >= minimumAmount, "Insignificant input amount");
     require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
 
@@ -213,7 +216,7 @@ abstract contract PeapodsZapperBase {
       IERC20(baseToken[apToken]).safeApprove(indexUtils, _want);
       IDecentralizedIndex(indexUtils).bond(apToken, baseToken[apToken], _want, 0);
 
-      _swapAndStake(vault, tokenAmountOutMin, apToken);
+      vaultBalance = _swapAndStake(vault, tokenAmountOutMin, apToken);
     } else {
       uint256 _want = IERC20(baseToken[apToken]).balanceOf(address(this));
 
@@ -221,7 +224,7 @@ abstract contract PeapodsZapperBase {
       IERC20(baseToken[apToken]).safeApprove(indexUtils, _want);
       IDecentralizedIndex(indexUtils).bond(apToken, baseToken[apToken], _want, 0);
 
-      _swapAndStake(vault, tokenAmountOutMin, apToken);
+      vaultBalance = _swapAndStake(vault, tokenAmountOutMin, apToken);
     }
   }
 
@@ -230,9 +233,13 @@ abstract contract PeapodsZapperBase {
     uint256 withdrawAmount,
     address desiredToken,
     uint256 desiredTokenOutMin
-  ) public virtual;
+  ) public virtual returns (uint256 tokenBalance);
 
-  function zapOutAndSwapEth(address vault, uint256 withdrawAmount, uint256 desiredTokenOutMin) public virtual;
+  function zapOutAndSwapEth(
+    address vault,
+    uint256 withdrawAmount,
+    uint256 desiredTokenOutMin
+  ) public virtual returns (uint256 ethBalance);
 
   function _getVaultPair(address vault_addr) internal view returns (IVault vault, address token) {
     vault = IVault(vault_addr);

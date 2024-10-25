@@ -30,7 +30,7 @@ contract PeapodsZapper is PeapodsZapperBase {
     uint256 withdrawAmount,
     address desiredToken,
     uint256 desiredTokenOutMin
-  ) public override onlyWhitelistedVaults(vault_addr) {
+  ) public override onlyWhitelistedVaults(vault_addr) returns (uint256 tokenBalance) {
     (IVault vault, address apToken) = _getVaultPair(vault_addr);
 
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
@@ -75,9 +75,13 @@ contract PeapodsZapper is PeapodsZapperBase {
       path4[0] = baseToken[apToken];
       path4[1] = desiredToken;
 
-      require(IERC20(desiredToken).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
+      tokenBalance = IERC20(desiredToken).balanceOf(address(this));
+
+      require(tokenBalance >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
       _returnAssets(path4);
+
+      emit Withdraw(address(this), tokenBalance);
     }
   }
 
@@ -85,7 +89,7 @@ contract PeapodsZapper is PeapodsZapperBase {
     address vault_addr,
     uint256 withdrawAmount,
     uint256 desiredTokenOutMin
-  ) public override onlyWhitelistedVaults(vault_addr) {
+  ) public override onlyWhitelistedVaults(vault_addr) returns (uint256 ethBalance) {
     (IVault vault, address apToken) = _getVaultPair(vault_addr);
 
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
@@ -125,9 +129,13 @@ contract PeapodsZapper is PeapodsZapperBase {
       path2[0] = baseToken[apToken];
       path2[1] = weth;
 
-      require(IERC20(weth).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
+      ethBalance = IERC20(weth).balanceOf(address(this));
+
+      require(ethBalance >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
       _returnAssets(path2);
+
+      emit Withdraw(address(this), ethBalance);
     }
   }
 
@@ -135,7 +143,7 @@ contract PeapodsZapper is PeapodsZapperBase {
     address vault_addr,
     uint256 tokenAmountOutMin,
     address tokenIn
-  ) public override onlyWhitelistedVaults(vault_addr) {
+  ) public override onlyWhitelistedVaults(vault_addr) returns (uint256 vaultBalance) {
     (IVault vault, address apToken) = _getVaultPair(vault_addr);
 
     bool isInputA = apToken == tokenIn;
@@ -144,7 +152,7 @@ contract PeapodsZapper is PeapodsZapperBase {
     _approveTokenIfNeeded(address(vault.token()), address(vault));
     vault.deposit(IERC20(apToken).balanceOf(address(this)));
 
-    uint256 vaultBalance = vault.balanceOf(address(this));
+    vaultBalance = vault.balanceOf(address(this));
 
     require(vaultBalance >= tokenAmountOutMin, "Insignificant tokenAmountOutMin");
 
@@ -156,5 +164,7 @@ contract PeapodsZapper is PeapodsZapperBase {
     path[1] = weth;
 
     _returnAssets(path);
+
+    emit Deposit(address(this), vaultBalance);
   }
 }
