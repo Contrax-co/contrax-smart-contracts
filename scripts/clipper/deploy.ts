@@ -75,6 +75,10 @@ const controller = "0x17942Fd8beC0EEeC064C3c7d697223FF3F107Cf4";
 let clipperAddress = "0x769728b5298445BA2828c0f3F5384227fbF590C5";
 const want = "0x769728b5298445BA2828c0f3F5384227fbF590C5";
 
+const clipperVault = [
+  "0xa752C41Ca7De8B6852D9f6e17E224D166dCC456b"
+]
+
 async function main() {
   const [deployer] = await ethers.getSigners();
 
@@ -98,17 +102,17 @@ async function main() {
   //   contractPath: "contracts/vaults/clipper/vault-clipper-base.sol:VaultClipperBase",
   // });
 
-  const clipperStrategy = await deploy({
-    name: "StrategyClipperBase",
-    args: [want, governance, governance, controller, governance],
-    contractPath: "contracts/strategies/clipper/strategy-clipper-base.sol:StrategyClipperBase",
-  });
-
-  // const clipperZapper = await deploy({
-  //   name: "ClipperZapperBase",
-  //   args: [governance, [clipperVault.address]],
-  //   contractPath: "contracts/vaults/clipper/clipper-zapper/clipper-zapper.sol:ClipperZapperBase",
+  // const clipperStrategy = await deploy({
+  //   name: "StrategyClipperBase",
+  //   args: [want, governance, governance, controller, governance],
+  //   contractPath: "contracts/strategies/clipper/strategy-clipper-base.sol:StrategyClipperBase",
   // });
+
+  const clipperZapper = await deploy({
+    name: "ClipperZapperBase",
+    args: [governance, clipperVault],
+    contractPath: "contracts/vaults/clipper/clipper-zapper/clipper-zapper.sol:ClipperZapperBase",
+  });
 }
 main()
   .then(() => process.exit(0))

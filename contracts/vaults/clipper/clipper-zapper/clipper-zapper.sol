@@ -34,6 +34,9 @@ contract ClipperZapperBase {
     0x912CE59144191C1204E64559FE8253a0e49E6548 //ARB
   ];
 
+  event Deposit(address indexed recipient, uint256 amountIn);
+  event Withdraw(address indexed recipient, uint256 amountOut);
+
   // Define a mapping to store whether an address is whitelisted or not
   mapping(address => bool) public whitelistedVaults;
 
@@ -175,7 +178,7 @@ contract ClipperZapperBase {
     bytes32 r,
     bytes32 s,
     uint256 amountOutMin
-  ) public onlyWhitelistedVaults(address(vault)) {
+  ) public onlyWhitelistedVaults(address(vault)) returns (uint256) {
     (, address tokenIn) = unpack(packedInput);
 
     _approveTokenIfNeeded(tokenIn, CLIPPER);
@@ -202,6 +205,10 @@ contract ClipperZapperBase {
     tokens[1] = CLIPPER;
 
     _returnAssets(tokens);
+
+    emit Deposit(msg.sender, vaultBalance);
+
+    return vaultBalance;
   }
 
   function zapInETH(
@@ -211,7 +218,7 @@ contract ClipperZapperBase {
     uint256 packedConfig,
     bytes32 r,
     bytes32 s
-  ) external payable onlyWhitelistedVaults(address(vault)) {
+  ) external payable onlyWhitelistedVaults(address(vault)) returns (uint256 vaultBalance) {
     //get tokenAmount
 
     WETH(weth).deposit{value: msg.value}();
@@ -219,7 +226,7 @@ contract ClipperZapperBase {
 
     require(_amountIn >= minimumAmount, "Insignificant input amount");
 
-    deposit(vault, packedInput, packedConfig, r, s, tokenAmountOutMin);
+    return vaultBalance = deposit(vault, packedInput, packedConfig, r, s, tokenAmountOutMin);
   }
 
   function zapIn(
@@ -229,7 +236,7 @@ contract ClipperZapperBase {
     uint256 packedConfig,
     bytes32 r,
     bytes32 s
-  ) external onlyWhitelistedVaults(address(vault)) {
+  ) external onlyWhitelistedVaults(address(vault)) returns (uint256 vaultBalance) {
     (uint256 tokenInAmount, address tokenIn) = unpack(packedInput);
     require(tokenInAmount >= minimumAmount, "Insignificant input amount");
     require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
@@ -237,7 +244,7 @@ contract ClipperZapperBase {
     // transfer token
     IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), tokenInAmount);
 
-    deposit(vault, packedInput, packedConfig, r, s, tokenAmountOutMin);
+    return vaultBalance = deposit(vault, packedInput, packedConfig, r, s, tokenAmountOutMin);
   }
 
   function zapOutAndSwap(
@@ -245,7 +252,7 @@ contract ClipperZapperBase {
     uint256 withdrawAmount,
     address desiredToken,
     uint256 desiredTokenOutMin
-  ) public onlyWhitelistedVaults(address(vault)) {
+  ) public onlyWhitelistedVaults(address(vault)) returns (uint256 tokenBalance) {
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
 
     vault.withdraw(withdrawAmount);
@@ -261,16 +268,20 @@ contract ClipperZapperBase {
         _swap(ClipperTokens[i], desiredToken, _amount);
       }
     }
-    require(IERC20(desiredToken).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
+    tokenBalance = IERC20(desiredToken).balanceOf(address(this));
+
+    require(tokenBalance >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
     _returnAssets(ClipperTokens);
+
+    emit Withdraw(msg.sender, tokenBalance);
   }
 
   function zapOutAndSwapEth(
     IVault vault,
     uint256 withdrawAmount,
     uint256 desiredTokenOutMin
-  ) public onlyWhitelistedVaults(address(vault)) {
+  ) public onlyWhitelistedVaults(address(vault)) returns (uint256 ethBalance) {
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
 
     vault.withdraw(withdrawAmount);
@@ -287,9 +298,13 @@ contract ClipperZapperBase {
       }
     }
 
-    require(IERC20(weth).balanceOf(address(this)) >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
+    ethBalance = IERC20(weth).balanceOf(address(this));
+
+    require(ethBalance >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
     _returnAssets(ClipperTokens);
+
+    emit Withdraw(msg.sender, ethBalance);
   }
 
   function _approveTokenIfNeeded(address token, address spender) internal {
