@@ -9,7 +9,9 @@ contract ZapperSushi is ZapperBase {
   using SafeMath for uint256;
   using SafeERC20 for IVault;
 
-  constructor() ZapperBase(0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506, 0xCb410A689A03E06de0a6247b13C13D14237DecC8) {}
+  constructor(
+    address[] memory _vaults
+  ) ZapperBase(0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506, 0xCb410A689A03E06de0a6247b13C13D14237DecC8, _vaults) {}
 
   function zapOutAndSwap(
     address vault_addr,

@@ -25,12 +25,16 @@ abstract contract ZapperBase {
 
   uint256 public constant minimumAmount = 1000;
 
-  constructor(address _router, address _governance) {
+  constructor(address _router, address _governance, address[] memory _vaults) {
     // Safety checks to ensure WETH token address
     WETH(weth).deposit{value: 0}();
     WETH(weth).withdraw(0);
     router = _router;
     governance = _governance;
+
+    for (uint i = 0; i < _vaults.length; i++) {
+      whitelistedVaults[_vaults[i]] = true;
+    }
   }
 
   event Deposit(address indexed recipient, uint256 amountIn);
