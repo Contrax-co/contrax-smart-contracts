@@ -261,53 +261,57 @@ contract VaultLPZapperPeapods is PeapodsLPZapperBase {
     address vault_addr,
     uint256 tokenAmountOutMin,
     address tokenIn
-  ) public override onlyWhitelistedVaults(vault_addr) returns (uint256) {
+  ) public override onlyWhitelistedVaults(vault_addr) returns (uint256 vaultBalance) {
     (IVault vault, ICamelotPair pair) = _getVaultPair(vault_addr);
 
     bool isInputA = pair.token0() == apToken[tokenIn];
     require(isInputA || pair.token1() == apToken[tokenIn], "Input token not present in liquidity pair");
 
-    address[] memory tokens = new address[](2);
-    tokens[0] = tokenIn;
-    tokens[1] = isInputA ? baseToken[pair.token1()] : baseToken[pair.token0()];
+    address tokenOut = isInputA ? baseToken[pair.token1()] : baseToken[pair.token0()];
 
-    // swap for apToken version
-    uint256 _want0 = IERC20(tokens[0]).balanceOf(address(this));
-    uint256 _want1 = IERC20(tokens[1]).balanceOf(address(this));
+    // Swap for apToken version and approve
+    _bondTokenToIndex(tokenIn, indexUtils);
+    _bondTokenToIndex(tokenOut, indexUtils);
 
-    IERC20(tokens[0]).safeApprove(indexUtils, 0);
-    IERC20(tokens[0]).safeApprove(indexUtils, _want0);
-    IDecentralizedIndex(indexUtils).bond(apToken[tokens[0]], tokens[0], _want0, 0);
-
-    IERC20(tokens[1]).safeApprove(indexUtils, 0);
-    IERC20(tokens[1]).safeApprove(indexUtils, _want1);
-    IDecentralizedIndex(indexUtils).bond(apToken[tokens[1]], tokens[1], _want1, 0);
-
-    _approveTokenIfNeeded(apToken[tokens[0]], address(router));
-    _approveTokenIfNeeded(apToken[tokens[1]], address(router));
+    // Add liquidity
+    _approveTokenIfNeeded(apToken[tokenIn], address(router));
+    _approveTokenIfNeeded(apToken[tokenOut], address(router));
     ICamelotRouter(router).addLiquidity(
-      apToken[tokens[0]],
-      apToken[tokens[1]],
-      IERC20(apToken[tokens[0]]).balanceOf(address(this)),
-      IERC20(apToken[tokens[1]]).balanceOf(address(this)),
+      apToken[tokenIn],
+      apToken[tokenOut],
+      IERC20(apToken[tokenIn]).balanceOf(address(this)),
+      IERC20(apToken[tokenOut]).balanceOf(address(this)),
       tokenAmountOutMin,
       tokenAmountOutMin,
       address(this),
       block.timestamp
     );
 
+    // Deposit and transfer balance
     _approveTokenIfNeeded(address(pair), address(vault));
     vault.deposit(IERC20(address(pair)).balanceOf(address(this)));
-
-    //add to guage if possible instead of returning to user, and so no receipt token
     vault.safeTransfer(msg.sender, vault.balanceOf(address(this)));
 
-    uint256 vaultBalance = vault.balanceOf(msg.sender);
-    _returnAssets(tokens);
+    // Update balance and return assets
+    vaultBalance = vault.balanceOf(msg.sender);
+
+    _returnAssets(tokenIn, tokenOut);
 
     emit Deposit(msg.sender, vaultBalance);
-    
-    return vaultBalance;
+  }
+
+  // Helper function to return assets
+  function _returnAssets(address tokenIn, address tokenOut) internal {
+    IERC20(tokenIn).safeTransfer(msg.sender, IERC20(tokenIn).balanceOf(address(this)));
+    IERC20(tokenOut).safeTransfer(msg.sender, IERC20(tokenOut).balanceOf(address(this)));
+  }
+
+  // Helper function to bond token to index
+  function _bondTokenToIndex(address token, address index) internal {
+    uint256 balance = IERC20(token).balanceOf(address(this));
+    IERC20(token).safeApprove(index, 0);
+    IERC20(token).safeApprove(index, balance);
+    IDecentralizedIndex(index).bond(apToken[token], token, balance, 0);
   }
 
   function _getSwapAmount(

@@ -175,7 +175,7 @@ abstract contract PeapodsLPZapperBase {
     }
   }
 
-  function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual returns (uint256);
+  function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual returns (uint256 vaultBalance);
 
   function zapInETH(
     address vault,
