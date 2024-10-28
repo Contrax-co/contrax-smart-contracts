@@ -121,6 +121,59 @@ contract VaultZapperHop is HopZapperBase {
     }
   }
 
+  // function _swapAndStake(
+  //   address vault_addr,
+  //   uint256 tokenAmountOutMin,
+  //   address tokenIn
+  // ) public override onlyWhitelistedVaults(vault_addr) returns (uint256 vaultBalance) {
+  //   (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
+
+  //   address token0 = pair.getToken(0);
+  //   address token1 = pair.getToken(1);
+
+  //   bool isInputA = token0 == tokenIn;
+  //   require(isInputA || token1 == tokenIn, "Input token not present in liquidity pair");
+
+  //   uint256 _tokenBalance0 = IHopSwap(pair).getTokenBalance(0);
+  //   uint256 _tokenBalance1 = IHopSwap(pair).getTokenBalance(1);
+
+  //   if (_tokenBalance0 > _tokenBalance1) {
+  //     uint256 fullInvestment = IERC20(tokenIn).balanceOf(address(this));
+  //     _approveTokenIfNeeded(token0, address(pair));
+
+  //     IHopSwap(pair).swap(0, 1, fullInvestment, tokenAmountOutMin, block.timestamp);
+  //   }
+
+  //   // Adds in liquidity for token0/token1
+  //   uint256 _token0 = IERC20(token0).balanceOf(address(this));
+  //   uint256 _token1 = IERC20(token1).balanceOf(address(this));
+
+  //   uint256[] memory amounts;
+  //   amounts = new uint256[](2);
+  //   amounts[0] = _token0;
+  //   amounts[1] = _token1;
+
+  //   _approveTokenIfNeeded(token0, address(pair));
+  //   _approveTokenIfNeeded(token1, address(pair));
+
+  //   uint256 amountLiquidity = IHopSwap(pair).addLiquidity(amounts, 0, block.timestamp);
+
+  //   _approveTokenIfNeeded(address(vault.token()), address(vault));
+  //   vault.deposit(amountLiquidity);
+
+  //   vaultBalance = vault.balanceOf(address(this));
+  //   //add to guage if possible instead of returning to user, and so no receipt token
+  //   vault.safeTransfer(msg.sender, vaultBalance);
+
+  //   address[] memory path = new address[](2);
+  //   path[0] = token0;
+  //   path[1] = token1;
+
+  //   _returnAssets(path);
+
+  //   emit Deposit(msg.sender, vaultBalance);
+  // }
+
   function _swapAndStake(
     address vault_addr,
     uint256 tokenAmountOutMin,
@@ -128,50 +181,71 @@ contract VaultZapperHop is HopZapperBase {
   ) public override onlyWhitelistedVaults(vault_addr) returns (uint256 vaultBalance) {
     (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
 
-    address token0 = pair.getToken(0);
-    address token1 = pair.getToken(1);
+    _validateTokenInPair(pair, tokenIn);
 
-    bool isInputA = token0 == tokenIn;
-    require(isInputA || token1 == tokenIn, "Input token not present in liquidity pair");
-
-    uint256 _tokenBalance0 = IHopSwap(pair).getTokenBalance(0);
-    uint256 _tokenBalance1 = IHopSwap(pair).getTokenBalance(1);
+    (uint256 _tokenBalance0, uint256 _tokenBalance1) = _getTokenBalances(pair);
 
     if (_tokenBalance0 > _tokenBalance1) {
       uint256 fullInvestment = IERC20(tokenIn).balanceOf(address(this));
-      _approveTokenIfNeeded(token0, address(pair));
-
-      IHopSwap(pair).swap(0, 1, fullInvestment, tokenAmountOutMin, block.timestamp);
+      _approveAndSwap(pair, tokenIn, fullInvestment, tokenAmountOutMin);
     }
 
-    // Adds in liquidity for token0/token1
-    uint256 _token0 = IERC20(token0).balanceOf(address(this));
-    uint256 _token1 = IERC20(token1).balanceOf(address(this));
+    (uint256 _token0, uint256 _token1) = _getUpdatedTokenBalances(pair);
+    uint256 amountLiquidity = _addLiquidity(pair, _token0, _token1);
+    _handleVaultOperations(vault, amountLiquidity);
 
-    uint256[] memory amounts;
-    amounts = new uint256[](2);
+    vaultBalance = vault.balanceOf(address(this));
+    vault.safeTransfer(msg.sender, vaultBalance);
+
+    _returnAssets(pair);
+
+    emit Deposit(msg.sender, vaultBalance);
+  }
+
+  function _validateTokenInPair(IHopSwap pair, address tokenIn) internal view {
+    address token0 = pair.getToken(0);
+    address token1 = pair.getToken(1);
+    require(token0 == tokenIn || token1 == tokenIn, "Input token not present in liquidity pair");
+  }
+
+  function _getTokenBalances(IHopSwap pair) internal view returns (uint256, uint256) {
+    uint256 _tokenBalance0 = IHopSwap(pair).getTokenBalance(0);
+    uint256 _tokenBalance1 = IHopSwap(pair).getTokenBalance(1);
+    return (_tokenBalance0, _tokenBalance1);
+  }
+
+  function _approveAndSwap(IHopSwap pair, address tokenIn, uint256 fullInvestment, uint256 tokenAmountOutMin) internal {
+    _approveTokenIfNeeded(tokenIn, address(pair));
+    IHopSwap(pair).swap(0, 1, fullInvestment, tokenAmountOutMin, block.timestamp);
+  }
+
+  function _getUpdatedTokenBalances(IHopSwap pair) internal view returns (uint256, uint256) {
+    uint256 _token0 = IERC20(pair.getToken(0)).balanceOf(address(this));
+    uint256 _token1 = IERC20(pair.getToken(1)).balanceOf(address(this));
+    return (_token0, _token1);
+  }
+
+  function _addLiquidity(IHopSwap pair, uint256 _token0, uint256 _token1) internal returns (uint256) {
+    uint256[] memory amounts = new uint256[](2);
     amounts[0] = _token0;
     amounts[1] = _token1;
 
-    _approveTokenIfNeeded(token0, address(pair));
-    _approveTokenIfNeeded(token1, address(pair));
+    _approveTokenIfNeeded(pair.getToken(0), address(pair));
+    _approveTokenIfNeeded(pair.getToken(1), address(pair));
 
-    uint256 amountLiquidity = IHopSwap(pair).addLiquidity(amounts, 0, block.timestamp);
+    return IHopSwap(pair).addLiquidity(amounts, 0, block.timestamp);
+  }
 
+  function _handleVaultOperations(IVault vault, uint256 amountLiquidity) internal {
     _approveTokenIfNeeded(address(vault.token()), address(vault));
     vault.deposit(amountLiquidity);
+  }
 
-    vaultBalance = vault.balanceOf(address(this));
-    //add to guage if possible instead of returning to user, and so no receipt token
-    vault.safeTransfer(msg.sender, vaultBalance);
-
+  function _returnAssets(IHopSwap pair) internal {
     address[] memory path = new address[](2);
-    path[0] = token0;
-    path[1] = token1;
-
+    path[0] = pair.getToken(0);
+    path[1] = pair.getToken(1);
     _returnAssets(path);
-
-    emit Deposit(msg.sender, vaultBalance);
   }
 
   function estimateSwap(
