@@ -91,10 +91,22 @@ async function main() {
   // const steerControllerFactory = await ethers.getContractFactory("SteerController");
   // const steerController = await steerControllerFactory.attach(controller);
 
-  const StrategyHopDai = await deploy({
-    name: "StrategyHopDai",
-    args: [governance, governance, oldController, governance],
-    contractPath: "contracts/strategies/hop/strategy-hop-dai.sol:StrategyHopDai",
+  // const StrategyHopDai = await deploy({
+  //   name: "StrategyHopDai",
+  //   args: [governance, governance, oldController, governance],
+  //   contractPath: "contracts/strategies/hop/strategy-hop-dai.sol:StrategyHopDai",
+  // });
+
+  const VaultZapperHop = await deploy({
+    name: "VaultZapperHop",
+    args: [
+      governance,
+      [
+        "0xfd3573bebDc8bF323c65Edf2408Fd9a8412a8694",
+        "0x5cc3543656EfA30144965C6c538F4d8379F83138",
+        "0x8ca3f11485Bd85Dd0E952C6b21981DEe8CD1E901",
+      ],
+    ],
   });
 
   /** Settings for updation of Strategy and Controller
@@ -126,4 +138,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

@@ -10,209 +10,222 @@ import "../../../interfaces/vault.sol";
 import "../../../interfaces/uniswapv3.sol";
 
 abstract contract HopZapperBase {
-    using SafeERC20 for IERC20;
-    using Address for address;
-    using SafeMath for uint256;
-    using SafeERC20 for IVault;
+  using SafeERC20 for IERC20;
+  using Address for address;
+  using SafeMath for uint256;
+  using SafeERC20 for IVault;
 
-    address public router;
+  address public router;
 
-    address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
-    address public governance;
+  address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+  address public governance;
 
-    // Define a mapping to store whether an address is whitelisted or not
-    mapping(address => bool) public whitelistedVaults;
+  // Define a mapping to store whether an address is whitelisted or not
+  mapping(address => bool) public whitelistedVaults;
 
-    uint256 public constant minimumAmount = 1000;
+  uint256 public constant minimumAmount = 1000;
 
-    // For this example, we will set the pool fee to 0.3%.
-    uint24 public constant poolFee = 3000;
+  // For this example, we will set the pool fee to 0.3%.
+  uint24 public constant poolFee = 3000;
 
-    constructor(
-        address _router,  
-        address _governance
-    ) {
-        // Safety checks to ensure WETH token address
-        WETH(weth).deposit{value: 0}();
-        WETH(weth).withdraw(0);
-        router = _router;
-        governance = _governance;
+  constructor(address _router, address _governance, address[] memory _vaults) {
+    // Safety checks to ensure WETH token address
+    WETH(weth).deposit{value: 0}();
+    WETH(weth).withdraw(0);
+    router = _router;
+    governance = _governance;
+
+    for (uint i = 0; i < _vaults.length; i++) {
+      whitelistedVaults[_vaults[i]] = true;
     }
+  }
 
-    receive() external payable {
-        assert(msg.sender == weth);
-    }
+  event Deposit(address indexed recipient, uint256 amountIn);
+  event Withdraw(address indexed recipient, uint256 amountOut);
 
-     // **** Modifiers **** //
+  receive() external payable {
+    assert(msg.sender == weth);
+  }
 
-    // Modifier to restrict access to whitelisted vaults only
-    modifier onlyWhitelistedVaults(address vault) {
-        require(whitelistedVaults[vault], "Vault is not whitelisted");
-        _;
-    }
+  // **** Modifiers **** //
 
-    // Modifier to restrict access to governance only
-    modifier onlyGovernance() {
-        require(msg.sender == governance, "Caller is not the governance");
-        _;
-    }
-    
-    // Function to add a vault to the whitelist
-    function addToWhitelist(address _vault) external onlyGovernance {
-        whitelistedVaults[_vault] = true;
-    }
+  // Modifier to restrict access to whitelisted vaults only
+  modifier onlyWhitelistedVaults(address vault) {
+    require(whitelistedVaults[vault], "Vault is not whitelisted");
+    _;
+  }
 
-    // Function to remove a vault from the whitelist
-    function removeFromWhitelist(address _vault) external onlyGovernance {
-        whitelistedVaults[_vault] = false;
-    }
+  // Modifier to restrict access to governance only
+  modifier onlyGovernance() {
+    require(msg.sender == governance, "Caller is not the governance");
+    _;
+  }
 
-    //returns DUST
-    function _returnAssets(address[] memory tokens) internal {
-        uint256 balance;
-        for (uint256 i; i < tokens.length; i++) {
-            balance = IERC20(tokens[i]).balanceOf(address(this));
-            if (balance > 0) {
-                if (tokens[i] == weth) {
-                    WETH(weth).withdraw(balance);
-                    (bool success, ) = msg.sender.call{value: balance}(
-                        new bytes(0)
-                    );
-                    require(success, "ETH transfer failed");
-                } else {
-                    IERC20(tokens[i]).safeTransfer(msg.sender, balance);
-                }
-            }
+  // Function to add a vault to the whitelist
+  function addToWhitelist(address _vault) external onlyGovernance {
+    whitelistedVaults[_vault] = true;
+  }
+
+  // Function to remove a vault from the whitelist
+  function removeFromWhitelist(address _vault) external onlyGovernance {
+    whitelistedVaults[_vault] = false;
+  }
+
+  //returns DUST
+  function _returnAssets(address[] memory tokens) internal {
+    uint256 balance;
+    for (uint256 i; i < tokens.length; i++) {
+      balance = IERC20(tokens[i]).balanceOf(address(this));
+      if (balance > 0) {
+        if (tokens[i] == weth) {
+          WETH(weth).withdraw(balance);
+          (bool success, ) = msg.sender.call{value: balance}(new bytes(0));
+          require(success, "ETH transfer failed");
+        } else {
+          IERC20(tokens[i]).safeTransfer(msg.sender, balance);
         }
+      }
     }
+  }
 
-    function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual;
+  function _swapAndStake(address vault, uint256 tokenAmountOutMin, address tokenIn) public virtual returns (uint256);
 
-    function zapInETH(address vault, uint256 tokenAmountOutMin, address tokenIn) external payable onlyWhitelistedVaults(vault){
-        require(msg.value >= minimumAmount, "Insignificant input amount");
+  function zapInETH(
+    address vault,
+    uint256 tokenAmountOutMin,
+    address tokenIn
+  ) external payable onlyWhitelistedVaults(vault) returns (uint256 vaultBalance) {
+    require(msg.value >= minimumAmount, "Insignificant input amount");
 
-        WETH(weth).deposit{value: msg.value}();
+    WETH(weth).deposit{value: msg.value}();
 
-        // allows us to zapIn if eth isn't part of the original pair
-        if (tokenIn != weth){
-            uint256 _amount = IERC20(weth).balanceOf(address(this));
+    // allows us to zapIn if eth isn't part of the original pair
+    if (tokenIn != weth) {
+      uint256 _amount = IERC20(weth).balanceOf(address(this));
 
-            (, IHopSwap pair) = _getVaultPair(vault);
+      (, IHopSwap pair) = _getVaultPair(vault);
 
-            (address token0) = pair.getToken(0);
-            (address token1) = pair.getToken(1); 
+      address token0 = pair.getToken(0);
+      address token1 = pair.getToken(1);
 
-            bool isInputA = token0 == tokenIn;
-            require(isInputA || token1 == tokenIn, "Input token not present in liquidity pair");
+      bool isInputA = token0 == tokenIn;
+      require(isInputA || token1 == tokenIn, "Input token not present in liquidity pair");
 
-            address[] memory path = new address[](2);
-            path[0] = weth;
-            path[1] = tokenIn;
-       
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-              tokenIn: path[0],
-              tokenOut: path[1],
-              fee: poolFee,
-              recipient: address(this),
-              deadline: block.timestamp,
-              amountIn: _amount,
-              amountOutMinimum: 0,
-              sqrtPriceLimitX96: 0
-            });
+      address[] memory path = new address[](2);
+      path[0] = weth;
+      path[1] = tokenIn;
 
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-            
-            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
-        }else{
-            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
-        }
+      _approveTokenIfNeeded(path[0], address(router));
+      ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+        tokenIn: path[0],
+        tokenOut: path[1],
+        fee: poolFee,
+        recipient: address(this),
+        deadline: block.timestamp,
+        amountIn: _amount,
+        amountOutMinimum: 0,
+        sqrtPriceLimitX96: 0
+      });
+
+      // The call to `exactInputSingle` executes the swap.
+      ISwapRouter(address(router)).exactInputSingle(params);
+
+      vaultBalance = _swapAndStake(vault, tokenAmountOutMin, tokenIn);
+    } else {
+      vaultBalance = _swapAndStake(vault, tokenAmountOutMin, tokenIn);
     }
+  }
 
+  // transfers tokens from msg.sender to this contract
+  function zapIn(
+    address vault,
+    uint256 tokenAmountOutMin,
+    address tokenIn,
+    uint256 tokenInAmount
+  ) external onlyWhitelistedVaults(vault) returns (uint256 vaultBalance) {
+    require(tokenInAmount >= minimumAmount, "Insignificant input amount");
+    require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
 
-    // transfers tokens from msg.sender to this contract 
-    function zapIn(address vault, uint256 tokenAmountOutMin, address tokenIn, uint256 tokenInAmount) external onlyWhitelistedVaults(vault){
-        require(tokenInAmount >= minimumAmount, "Insignificant input amount");
-        require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
+    // transfer token
+    IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), tokenInAmount);
 
-        // transfer token 
-        IERC20(tokenIn).safeTransferFrom(
-            msg.sender,
-            address(this),
-            tokenInAmount
-        );
+    (, IHopSwap pair) = _getVaultPair(vault);
+    address desiredToken = pair.getToken(0);
 
-        (, IHopSwap pair) = _getVaultPair(vault);
-        (address desiredToken) = pair.getToken(0);
+    if (desiredToken != tokenIn) {
+      address[] memory path = new address[](2);
+      path[0] = tokenIn;
+      path[1] = desiredToken;
 
-        if(desiredToken != tokenIn){
-            address[] memory path = new address[](2);
-            path[0] = tokenIn;
-            path[1] = desiredToken;
+      _approveTokenIfNeeded(path[0], address(router));
+      ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+        tokenIn: path[0],
+        tokenOut: path[1],
+        fee: poolFee,
+        recipient: address(this),
+        deadline: block.timestamp,
+        amountIn: tokenInAmount,
+        amountOutMinimum: 0,
+        sqrtPriceLimitX96: 0
+      });
 
-            _approveTokenIfNeeded(path[0], address(router));
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-                tokenIn: path[0],
-                tokenOut: path[1],
-                fee: poolFee,
-                recipient: address(this),
-                deadline: block.timestamp,
-                amountIn: tokenInAmount,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
+      // The call to `exactInputSingle` executes the swap.
+      ISwapRouter(address(router)).exactInputSingle(params);
 
-            // The call to `exactInputSingle` executes the swap.
-            ISwapRouter(address(router)).exactInputSingle(params);
-            _swapAndStake(vault, tokenAmountOutMin, desiredToken);
-
-        }else {
-            _swapAndStake(vault, tokenAmountOutMin, tokenIn);
-        }
-        
+      vaultBalance = _swapAndStake(vault, tokenAmountOutMin, desiredToken);
+    } else {
+      vaultBalance = _swapAndStake(vault, tokenAmountOutMin, tokenIn);
     }
+  }
 
-    function zapOutAndSwap(address vault, uint256 withdrawAmount, address desiredToken, uint256 desiredTokenOutMin) public virtual;
+  function zapOutAndSwap(
+    address vault,
+    uint256 withdrawAmount,
+    address desiredToken,
+    uint256 desiredTokenOutMin
+  ) public virtual returns (uint256 tokenBalance);
 
-    function zapOutAndSwapEth(address vault, uint256 withdrawAmount, uint256 desiredTokenOutMin) public virtual;
+  function zapOutAndSwapEth(
+    address vault,
+    uint256 withdrawAmount,
+    uint256 desiredTokenOutMin
+  ) public virtual returns (uint256 ethBalance);
 
-    function _removeLiquidity(address token, IHopSwap pair) internal {
-        _approveTokenIfNeeded(token, address(pair));
+  function _removeLiquidity(address token, IHopSwap pair) internal {
+    _approveTokenIfNeeded(token, address(pair));
 
-        uint256[] memory amounts;
-        amounts = new uint256[](2);
-        amounts[0] = 0;
-        amounts[1] = 0;
-        IHopSwap(pair).removeLiquidity(IERC20(token).balanceOf(address(this)), amounts, block.timestamp); 
+    uint256[] memory amounts;
+    amounts = new uint256[](2);
+    amounts[0] = 0;
+    amounts[1] = 0;
+    IHopSwap(pair).removeLiquidity(IERC20(token).balanceOf(address(this)), amounts, block.timestamp);
+  }
 
+  function _getVaultPair(address vault_addr) internal view returns (IVault vault, IHopSwap pair) {
+    vault = IVault(vault_addr);
+    pair = IHopSwap(ILPToken(vault.token()).swap());
+
+    require(ILPToken(vault.token()).swap() != address(0), "Liquidity pool address cannot be the zero address");
+  }
+
+  function _approveTokenIfNeeded(address token, address spender) internal {
+    if (IERC20(token).allowance(address(this), spender) == 0) {
+      IERC20(token).safeApprove(spender, type(uint256).max);
     }
+  }
 
-    function _getVaultPair(address vault_addr) internal view returns (IVault vault, IHopSwap pair){
-        vault = IVault(vault_addr);
-        pair = IHopSwap(ILPToken(vault.token()).swap());
+  function zapOut(address vault_addr, uint256 withdrawAmount) external onlyWhitelistedVaults(vault_addr) {
+    (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
 
-        require(ILPToken(vault.token()).swap() != address(0), "Liquidity pool address cannot be the zero address");
-    }
+    IERC20(vault_addr).safeTransferFrom(msg.sender, address(this), withdrawAmount);
+    vault.withdraw(withdrawAmount);
 
-    function _approveTokenIfNeeded(address token, address spender) internal {
-        if (IERC20(token).allowance(address(this), spender) == 0) {
-            IERC20(token).safeApprove(spender, type(uint256).max);
-        }
-    }
+    _removeLiquidity(address(vault.token()), IHopSwap(pair));
 
-    function zapOut(address vault_addr, uint256 withdrawAmount) external onlyWhitelistedVaults(vault_addr){
-        (IVault vault, IHopSwap pair) = _getVaultPair(vault_addr);
+    address[] memory tokens = new address[](2);
+    tokens[0] = pair.getToken(0);
+    tokens[1] = pair.getToken(1);
 
-        IERC20(vault_addr).safeTransferFrom(msg.sender, address(this), withdrawAmount);
-        vault.withdraw(withdrawAmount);
-
-        _removeLiquidity(address(vault.token()), IHopSwap(pair));
-
-        address[] memory tokens = new address[](2);
-        tokens[0] = pair.getToken(0);
-        tokens[1] = pair.getToken(1);
-
-        _returnAssets(tokens);
-    }
+    _returnAssets(tokens);
+  }
 }
