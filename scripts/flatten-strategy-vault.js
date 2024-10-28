@@ -1,9 +1,11 @@
 const {exec} = require('child_process');
 
 async function main() {
-  const platform = "gmx";
+  const platform = "peapods";
   const names = [
-    "x-gmx"
+    "peas-ohm",
+    "gmx-ohm",
+    "savvy-ohm"
   ];
 
   const flatten = name => {

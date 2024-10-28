@@ -8,6 +8,7 @@ import "../interfaces/uniswapv2.sol";
 import "../interfaces/staking-rewards.sol";
 import "../interfaces/vault.sol";
 import "../interfaces/controller.sol";
+import "../interfaces/camelot.sol";
 
 
 /**
@@ -22,6 +23,7 @@ abstract contract StrategyBase {
     address public want;
     address public constant weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
     address public constant uni = 0xd4d42F0b6DEF4CE0383636770eF773390d85c61A;
+    address public constant zero = 0x0000000000000000000000000000000000000000;
 
     // Dex
     address public univ2Router2 = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106;
@@ -51,6 +53,7 @@ abstract contract StrategyBase {
 
     // Dex 
     address public sushiRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
+    address public camelotRouter = 0xc873fEcbd354f5A56E00E710B90EF4201db2448d;
 
     mapping(address => bool) public harvesters;
 
@@ -319,6 +322,39 @@ abstract contract StrategyBase {
             address(this),
             block.timestamp.add(60)
         );
+    }
+
+    function _swapCamelot(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal {
+        require(_to != address(0));
+
+        address[] memory path;
+
+        if (_from == weth || _to == weth) {
+            path = new address[](2);
+            path[0] = _from;
+            path[1] = _to;
+        } else {
+            path = new address[](3);
+            path[0] = _from;
+            path[1] = weth;
+            path[2] = _to;
+        }
+
+        IERC20(_from).safeApprove(camelotRouter, 0);
+        IERC20(_from).safeApprove(camelotRouter, _amount);
+        ICamelotRouter(camelotRouter).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            _amount,
+            0,
+            path,
+            _to,
+            zero,
+            block.timestamp.add(60)
+        );
+
     }
 
     function _distributePerformanceFeesAndDeposit() internal {

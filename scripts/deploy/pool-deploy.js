@@ -36,6 +36,8 @@ async function main() {
             case "stargate": controller_addr = "0x8B82E63D4494bE23a479201ADb75F7E43247E859"; break;
             case "fish": controller_addr="0xF36059454bE1e87E88506DdcF2aa65a1CEF8C1bF"; break; 
             case "hop": controller_addr="0x8121Fa4e27051DC3b86E4e7d6Fb2a02d62fe6F68"; break;
+            case "peapods": controller_addr="0xc3BB0e5134672f7DFb574cDB9adDDe10d6f2ADd8"; break;
+
         }
 
         // if there is no targets or data array, create one

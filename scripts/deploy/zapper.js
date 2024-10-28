@@ -3,8 +3,8 @@ require("@nomiclabs/hardhat-waffle");
 require('dotenv').config();
 
 async function main() {
-    const platform = "Gmx";
-    const zapper_name = "VaultZapper"+platform;
+    const platform = "Peapods";
+    const zapper_name = "VaultLPZapper"+platform;
 
     const [deployer] = await ethers.getSigners();
     console.log("Deploying zapper contracts with the account:", deployer.address);
