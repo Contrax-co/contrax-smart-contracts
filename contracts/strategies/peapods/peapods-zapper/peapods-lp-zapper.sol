@@ -11,9 +11,15 @@ contract VaultLPZapperPeapods is PeapodsLPZapperBase {
   using SafeERC20 for IVault;
   using SafeERC20 for ICamelotPair;
 
-  constructor()
-    PeapodsLPZapperBase(0xc873fEcbd354f5A56E00E710B90EF4201db2448d, 0xCb410A689A03E06de0a6247b13C13D14237DecC8)
-  {}
+  constructor(
+    address _governance,
+    address[] memory _vaults
+  ) PeapodsLPZapperBase(0xc873fEcbd354f5A56E00E710B90EF4201db2448d, _governance) {
+    
+    for (uint i = 0; i < _vaults.length; i++) {
+      whitelistedVaults[_vaults[i]] = true;
+    }
+  }
 
   function zapOutAndSwap(
     address vault_addr,
@@ -136,6 +142,8 @@ contract VaultLPZapperPeapods is PeapodsLPZapperBase {
 
     tokenBalance = IERC20(desiredToken).balanceOf(address(this));
 
+    require(tokenBalance > desiredTokenOutMin, "Token balance is too low");
+
     _returnAssets(returnTokens);
 
     emit Withdraw(msg.sender, tokenBalance);
@@ -251,6 +259,8 @@ contract VaultLPZapperPeapods is PeapodsLPZapperBase {
     returnTokens[4] = tokenB;
 
     ethBalance = IERC20(weth).balanceOf(address(this));
+
+    require(ethBalance > desiredTokenOutMin, "ETH balance is too low");
 
     _returnAssets(returnTokens);
 
