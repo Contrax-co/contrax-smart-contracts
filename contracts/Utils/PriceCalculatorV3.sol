@@ -20,12 +20,6 @@ contract PriceCalculatorV3 is SphereXProtected {
   // Array of stable tokens
   address[] public stableTokens;
 
-  // [
-  //   0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, // BASE USDC
-  //   0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA // BASE USDBC
-  //   // 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8
-  // ];
-
   address public WETH_USDC_POOLV3;
 
   // Modifier to restrict access to governance only
