@@ -4,9 +4,10 @@ pragma solidity 0.8.4;
 import "../../lib/erc20.sol";
 import "../../interfaces/controller.sol";
 import "../../lib/safe-math.sol";
-import "../../interfaces/weth.sol";
-
-contract StrategyCore {
+import "../../interfaces/weth.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
+contract StrategyCore is SphereXProtected {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -82,72 +83,72 @@ contract StrategyCore {
 
   // **** Setters **** //
 
-  function whitelistHarvester(address _harvester) external {
+  function whitelistHarvester(address _harvester) external sphereXGuardExternal(0xd2f0cf34) {
     require(msg.sender == governance || msg.sender == strategist || harvesters[msg.sender], "not authorized");
     harvesters[_harvester] = true;
   }
 
-  function revokeHarvester(address _harvester) external {
+  function revokeHarvester(address _harvester) external sphereXGuardExternal(0xaf9ab34a) {
     require(msg.sender == governance || msg.sender == strategist, "not authorized");
     harvesters[_harvester] = false;
   }
 
   // **** Setters ****
-  function setKeepReward(uint32 _keepReward) external onlyTimeLock {
+  function setKeepReward(uint32 _keepReward) external onlyTimeLock sphereXGuardExternal(0x9b46d22b) {
     require(_keepReward <= keepMax, "invalid keep reward");
     keepReward = _keepReward;
   }
 
-  function setRewardToken(address _rewardToken) external {
+  function setRewardToken(address _rewardToken) external sphereXGuardExternal(0xe78d4715) {
     require(msg.sender == timelock || msg.sender == strategist, "!timelock");
     rewardToken = _rewardToken;
   }
 
-  function setFeeDistributor(address _feeDistributor) external {
+  function setFeeDistributor(address _feeDistributor) external sphereXGuardExternal(0x4f98949b) {
     require(msg.sender == governance, "!governance");
     feeDistributor = _feeDistributor;
   }
 
-  function setWithdrawalDevFundFee(uint32 _withdrawalDevFundFee) external onlyTimeLock {
+  function setWithdrawalDevFundFee(uint32 _withdrawalDevFundFee) external onlyTimeLock sphereXGuardExternal(0x0ddff0ac) {
     require(_withdrawalDevFundFee <= withdrawalDevFundMax, "invalid withdrawal dev fund fee");
     withdrawalDevFundFee = _withdrawalDevFundFee;
   }
 
-  function setWithdrawalTreasuryFee(uint32 _withdrawalTreasuryFee) external onlyTimeLock {
+  function setWithdrawalTreasuryFee(uint32 _withdrawalTreasuryFee) external onlyTimeLock sphereXGuardExternal(0x723d7640) {
     require(_withdrawalTreasuryFee <= withdrawalTreasuryMax, "invalid withdrawal treasury fee");
     withdrawalTreasuryFee = _withdrawalTreasuryFee;
   }
 
-  function setPerformanceDevFee(uint32 _performanceDevFee) external onlyTimeLock {
+  function setPerformanceDevFee(uint32 _performanceDevFee) external onlyTimeLock sphereXGuardExternal(0x6a80907d) {
     require(_performanceDevFee <= performanceDevMax, "invalid performance dev fee");
     performanceDevFee = _performanceDevFee;
   }
 
-  function setPerformanceTreasuryFee(uint32 _performanceTreasuryFee) external onlyTimeLock {
+  function setPerformanceTreasuryFee(uint32 _performanceTreasuryFee) external onlyTimeLock sphereXGuardExternal(0xea642819) {
     require(_performanceTreasuryFee <= performanceTreasuryMax, "invalid performance treasury fee");
     performanceTreasuryFee = _performanceTreasuryFee;
   }
 
-  function setStrategist(address _strategist) external {
+  function setStrategist(address _strategist) external sphereXGuardExternal(0x20059154) {
     require(msg.sender == governance, "!governance");
     strategist = _strategist;
   }
 
-  function setGovernance(address _governance) external {
+  function setGovernance(address _governance) external sphereXGuardExternal(0x03549e95) {
     require(msg.sender == governance, "!governance");
     governance = _governance;
   }
 
-  function setTimelock(address _timelock) external onlyTimeLock {
+  function setTimelock(address _timelock) external onlyTimeLock sphereXGuardExternal(0xfa588919) {
     timelock = _timelock;
   }
 
-  function setController(address _controller) external onlyTimeLock {
+  function setController(address _controller) external onlyTimeLock sphereXGuardExternal(0xd71b75d5) {
     controller = _controller;
   }
 
   // Controller only function for creating additional rewards from dust
-  function withdraw(IERC20 _asset) external returns (uint256 balance) {
+  function withdraw(IERC20 _asset) external sphereXGuardExternal(0xc6aebf84) returns (uint256 balance) {
     require(msg.sender == controller, "!controller");
     require(want != address(_asset), "want");
     balance = _asset.balanceOf(address(this));
@@ -156,7 +157,7 @@ contract StrategyCore {
 
   // Withdraw partial funds, normally used with a vault withdrawal
 
-  function withdraw(uint256 _amount) external {
+  function withdraw(uint256 _amount) external sphereXGuardExternal(0xd52ac0bf) {
     require(msg.sender == controller, "!controller");
     require(balanceOf() >= _amount, "!balance");
 
@@ -173,7 +174,7 @@ contract StrategyCore {
   }
 
   // Withdraw funds, used to swap between strategies
-  function withdrawForSwap(uint256 _amount) external returns (uint256 balance) {
+  function withdrawForSwap(uint256 _amount) external sphereXGuardExternal(0x7526d642) returns (uint256 balance) {
     require(msg.sender == controller, "!controller");
     balance = balanceOf();
     require(balance >= _amount, "!balance");
@@ -184,7 +185,7 @@ contract StrategyCore {
   }
 
   // Withdraw all funds, normally used when migrating strategies
-  function withdrawAll() external returns (uint256 balance) {
+  function withdrawAll() external sphereXGuardExternal(0x077b257c) returns (uint256 balance) {
     require(msg.sender == controller, "!controller");
     balance = balanceOf();
     address _vault = IController(controller).vaults(address(want));
@@ -192,7 +193,7 @@ contract StrategyCore {
     IERC20(want).safeTransfer(_vault, balance);
   }
 
-  function _approveTokenIfNeeded(address token, address spender) internal {
+  function _approveTokenIfNeeded(address token, address spender) internal sphereXGuardInternal(0xee3a32e1) {
     if (IERC20(token).allowance(address(this), spender) == 0) {
       IERC20(token).safeApprove(spender, type(uint256).max);
     }
@@ -200,7 +201,7 @@ contract StrategyCore {
 
   // **** Emergency functions ****
 
-  function execute(address _target, bytes memory _data) public payable onlyTimeLock returns (bytes memory response) {
+  function execute(address _target, bytes memory _data) public payable onlyTimeLock sphereXGuardPublic(0xe0b14083, 0x1cff79cd) returns (bytes memory response) {
     require(_target != address(0), "!target");
 
     // call contract in current context
