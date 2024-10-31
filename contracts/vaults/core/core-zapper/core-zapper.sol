@@ -8,9 +8,9 @@ import "../../../interfaces/weth.sol";
 import "../../../interfaces/vault.sol";
 import "../../../interfaces/uniswapv3.sol";
 import "../../../interfaces/ICoreStaking.sol";
-import "./UserStakingContract.sol"; 
+import "./UserStakingContract.sol";
 import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
- 
+
 contract CoreZapperBase is SphereXProtected {
   using SafeERC20 for IERC20;
   using Address for address;
@@ -105,7 +105,11 @@ contract CoreZapperBase is SphereXProtected {
     whitelistedVaults[_vault] = false;
   }
 
-  function multiPathSwapV3(address tokenIn, address tokenOut, uint256 amountIn) internal sphereXGuardInternal(0x0f59b0d7) {
+  function multiPathSwapV3(
+    address tokenIn,
+    address tokenOut,
+    uint256 amountIn
+  ) internal sphereXGuardInternal(0x0f59b0d7) {
     address[] memory path = new address[](3);
     if (tokenIn != wCore && tokenOut != wCore) {
       path[0] = tokenIn;
@@ -137,7 +141,11 @@ contract CoreZapperBase is SphereXProtected {
     ISwapRouter(coreXRouter).exactInput(params);
   }
 
-  function fetchPool(address token0, address token1, address _uniV3Factory) internal sphereXGuardInternal(0x7cc8ad92) returns (address) {
+  function fetchPool(
+    address token0,
+    address token1,
+    address _uniV3Factory
+  ) internal sphereXGuardInternal(0x7cc8ad92) returns (address) {
     address pairWithMaxLiquidity = address(0);
     uint256 maxLiquidity = 0;
 
@@ -169,6 +177,8 @@ contract CoreZapperBase is SphereXProtected {
     //get clipper vault balance
     uint256 stCoreBal = IERC20(ST_CORE).balanceOf(address(this));
 
+    // Call redeem on the user's staking contract
+    require(stCoreBal > 1e18, "Insufficient stCore balance, core staking won't allow to redeem");
     //depoist clipper vault shares to local vault
     _approveTokenIfNeeded(ST_CORE, address(vault));
 
@@ -190,7 +200,7 @@ contract CoreZapperBase is SphereXProtected {
     // Check if the user already has a staking contract
     if (userStakingContracts[msg.sender] == address(0)) {
       // If not, create a new UserStakingContract
-      UserStakingContract newContract = new UserStakingContract(address(this));
+      UserStakingContract newContract = new UserStakingContract(address(this), msg.sender);
       userStakingContracts[msg.sender] = address(newContract);
     }
 
@@ -205,7 +215,10 @@ contract CoreZapperBase is SphereXProtected {
     UserStakingContract(payable(userContract)).redeem(amount);
   }
 
-  function redeem(IVault vault, uint256 withdrawAmount) external sphereXGuardExternal(0x07aa540e) returns (uint256 stCoreRedeemed) {
+  function redeem(
+    IVault vault,
+    uint256 withdrawAmount
+  ) external sphereXGuardExternal(0x07aa540e) returns (uint256 stCoreRedeemed) {
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
 
     uint256 stCoreBalBefore = IERC20(ST_CORE).balanceOf(address(this));
@@ -225,7 +238,13 @@ contract CoreZapperBase is SphereXProtected {
     IVault vault,
     uint256 tokenAmountOutMin,
     address tokenIn
-  ) public payable onlyWhitelistedVaults(address(vault)) sphereXGuardPublic(0xcb4719d8, 0xa6cedf9c) returns (uint256 vaultBalance) {
+  )
+    public
+    payable
+    onlyWhitelistedVaults(address(vault))
+    sphereXGuardPublic(0xcb4719d8, 0xa6cedf9c)
+    returns (uint256 vaultBalance)
+  {
     //get tokenAmount
     uint256 _amountIn = msg.value;
 
@@ -240,7 +259,12 @@ contract CoreZapperBase is SphereXProtected {
     uint256 tokenAmountOutMin,
     address tokenIn,
     uint256 tokenInAmount
-  ) public onlyWhitelistedVaults(address(vault)) sphereXGuardPublic(0x0a2b0d1e, 0x72f8b6cd) returns (uint256 vaultBalance) {
+  )
+    public
+    onlyWhitelistedVaults(address(vault))
+    sphereXGuardPublic(0x0a2b0d1e, 0x72f8b6cd)
+    returns (uint256 vaultBalance)
+  {
     require(tokenInAmount >= minimumAmount, "Insignificant input amount");
 
     require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
@@ -256,7 +280,18 @@ contract CoreZapperBase is SphereXProtected {
     vaultBalance = deposit(vault, address(this).balance, tokenAmountOutMin);
   }
 
-  function zapOutAndSwapEth(IVault vault) public onlyWhitelistedVaults(address(vault)) sphereXGuardPublic(0xb6a434a4, 0x839e1afb) returns (uint256 ethBalance) {
+  function zapOutAndSwapEth(
+    IVault vault,
+    uint256 withdrawAmount,
+    uint256 desiredTokenOutMin
+  )
+    public
+    onlyWhitelistedVaults(address(vault))
+    sphereXGuardPublic(0xb6a434a4, 0x839e1afb)
+    returns (uint256 ethBalance)
+  {
+    require(withdrawAmount == 0, "Withdraw amount must be 0");
+
     // Get the user's staking contract
     address userContract = userStakingContracts[msg.sender];
     require(userContract != address(0), "User has no staking contract");
@@ -269,10 +304,25 @@ contract CoreZapperBase is SphereXProtected {
     (bool sent, ) = payable(msg.sender).call{value: address(this).balance}("");
     require(sent, "Failed to send Ether");
 
+    require(ethBalance > desiredTokenOutMin, "No ETH to withdraw");
+
     emit Withdraw(msg.sender, ethBalance);
   }
 
-  function zapOutAndSwap(IVault vault) public onlyWhitelistedVaults(address(vault)) sphereXGuardPublic(0xcc8b2f24, 0x5a5bac2d) returns (uint256 tokenBalance) {
+  function zapOutAndSwap(
+    IVault vault,
+    uint256 withdrawAmount,
+    address desiredToken,
+    uint256 desiredTokenOutMin
+  )
+    public
+    onlyWhitelistedVaults(address(vault))
+    sphereXGuardPublic(0xcc8b2f24, 0x5a5bac2d)
+    returns (uint256 tokenBalance)
+  {
+    require(withdrawAmount == 0, "Withdraw amount must be 0");
+    require(desiredToken == USDC, "Invalid desiredToken address");
+
     // Get the user's staking contract
     address userContract = userStakingContracts[msg.sender];
     require(userContract != address(0), "User has no staking contract");
@@ -294,6 +344,8 @@ contract CoreZapperBase is SphereXProtected {
     _returnAssets(returnAssist);
 
     tokenBalance = IERC20(USDC).balanceOf(msg.sender);
+
+    require(tokenBalance > desiredTokenOutMin, "Minimum desiredTokenOutMin");
 
     emit Withdraw(msg.sender, tokenBalance);
   }

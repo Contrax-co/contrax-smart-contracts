@@ -18,7 +18,7 @@ contract GammaZapperBase {
 
   address public router; // V3 router
   address public V3Factory;
-  address public weth;
+  address public wPol;
   address public GAMMA_UNIPROXY;
   address public governance;
 
@@ -44,13 +44,13 @@ contract GammaZapperBase {
     router = _router;
     V3Factory = _V3Factory;
     GAMMA_UNIPROXY = _gammaUniproxy;
-    weth = _weth;
+    wPol = _weth;
     governance = _governance;
 
     // Safety checks to ensure WETH token address`
 
-    WETH(weth).deposit{value: 0}();
-    WETH(weth).withdraw(0);
+    WETH(wPol).deposit{value: 0}();
+    WETH(wPol).withdraw(0);
 
     for (uint i = 0; i < _vaults.length; i++) {
       whitelistedVaults[_vaults[i]] = true;
@@ -61,7 +61,7 @@ contract GammaZapperBase {
   event Withdraw(address indexed recipient, uint256 amountOut);
 
   receive() external payable {
-    assert(msg.sender == weth);
+    assert(msg.sender == wPol);
   }
 
   // Modifier to restrict access to governance only
@@ -85,7 +85,7 @@ contract GammaZapperBase {
   }
 
   function setSwapAddresses(address _weth, address _router, address _V3Factory) external onlyGovernance {
-    weth = _weth;
+    wPol = _weth;
     router = _router;
     V3Factory = _V3Factory;
   }
@@ -115,8 +115,8 @@ contract GammaZapperBase {
     for (uint256 i; i < tokens.length; i++) {
       balance = IERC20(tokens[i]).balanceOf(address(this));
       if (balance > 0) {
-        if (tokens[i] == weth) {
-          WETH(weth).withdraw(balance);
+        if (tokens[i] == wPol) {
+          WETH(wPol).withdraw(balance);
           (bool success, ) = msg.sender.call{value: balance}(new bytes(0));
           require(success, "ETH transfer failed");
         } else {
@@ -244,16 +244,16 @@ contract GammaZapperBase {
   ) external payable onlyWhitelistedVaults(address(vault)) returns (uint256 vaultBalance) {
     //get tokenAmount
 
-    WETH(weth).deposit{value: msg.value}();
-    uint256 _amountIn = IERC20(weth).balanceOf(address(this));
+    WETH(wPol).deposit{value: msg.value}();
+    uint256 _amountIn = IERC20(wPol).balanceOf(address(this));
     (address token0, address token1) = gammaVaultTokens(vault);
     require(_amountIn >= minimumAmount, "Insignificant input amount");
 
     (uint256 tokenInAmount0, uint256 tokenInAmount1) = calculateGammaVaultTokensAmount(_amountIn);
 
     if (tokenIn != token0 && tokenIn != token1) {
-      _swap(weth, token0, tokenInAmount0);
-      _swap(weth, token1, tokenInAmount1);
+      _swap(wPol, token0, tokenInAmount0);
+      _swap(wPol, token1, tokenInAmount1);
     } else {
       address tokenOut = token0;
       uint256 amountToSwap = tokenInAmount0;
@@ -261,7 +261,7 @@ contract GammaZapperBase {
         tokenOut = token1;
         amountToSwap = tokenInAmount1;
       }
-      _swap(weth, tokenOut, amountToSwap);
+      _swap(wPol, tokenOut, amountToSwap);
     }
 
     vaultBalance = deposit(
@@ -378,20 +378,20 @@ contract GammaZapperBase {
     (address token0, address token1) = gammaVaultTokens(vault);
 
     // Swapping
-    if (token0 != weth) {
-      _swap(token0, weth, amount0);
+    if (token0 != wPol) {
+      _swap(token0, wPol, amount0);
     }
 
-    if (token1 != weth) {
-      _swap(token1, weth, amount1);
+    if (token1 != wPol) {
+      _swap(token1, wPol, amount1);
     }
 
     address[] memory path = new address[](3);
     path[0] = token0;
     path[1] = token1;
-    path[2] = weth;
+    path[2] = wPol;
 
-    ethBalance = IERC20(weth).balanceOf(address(this));
+    ethBalance = IERC20(wPol).balanceOf(address(this));
 
     require(ethBalance >= desiredTokenOutMin, "Insignificant desiredTokenOutMin");
 
