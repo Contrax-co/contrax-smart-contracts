@@ -30,11 +30,11 @@ const config: HardhatUserConfig = {
 
   networks: {
     hardhat: {
-      chainId: 42161,
-      forking: {
-        url: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,//"https://arbitrum.llamarpc.com", //, // "https://arb1.arbitrum.io/rpc",
-        blockNumber: 211889162,
-      },
+      // chainId: 42161,
+      // forking: {
+      //   url: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`, //"https://arbitrum.llamarpc.com", //, // "https://arb1.arbitrum.io/rpc",
+      //   // blockNumber: 211889162,
+      // },
 
       // chainId: 8453,
       // forking: {
@@ -47,6 +47,17 @@ const config: HardhatUserConfig = {
       //   url: "https://1rpc.io/core",
       //   // blockNumber: 18385941,
       // },
+      chainId: 137,
+      forking: {
+        url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+        blockNumber: 63664681,
+      },
+    },
+
+    polygon: {
+      chainId: 137,
+      url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY ?? ""],
     },
 
     arbitrum: {

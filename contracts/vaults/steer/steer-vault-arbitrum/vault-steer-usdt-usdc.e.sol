@@ -6,7 +6,7 @@ import "../vault-steer-base.sol";
 // Vault address for steer sushi USDT-USDC pool
 //0x5DbAD371890C3A89f634e377c1e8Df987F61fB64
 
-contract VaultSteerSushiUsdtUsdc is VaultSteerBase {
+contract VaultSteerSushiUsdtUsdce is VaultSteerBase {
   constructor(
     address _governance,
     address _timelock,

@@ -7,7 +7,7 @@ import "../../../interfaces/uniswapv3.sol";
 // Vault address for steer sushi USDT-USDC pool
 //0x5DbAD371890C3A89f634e377c1e8Df987F61fB64
 
-contract StrategySteerUsdcUsdt is StrategySteerBase {
+contract StrategySteerUsdceUsdt is StrategySteerBase {
   constructor(
     address _governance,
     address _strategist,
