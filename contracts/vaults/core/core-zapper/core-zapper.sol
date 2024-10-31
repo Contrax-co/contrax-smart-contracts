@@ -8,9 +8,10 @@ import "../../../interfaces/weth.sol";
 import "../../../interfaces/vault.sol";
 import "../../../interfaces/uniswapv3.sol";
 import "../../../interfaces/ICoreStaking.sol";
-import "./UserStakingContract.sol";
-
-contract CoreZapperBase {
+import "./UserStakingContract.sol"; 
+import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
+ 
+contract CoreZapperBase is SphereXProtected {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
@@ -78,7 +79,7 @@ contract CoreZapperBase {
   }
 
   //returns DUST
-  function _returnAssets(address[] memory tokens) internal {
+  function _returnAssets(address[] memory tokens) internal sphereXGuardInternal(0xd855e2ad) {
     uint256 balance;
     for (uint256 i; i < tokens.length; i++) {
       balance = IERC20(tokens[i]).balanceOf(address(this));
@@ -95,16 +96,16 @@ contract CoreZapperBase {
   }
 
   // Function to add a vault to the whitelist
-  function addToWhitelist(address _vault) external onlyGovernance {
+  function addToWhitelist(address _vault) external onlyGovernance sphereXGuardExternal(0x0df53ace) {
     whitelistedVaults[_vault] = true;
   }
 
   // Function to remove a vault from the whitelist
-  function removeFromWhitelist(address _vault) external onlyGovernance {
+  function removeFromWhitelist(address _vault) external onlyGovernance sphereXGuardExternal(0x9cfb3940) {
     whitelistedVaults[_vault] = false;
   }
 
-  function multiPathSwapV3(address tokenIn, address tokenOut, uint256 amountIn) internal {
+  function multiPathSwapV3(address tokenIn, address tokenOut, uint256 amountIn) internal sphereXGuardInternal(0x0f59b0d7) {
     address[] memory path = new address[](3);
     if (tokenIn != wCore && tokenOut != wCore) {
       path[0] = tokenIn;
@@ -136,7 +137,7 @@ contract CoreZapperBase {
     ISwapRouter(coreXRouter).exactInput(params);
   }
 
-  function fetchPool(address token0, address token1, address _uniV3Factory) internal returns (address) {
+  function fetchPool(address token0, address token1, address _uniV3Factory) internal sphereXGuardInternal(0x7cc8ad92) returns (address) {
     address pairWithMaxLiquidity = address(0);
     uint256 maxLiquidity = 0;
 
@@ -161,7 +162,7 @@ contract CoreZapperBase {
     IVault vault,
     uint256 amountIn,
     uint256 amountOutMin
-  ) public payable onlyWhitelistedVaults(address(vault)) returns (uint256) {
+  ) public payable onlyWhitelistedVaults(address(vault)) sphereXGuardPublic(0xc1dc26df, 0x0efe6a8b) returns (uint256) {
     // depoist Core to coreStaking
     ICoreStaking(CORE_STAKING).mint{value: amountIn}(CORE_VALIDATOR);
 
@@ -185,7 +186,7 @@ contract CoreZapperBase {
     return vaultBalance;
   }
 
-  function _redeem(uint256 amount) internal {
+  function _redeem(uint256 amount) internal sphereXGuardInternal(0x1ad753ed) {
     // Check if the user already has a staking contract
     if (userStakingContracts[msg.sender] == address(0)) {
       // If not, create a new UserStakingContract
@@ -204,7 +205,7 @@ contract CoreZapperBase {
     UserStakingContract(payable(userContract)).redeem(amount);
   }
 
-  function redeem(IVault vault, uint256 withdrawAmount) external returns (uint256 stCoreRedeemed) {
+  function redeem(IVault vault, uint256 withdrawAmount) external sphereXGuardExternal(0x07aa540e) returns (uint256 stCoreRedeemed) {
     vault.safeTransferFrom(msg.sender, address(this), withdrawAmount);
 
     uint256 stCoreBalBefore = IERC20(ST_CORE).balanceOf(address(this));
@@ -224,7 +225,7 @@ contract CoreZapperBase {
     IVault vault,
     uint256 tokenAmountOutMin,
     address tokenIn
-  ) public payable onlyWhitelistedVaults(address(vault)) returns (uint256 vaultBalance) {
+  ) public payable onlyWhitelistedVaults(address(vault)) sphereXGuardPublic(0xcb4719d8, 0xa6cedf9c) returns (uint256 vaultBalance) {
     //get tokenAmount
     uint256 _amountIn = msg.value;
 
@@ -239,7 +240,7 @@ contract CoreZapperBase {
     uint256 tokenAmountOutMin,
     address tokenIn,
     uint256 tokenInAmount
-  ) public onlyWhitelistedVaults(address(vault)) returns (uint256 vaultBalance) {
+  ) public onlyWhitelistedVaults(address(vault)) sphereXGuardPublic(0x0a2b0d1e, 0x72f8b6cd) returns (uint256 vaultBalance) {
     require(tokenInAmount >= minimumAmount, "Insignificant input amount");
 
     require(IERC20(tokenIn).allowance(msg.sender, address(this)) >= tokenInAmount, "Input token is not approved");
@@ -255,7 +256,7 @@ contract CoreZapperBase {
     vaultBalance = deposit(vault, address(this).balance, tokenAmountOutMin);
   }
 
-  function zapOutAndSwapEth(IVault vault) public onlyWhitelistedVaults(address(vault)) returns (uint256 ethBalance) {
+  function zapOutAndSwapEth(IVault vault) public onlyWhitelistedVaults(address(vault)) sphereXGuardPublic(0xb6a434a4, 0x839e1afb) returns (uint256 ethBalance) {
     // Get the user's staking contract
     address userContract = userStakingContracts[msg.sender];
     require(userContract != address(0), "User has no staking contract");
@@ -271,7 +272,7 @@ contract CoreZapperBase {
     emit Withdraw(msg.sender, ethBalance);
   }
 
-  function zapOutAndSwap(IVault vault) public onlyWhitelistedVaults(address(vault)) returns (uint256 tokenBalance) {
+  function zapOutAndSwap(IVault vault) public onlyWhitelistedVaults(address(vault)) sphereXGuardPublic(0xcc8b2f24, 0x5a5bac2d) returns (uint256 tokenBalance) {
     // Get the user's staking contract
     address userContract = userStakingContracts[msg.sender];
     require(userContract != address(0), "User has no staking contract");
@@ -297,7 +298,7 @@ contract CoreZapperBase {
     emit Withdraw(msg.sender, tokenBalance);
   }
 
-  function _approveTokenIfNeeded(address token, address spender) internal {
+  function _approveTokenIfNeeded(address token, address spender) internal sphereXGuardInternal(0x85191606) {
     if (IERC20(token).allowance(address(this), spender) == 0) {
       IERC20(token).safeApprove(spender, type(uint256).max);
     }
