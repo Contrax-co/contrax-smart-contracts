@@ -1,4 +1,3 @@
-// https://github.com/iearn-finance/vaults/blob/master/contracts/controllers/StrategyControllerV1.sol
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 pragma experimental ABIEncoderV2;
