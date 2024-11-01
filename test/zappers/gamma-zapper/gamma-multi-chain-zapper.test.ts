@@ -29,6 +29,7 @@ let wethArb = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 let usdcArb = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 
 let wethPol = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
+
 let usdcPol = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359";
 let wPol = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270";
 
@@ -46,7 +47,6 @@ const uniV3RouterArb = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 const uniV3RouterPol = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 
 const gammaVaultWpolWeth = "0x02203f2351E7aC6aB5051205172D3f772db7D814";
-
 const gammaUniProxy = "0xA42d55074869491D60Ac05490376B74cF19B00e6";
 
 const vaultName = "VaultGammaWpolWeth";

@@ -96,6 +96,7 @@ const config: HardhatUserConfig = {
       base: process.env.BASE_API_KEY ?? "",
       arbitrum: process.env.ETHERSCAN_API_KEY ?? "",
       core: process.env.CORE_API_KEY ?? "",
+      polygon: process.env.POLYGON_API_KEY ?? "",
     },
     customChains: [
       {
@@ -121,6 +122,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://openapi.coredao.org/api",
           browserURL: "https://scan.coredao.org/",
+        },
+      },
+      {
+        network: "polygon",
+        chainId: 137,
+        urls: {
+          apiURL: "https://api.polygonscan.com/api",
+          browserURL: "https://polygonscan.com/",
         },
       },
     ],
