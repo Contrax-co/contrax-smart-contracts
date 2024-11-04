@@ -72,7 +72,7 @@ const deploy = async (params: { name: string; args: any[]; verificationWait?: nu
 const governance = "0xCb410A689A03E06de0a6247b13C13D14237DecC8";
 const timelock = governance;
 
-const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d";
+// const controller = "0x0Af9B6e31eAcBF7dDDecB483C93bB4E4c8E6F58d";
 
 const sushiV3FactoryArb = "0x1af415a1EbA07a4986a52B6f2e7dE7003D82231e";
 const sushiV3FactoryBase = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4";
@@ -114,13 +114,13 @@ async function main() {
 
   const StrategyGamma = await deploy({
     name: "StrategyGamma",
-    args: [gammaVaultWpolWeth, governance, governance, controller, governance],
+    args: [gammaVaultWpolWeth, governance, governance, gammaController, governance],
     contractPath: "contracts/strategies/gamma/strategy/strategy-gamma.sol:StrategyGamma",
   });
 
   const VaultGammaWpolWeth = await deploy({
     name: "VaultGammaWpolWeth",
-    args: [governance, timelock, controller],
+    args: [governance, timelock, gammaController],
     contractPath: "contracts/vaults/gamma/gamma-vault-polygon/vault-gamma-wpol-weth.sol:VaultGammaWpolWeth",
   });
 

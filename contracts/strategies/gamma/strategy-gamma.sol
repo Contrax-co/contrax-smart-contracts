@@ -1,100 +1,78 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../../lib/erc20.sol";
-import "../../interfaces/controller.sol";
-import "../../lib/safe-math.sol";
-import "../../interfaces/weth.sol";
+import "./strategy-gamma-base.sol";
+import "../../interfaces/minichefv2.sol";
+import "../../interfaces/IRewarder.sol";
 
-contract StrategyGamma {
+abstract contract StrategyGamma is StrategyGammaBase {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;
 
-  // Tokens
-  address public want;
+  // Token addresses
+  address public constant ACCT = 0x012c399Cf299ba26C9c379e17e90e3535b4318D6;
+  address public MASTER_CHEF;
 
-  address public governance;
+  // WETH/<token1> pair
+  address public token0;
+  address public token1;
+  address rewardToken;
 
-  address public feeDistributor = 0xAd86ef5fD2eBc25bb9Db41A1FE8d0f2a322c7839;
+  // How much tokens to keep?
+  uint256 public keep = 1000;
+  uint256 public keepReward = 1000;
+  uint256 public constant keepMax = 10000;
 
-  // Perfomance fees - start with 10%
-  uint32 public performanceTreasuryFee = 1000;
-  uint32 public constant performanceTreasuryMax = 10000;
+  uint256 public poolId;
 
-  uint32 public performanceDevFee = 0;
-  uint32 public constant performanceDevMax = 10000;
-
-  // Withdrawal fee 0%
-  // - 0% to treasury
-  // - 0% to dev fund
-  uint32 public withdrawalTreasuryFee = 0;
-  uint32 public constant withdrawalTreasuryMax = 100000;
-
-  uint32 public withdrawalDevFundFee = 0;
-  uint32 public constant withdrawalDevFundMax = 100000;
-
-  // How much tokens to keep? 10%
-  uint32 public keepReward = 1000;
-  uint32 public constant keepMax = 10000;
-
-  address public controller;
-  address public strategist;
-  address public timelock;
-  address public rewardToken;
-
-  mapping(address => bool) public harvesters;
-
-  constructor(address _want, address _governance, address _strategist, address _controller, address _timelock) {
-    require(_want != address(0));
-    require(_governance != address(0));
-    require(_strategist != address(0));
-    require(_controller != address(0));
-    require(_timelock != address(0));
-
-    want = _want;
-    governance = _governance;
-    strategist = _strategist;
-    controller = _controller;
-    timelock = _timelock;
+  constructor(
+    uint256 _poolId,
+    address _lp,
+    address _governance,
+    address _strategist,
+    address _controller,
+    address _timelock,
+    address _masterChef
+  ) StrategyBase(_lp, _governance, _strategist, _controller, _timelock) {
+    poolId = _poolId;
+    MASTER_CHEF = _masterChef;
   }
 
-  // **** Modifiers **** //
-
-  modifier onlyBenevolent() {
-    require(harvesters[msg.sender] || msg.sender == governance || msg.sender == strategist);
-    _;
+  function balanceOfPool() public view override returns (uint256) {
+    (uint256 amount, ) = IMiniChefV2(MASTER_CHEF).userInfo(poolId, address(this));
+    return amount;
   }
 
-  modifier onlyGovernance() {
-    require(msg.sender == governance, "Caller is not the governance");
-    _;
-  }
-
-  modifier onlyTimeLock() {
-    require(msg.sender == timelock);
-    _;
-  }
-
-  function balanceOf() public view returns (uint256) {
-    return IERC20(want).balanceOf(address(this));
-  }
-
-  // **** Setters **** //
-
-  function whitelistHarvester(address _harvester) external {
-    require(msg.sender == governance || msg.sender == strategist || harvesters[msg.sender], "not authorized");
-    harvesters[_harvester] = true;
-  }
-
-  function revokeHarvester(address _harvester) external {
-    require(msg.sender == governance || msg.sender == strategist, "not authorized");
-    harvesters[_harvester] = false;
+  function getHarvestable() external view returns (uint256) {
+    uint256 _pendingSushi = IMiniChefV2(MASTER_CHEF).pendingSushi(poolId, address(this));
+    return (_pendingSushi);
   }
 
   // **** Setters ****
-  function setKeepReward(uint32 _keepReward) external onlyTimeLock {
-    require(_keepReward <= keepMax, "invalid keep reward");
+  function deposit() public override {
+    uint256 _want = IERC20(want).balanceOf(address(this));
+    if (_want > 0) {
+      IERC20(want).safeApprove(MASTER_CHEF, 0);
+      IERC20(want).safeApprove(MASTER_CHEF, _want);
+      IMiniChefV2(MASTER_CHEF).deposit(poolId, _want, address(this));
+    }
+  }
+
+  function _withdrawSome(uint256 _amount) internal override returns (uint256) {
+    IMiniChefV2(MASTER_CHEF).withdraw(poolId, _amount, address(this));
+    return _amount;
+  }
+
+  // **** Setters ****
+
+  function setKeep(uint256 _keep) external {
+    require(msg.sender == timelock, "!timelock");
+    keep = _keep;
+  }
+
+  function setKeepReward(uint256 _keepReward) external {
+    require(msg.sender == timelock, "!timelock");
     keepReward = _keepReward;
   }
 
@@ -103,121 +81,34 @@ contract StrategyGamma {
     rewardToken = _rewardToken;
   }
 
-  function setFeeDistributor(address _feeDistributor) external {
-    require(msg.sender == governance, "!governance");
-    feeDistributor = _feeDistributor;
-  }
+  // **** State Mutations ****
 
-  function setWithdrawalDevFundFee(uint32 _withdrawalDevFundFee) external onlyTimeLock {
-    require(_withdrawalDevFundFee <= withdrawalDevFundMax, "invalid withdrawal dev fund fee");
-    withdrawalDevFundFee = _withdrawalDevFundFee;
-  }
+  // Declare a Harvest Event
+  event Harvest(uint _timestamp, uint _value);
 
-  function setWithdrawalTreasuryFee(uint32 _withdrawalTreasuryFee) external onlyTimeLock {
-    require(_withdrawalTreasuryFee <= withdrawalTreasuryMax, "invalid withdrawal treasury fee");
-    withdrawalTreasuryFee = _withdrawalTreasuryFee;
-  }
-
-  function setPerformanceDevFee(uint32 _performanceDevFee) external onlyTimeLock {
-    require(_performanceDevFee <= performanceDevMax, "invalid performance dev fee");
-    performanceDevFee = _performanceDevFee;
-  }
-
-  function setPerformanceTreasuryFee(uint32 _performanceTreasuryFee) external onlyTimeLock {
-    require(_performanceTreasuryFee <= performanceTreasuryMax, "invalid performance treasury fee");
-    performanceTreasuryFee = _performanceTreasuryFee;
-  }
-
-  function setStrategist(address _strategist) external {
-    require(msg.sender == governance, "!governance");
-    strategist = _strategist;
-  }
-
-  function setGovernance(address _governance) external {
-    require(msg.sender == governance, "!governance");
-    governance = _governance;
-  }
-
-  function setTimelock(address _timelock) external onlyTimeLock {
-    timelock = _timelock;
-  }
-
-  function setController(address _controller) external onlyTimeLock {
-    controller = _controller;
-  }
-
-  // Controller only function for creating additional rewards from dust
-  function withdraw(IERC20 _asset) external returns (uint256 balance) {
-    require(msg.sender == controller, "!controller");
-    require(want != address(_asset), "want");
-    balance = _asset.balanceOf(address(this));
-    _asset.safeTransfer(controller, balance);
-  }
-
-  // Withdraw partial funds, normally used with a vault withdrawal
-
-  function withdraw(uint256 _amount) external {
-    require(msg.sender == controller, "!controller");
-    require(balanceOf() >= _amount, "!balance");
-
-    uint256 _feeDev = _amount.mul(withdrawalDevFundFee).div(withdrawalDevFundMax);
-    IERC20(want).safeTransfer(IController(controller).devfund(), _feeDev);
-
-    uint256 _feeTreasury = _amount.mul(withdrawalTreasuryFee).div(withdrawalTreasuryMax);
-    IERC20(want).safeTransfer(IController(controller).treasury(), _feeTreasury);
-
-    address _vault = IController(controller).vaults(address(want));
-    require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-
-    IERC20(want).safeTransfer(_vault, _amount.sub(_feeDev).sub(_feeTreasury));
-  }
-
-  // Withdraw funds, used to swap between strategies
-  function withdrawForSwap(uint256 _amount) external returns (uint256 balance) {
-    require(msg.sender == controller, "!controller");
-    balance = balanceOf();
-    require(balance >= _amount, "!balance");
-
-    address _vault = IController(controller).vaults(address(want));
-    require(_vault != address(0), "!vault");
-    IERC20(want).safeTransfer(_vault, _amount);
-  }
-
-  // Withdraw all funds, normally used when migrating strategies
-  function withdrawAll() external returns (uint256 balance) {
-    require(msg.sender == controller, "!controller");
-    balance = balanceOf();
-    address _vault = IController(controller).vaults(address(want));
-    require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
-    IERC20(want).safeTransfer(_vault, balance);
-  }
-
-  function _approveTokenIfNeeded(address token, address spender) internal {
-    if (IERC20(token).allowance(address(this), spender) == 0) {
-      IERC20(token).safeApprove(spender, type(uint256).max);
+  function harvest() public override onlyBenevolent {
+    // Collects SUSHI tokens
+    IMiniChefV2(MASTER_CHEF).harvest(poolId, address(this));
+    uint256 _Acct = IERC20(ACCT).balanceOf(address(this));
+    if (_Acct > 0) {
+      // 10% is locked up for future gov
+      uint256 _keepAcct = _Acct.mul(keep).div(keepMax);
+      IERC20(ACCT).safeTransfer(IController(controller).treasury(), _keepAcct);
     }
-  }
 
-  // **** Emergency functions ****
-
-  function execute(address _target, bytes memory _data) public payable onlyTimeLock returns (bytes memory response) {
-    require(_target != address(0), "!target");
-
-    // call contract in current context
-    assembly {
-      let succeeded := delegatecall(sub(gas(), 5000), _target, add(_data, 0x20), mload(_data), 0, 0)
-      let size := returndatasize()
-
-      response := mload(0x40)
-      mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-      mstore(response, size)
-      returndatacopy(add(response, 0x20), 0, size)
-
-      switch iszero(succeeded)
-      case 1 {
-        // throw if delegatecall failed
-        revert(add(response, 0x20), size)
+    // Collect reward tokens
+    if (rewardToken != address(0)) {
+      uint256 _reward = IERC20(rewardToken).balanceOf(address(this));
+      if (_reward > 0) {
+        uint256 _keepReward = _reward.mul(keepReward).div(keepMax);
+        IERC20(rewardToken).safeTransfer(IController(controller).treasury(), _keepReward);
+        _reward = IERC20(rewardToken).balanceOf(address(this));
       }
     }
+    uint256 _want = IERC20(want).balanceOf(address(this));
+    emit Harvest(block.timestamp, _want);
+
+    // We want to get back SUSHI LP tokens
+    _distributePerformanceFeesAndDeposit();
   }
 }
