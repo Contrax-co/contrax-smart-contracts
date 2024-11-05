@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../lib/erc20.sol";
+import "../../lib/erc20.sol";
 
 interface IUniProxy {
   /// @notice Get the amount of token to deposit for the given amount of pair token

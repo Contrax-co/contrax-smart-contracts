@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "../lib/erc20.sol";
-import "../lib/safe-math.sol";
+import "../../lib/erc20.sol";
+import "../../lib/safe-math.sol";
 
-import "../interfaces/uniswapv2.sol";
-import "../interfaces/staking-rewards.sol";
-import "../interfaces/vault.sol";
-import "../interfaces/controller.sol";
-import "../interfaces/camelot.sol";
+import "../../interfaces/uniswapv2.sol";
+import "../../interfaces/staking-rewards.sol";
+import "../../interfaces/vault.sol";
+import "../../interfaces/controller.sol";
 
 /**
  * The is the Strategy Base that most LPs will inherit
@@ -234,43 +233,6 @@ abstract contract StrategyGammaBase {
     }
   }
 
-  
-
-  function _swapSushiswapWithPath(address[] memory path, uint256 _amount) internal {
-    require(path[1] != address(0));
-
-    IERC20(path[0]).safeApprove(sushiRouter, 0);
-    IERC20(path[0]).safeApprove(sushiRouter, _amount);
-    UniswapRouterV2(sushiRouter).swapExactTokensForTokens(_amount, 0, path, address(this), block.timestamp.add(60));
-  }
-
-  function _swapCamelot(address _from, address _to, uint256 _amount) internal {
-    require(_to != address(0));
-
-    address[] memory path;
-
-    if (_from == weth || _to == weth) {
-      path = new address[](2);
-      path[0] = _from;
-      path[1] = _to;
-    } else {
-      path = new address[](3);
-      path[0] = _from;
-      path[1] = weth;
-      path[2] = _to;
-    }
-
-    IERC20(_from).safeApprove(camelotRouter, 0);
-    IERC20(_from).safeApprove(camelotRouter, _amount);
-    ICamelotRouter(camelotRouter).swapExactTokensForTokensSupportingFeeOnTransferTokens(
-      _amount,
-      0,
-      path,
-      _to,
-      address(0),
-      block.timestamp.add(60)
-    );
-  }
 
   function _distributePerformanceFeesAndDeposit() internal {
     uint256 _want = IERC20(want).balanceOf(address(this));

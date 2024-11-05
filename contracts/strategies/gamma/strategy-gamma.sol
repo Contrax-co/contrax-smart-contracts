@@ -34,7 +34,7 @@ abstract contract StrategyGamma is StrategyGammaBase {
     address _controller,
     address _timelock,
     address _masterChef
-  ) StrategyBase(_lp, _governance, _strategist, _controller, _timelock) {
+  ) StrategyGammaBase(_lp, _governance, _strategist, _controller, _timelock) {
     poolId = _poolId;
     MASTER_CHEF = _masterChef;
   }
