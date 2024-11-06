@@ -49,9 +49,11 @@ const uniV3RouterPol = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
 const gammaVaultWpolWeth = "0x02203f2351E7aC6aB5051205172D3f772db7D814";
 const gammaUniProxy = "0xA42d55074869491D60Ac05490376B74cF19B00e6";
 
+const wpol_weth_poolId = "0";
+const masterChef = "0x20ec0d06F447d550fC6edee42121bc8C1817b97D";
+
 const vaultName = "VaultGammaWpolWeth";
 const strategyName = "StrategyGamma";
-
 
 describe("Steer Zapper Test", async () => {
   // These reset the state after each test is executed
@@ -102,11 +104,13 @@ describe("Steer Zapper Test", async () => {
     startegyContract = await stratFactory
       .connect(walletSigner)
       .deploy(
+        wpol_weth_poolId,
         gammaVaultWpolWeth,
         governanceSigner.getAddress(),
         strategistSigner.getAddress(),
         controllerAdd,
-        timelockSigner.getAddress()
+        timelockSigner.getAddress(),
+        masterChef
       );
 
     const approveStrategy = await controllerContract
@@ -128,17 +132,12 @@ describe("Steer Zapper Test", async () => {
 
     // deploy zapper
 
-
-    const zapperFactory = await ethers.getContractFactory("GammaZapperBase");
+    const zapperFactory = await ethers.getContractFactory("GammaZapper");
     zapperContract = await zapperFactory
       .connect(walletSigner)
-      .deploy(walletSigner.getAddress(), wPol, uniV3RouterPol, uniV3FactoryPol, gammaUniProxy, [
-        vaultContract.address,
-      ]);
+      .deploy(wPol, usdcPol, uniV3RouterPol, uniV3FactoryPol, [vaultContract.address], gammaUniProxy);
 
     console.log(`Deployed Zapper: ${zapperContract.address}`);
-
-
 
     usdcContract = await ethers.getContractAt("contracts/lib/erc20.sol:ERC20", usdcPol, walletSigner);
     await overwriteTokenAmount(usdcPol, walletAddress, zapInUsdcAmount, 9);

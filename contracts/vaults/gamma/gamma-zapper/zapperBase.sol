@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import {IERC20, SafeERC20, Address} from "../../../lib/erc20.sol";
 import {WETH} from "../../../interfaces/weth.sol";
-import {ISwapRouter} from "../../../interfaces/ISwapRouter.sol";
+import {ISwapRouter, IUniswapV3Factory, IUniswapV3Pool} from "../../../interfaces/uniswapv3.sol";
 import {IVault} from "../../../interfaces/vault.sol";
 import {IZapper} from "../../../interfaces/IZapper.sol";
 
@@ -16,16 +16,33 @@ abstract contract ZapperBase is IZapper {
   ISwapRouter public swapRouter;
   WETH public wrappedNative;
   IERC20 public usdcToken;
+  address public V3Factory;
   uint256 public constant minimumAmount = 1000;
   mapping(address => bool) public whitelistedVaults;
 
-  constructor(address _wrappedNative, address _usdcToken, address _swapRouter, address[] memory _vaultsToWhitelist) {
+  uint24[] public poolsFee = [3000, 500, 100, 10000];
+
+  // tokenIn => tokenOut => poolFee
+  mapping(address => mapping(address => uint24)) public poolFees;
+
+  constructor(
+    address _wrappedNative,
+    address _usdcToken,
+    address _V3Factory,
+    address _swapRouter,
+    address[] memory _vaultsToWhitelist
+  ) {
     // Safety checks to ensure wrappedNative token address
     wrappedNative = WETH(_wrappedNative);
+
     wrappedNative.deposit{value: 0}();
     wrappedNative.withdraw(0);
-    usdcToken = IERC20(_usdcToken);
+
     swapRouter = ISwapRouter(_swapRouter);
+
+    usdcToken = IERC20(_usdcToken);
+
+    V3Factory = _V3Factory;
 
     for (uint i = 0; i < _vaultsToWhitelist.length; i++) {
       _setWhitelistVault(_vaultsToWhitelist[i], true);
@@ -49,6 +66,12 @@ abstract contract ZapperBase is IZapper {
 
   function setWhitelistVault(address _vault, bool _whitelisted) external onlyGovernance {
     _setWhitelistVault(_vault, _whitelisted);
+  }
+
+  function getPoolFee(address token0, address token1) public view returns (uint24) {
+    uint24 fee = poolFees[token0][token1];
+    require(fee > 0, "pool fee is not set");
+    return fee;
   }
 
   function setSwapRouter(address _swapRouter) external onlyGovernance {
@@ -91,6 +114,49 @@ abstract contract ZapperBase is IZapper {
     IVault vault,
     IERC20 tokenIn
   ) public virtual returns (uint256 tokenOutAmount, ReturnedAsset[] memory returnedAssets);
+
+  function _swap(address tokenIn, address tokenOut, uint256 amountIn) internal returns (uint256) {
+    address[] memory path = new address[](2);
+    path[0] = tokenIn;
+    path[1] = tokenOut;
+
+    if (poolFees[tokenIn][tokenOut] == 0) fetchPool(tokenIn, tokenOut, V3Factory);
+
+    _approveTokenIfNeeded(path[0], address(swapRouter));
+    ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+      tokenIn: path[0],
+      tokenOut: path[1],
+      fee: getPoolFee(tokenIn, tokenOut),
+      recipient: address(this),
+      deadline: block.timestamp,
+      amountIn: amountIn,
+      amountOutMinimum: 0,
+      sqrtPriceLimitX96: 0
+    });
+
+    return ISwapRouter(address(swapRouter)).exactInputSingle(params);
+  }
+
+  function fetchPool(address token0, address token1, address _uniV3Factory) internal returns (address) {
+    address pairWithMaxLiquidity = address(0);
+    uint256 maxLiquidity = 0;
+
+    for (uint256 i = 0; i < poolsFee.length; i++) {
+      address currentPair = IUniswapV3Factory(_uniV3Factory).getPool(token0, token1, poolsFee[i]);
+      if (currentPair != address(0)) {
+        uint256 currentLiquidity = IUniswapV3Pool(currentPair).liquidity();
+        if (currentLiquidity > maxLiquidity) {
+          maxLiquidity = currentLiquidity;
+          pairWithMaxLiquidity = currentPair;
+          poolFees[token0][token1] = poolsFee[i];
+          // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
+          poolFees[token1][token0] = poolsFee[i];
+        }
+      }
+    }
+    require(pairWithMaxLiquidity != address(0), "No pool found with sufficient liquidity");
+    return pairWithMaxLiquidity;
+  }
 
   function _zapIn(
     IVault vault,

@@ -5,7 +5,7 @@ import "./strategy-gamma-base.sol";
 import "../../interfaces/minichefv2.sol";
 import "../../interfaces/IRewarder.sol";
 
-abstract contract StrategyGamma is StrategyGammaBase {
+contract StrategyGamma is StrategyGammaBase {
   using SafeERC20 for IERC20;
   using Address for address;
   using SafeMath for uint256;

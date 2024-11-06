@@ -86,8 +86,6 @@ abstract contract StrategyGammaBase {
     return balanceOfWant().add(balanceOfPool());
   }
 
-  function getName() external pure virtual returns (string memory);
-
   // **** Setters **** //
 
   function whitelistHarvester(address _harvester) external {
