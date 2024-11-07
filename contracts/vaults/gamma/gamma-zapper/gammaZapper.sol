@@ -47,7 +47,6 @@ contract GammaZapper is ZapperBase {
     _getDepositAmounts(IVault(_vault), 1e18);
     _getDepositAmounts(IVault(_vault), 100e6);
     super._setWhitelistVault(_vault, _whitelisted);
-    
   }
 
   function _beforeDeposit(
@@ -80,9 +79,13 @@ contract GammaZapper is ZapperBase {
 
     uint256[4] memory minInAmounts = [uint256(0), uint256(0), uint256(0), uint256(0)];
 
+    
+    _approveTokenIfNeeded(token0, gammaVault);
+    _approveTokenIfNeeded(token1, gammaVault);
+
     tokenOutAmount = IUniProxy(gammaUniProxy).deposit(
-      amount0,
-      amount1,
+      IERC20(token0).balanceOf(address(this)),
+      IERC20(token1).balanceOf(address(this)),
       address(this),
       address(vault.token()), // gamma vault
       minInAmounts
