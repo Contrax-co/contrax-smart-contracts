@@ -19,20 +19,36 @@ contract GammaZapper is ZapperBase {
     address _usdcToken,
     address _swapRouter,
     address _V3Factory,
+    address _governance,
+    address _weth_usdc_pool,
+    address _weth,
     address[] memory _vaultsToWhitelist,
+    address[] memory _stableTokens,
     address _gammaUniProxy
-  ) ZapperBase(_wrappedNative, _usdcToken, _V3Factory, _swapRouter, _vaultsToWhitelist) {
+  )
+    ZapperBase(
+      _wrappedNative,
+      _usdcToken,
+      _swapRouter,
+      _V3Factory,
+      _governance,
+      _weth_usdc_pool,
+      _weth,
+      _stableTokens,
+      _vaultsToWhitelist
+    )
+  {
     gammaUniProxy = IUniProxy(_gammaUniProxy);
   }
 
-  // function _setWhitelistVault(address _vault, bool _whitelisted) internal override {
-  //   // make sure token0 and token1 have swapping pools available with the swapRouter
-  //   address gammaVault = address(IVault(_vault).token());
-  //   (address token0, address token1) = (IHypervisor(gammaVault).token0(), IHypervisor(gammaVault).token1());
-  //   _getDepositAmounts(gammaVault, address(wrappedNative), token0, token1, 1e18);
-  //   _getDepositAmounts(gammaVault, address(usdcToken), token0, token1, 100e6);
-  //   super._setWhitelistVault(_vault, _whitelisted);
-  // }
+  function _setWhitelistVault(address _vault, bool _whitelisted) internal override {
+    // make sure token0 and token1 have swapping pools available with the swapRouter
+
+    _getDepositAmounts(IVault(_vault), 1e18);
+    _getDepositAmounts(IVault(_vault), 100e6);
+    super._setWhitelistVault(_vault, _whitelisted);
+    
+  }
 
   function _beforeDeposit(
     IVault vault,
@@ -42,13 +58,8 @@ contract GammaZapper is ZapperBase {
     (address token0, address token1) = (IHypervisor(gammaVault).token0(), IHypervisor(gammaVault).token1());
 
     uint256 tokenInAmount = tokenIn.balanceOf(address(this));
-    (uint256 amount0, uint256 amount1) = _getDepositAmounts(
-      gammaVault,
-      address(tokenIn),
-      token0,
-      token1,
-      tokenInAmount
-    );
+
+    (uint256 amount0, uint256 amount1) = _getDepositAmounts(vault, tokenInAmount);
 
     console.log("amount0: ", amount0);
     console.log("amount1: ", amount1);
@@ -89,7 +100,7 @@ contract GammaZapper is ZapperBase {
     IERC20 desiredToken
   ) public virtual override returns (uint256 tokenOutAmount, ReturnedAsset[] memory returnedAssets) {
     IHypervisor gammaVault = IHypervisor(address(IVault(vault).token()));
-    (address token0, address token1) = (gammaVault.token0(), gammaVault.token1());
+    (address token0, address token1) = gammaVaultTokens(vault);
 
     uint256[4] memory minInAmounts = [uint256(0), uint256(0), uint256(0), uint256(0)];
     uint256 gammaVaultBalance = IERC20(gammaVault).balanceOf(address(this));
@@ -113,20 +124,20 @@ contract GammaZapper is ZapperBase {
     returnedAssets = _returnAssets(tokens);
   }
 
-  /**
-   * @notice Calculates the optimal token0/token1 ratio for depositing into a Gamma vault.
-   * The Uniproxy getDepositAmount function is used to find the amount of one token by providing the amount of the other token. We can use this to find the
-   * ratio of the two tokens in the hypervisor, As a starting point we use half of the zapped amount as the amount of token0, then we use the getDepositAmount
-   * function to find the amount of token1. With these two values we can find the ratio, first we need to convert both the amounts in base token (wrappedNative)
-   * then we can find the ratio of token0 to token1. With this ratio we can convert the zapped amount to the correct amount of token0 and token1
-   * @param gammaVault The address of the gamma vault
-   * @param tokenIn The address of the token being zapped
-   * @param token0 The address of the first token in the hypervisor
-   * @param token1 The address of the second token in the hypervisor
-   * @param tokenInAmount The amount of the token being zapped
-   * @return amount0 The amount of the first token
-   * @return amount1 The amount of the second token
-   */
+  // /**
+  //  * @notice Calculates the optimal token0/token1 ratio for depositing into a Gamma vault.
+  //  * The Uniproxy getDepositAmount function is used to find the amount of one token by providing the amount of the other token. We can use this to find the
+  //  * ratio of the two tokens in the hypervisor, As a starting point we use half of the zapped amount as the amount of token0, then we use the getDepositAmount
+  //  * function to find the amount of token1. With these two values we can find the ratio, first we need to convert both the amounts in base token (wrappedNative)
+  //  * then we can find the ratio of token0 to token1. With this ratio we can convert the zapped amount to the correct amount of token0 and token1
+  //  * @param gammaVault The address of the gamma vault
+  //  * @param tokenIn The address of the token being zapped
+  //  * @param token0 The address of the first token in the hypervisor
+  //  * @param token1 The address of the second token in the hypervisor
+  //  * @param tokenInAmount The amount of the token being zapped
+  //  * @return amount0 The amount of the first token
+  //  * @return amount1 The amount of the second token
+  //  */
 
   // function _getDepositAmounts(
   //   address gammaVault,
@@ -152,87 +163,73 @@ contract GammaZapper is ZapperBase {
   //   amount1 = tokenInAmount - amount0;
   // }
 
-  function _getDepositAmounts(
-    address gammaVault,
-    address tokenIn,
-    address token0,
-    address token1,
-    uint256 tokenInAmount
-  ) public returns (uint256 amount0, uint256 amount1) {
-    uint256 predictedAmount0 = tokenInAmount / 2;
+  function _getDepositAmounts(IVault vault, uint256 _amountIn) public returns (uint256, uint256) {
+    (address token0, address token1) = gammaVaultTokens(vault);
+    (uint256 amount0, uint256 amount1) = getTotalAmounts(vault);
+    (uint256 token0Price, uint256 token1Price) = calculateGammaVaultTokensPrices(vault);
 
-    // If tokenIn is not equal to token0, get the quote, otherwise use the predictedAmount0 directly
-    if (token0 != tokenIn) {
-      // Get quote for tokenIn -> token0
-      predictedAmount0 = _getQuoteV3(tokenIn, token0, predictedAmount0, V3Factory);
-    }
+    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals())));
+    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals())));
 
-    (, uint256 predictedAmount1) = IUniProxy(gammaUniProxy).getDepositAmount(gammaVault, token0, predictedAmount0);
+    uint256 totalValue = token0Value + token1Value;
+    uint256 token0Amount = (_amountIn * token0Value) / totalValue;
+    uint256 token1Amount = _amountIn - token0Amount;
 
-    // If tokenIn matches token0 or token1, use predicted amounts directly without converting to wrappedNative
-    uint256 predictedAmount0InEth = (token0 == address(wrappedNative))
-      ? predictedAmount0
-      : _getQuoteV3(token0, address(wrappedNative), predictedAmount0, V3Factory);
-    uint256 predictedAmount1InEth = (token1 == address(wrappedNative))
-      ? predictedAmount0
-      : _getQuoteV3(token1, address(wrappedNative), predictedAmount1, V3Factory);
-
-    // Calculate amount0 and amount1 in the same ratio as the predictedAmount0InEth and predictedAmount1InEth ratios
-    amount0 = (tokenInAmount * predictedAmount0InEth) / (predictedAmount0InEth + predictedAmount1InEth);
-    amount1 = tokenInAmount - amount0;
+    return (token0Amount, token1Amount);
   }
 
-  function _getQuoteV3(
-    address tokenIn,
-    address tokenOut,
-    uint256 amountIn,
-    address factory
-  ) internal returns (uint256 amountOut) {
-    address poolAddress = fetchPool(tokenIn, tokenOut, factory);
+  function calculateGammaVaultTokensPrices(IVault vault) internal returns (uint256 token0Price, uint256 token1Price) {
+    (address token0, address token1) = gammaVaultTokens(vault);
 
-    if (poolAddress == address(0)) {
-      // if no direct pool is found, try to find a pool between tokenIn and WETH and then between WETH and tokenOut
-      address[] memory path = new address[](3);
-      path[0] = tokenIn;
-      path[1] = address(wrappedNative);
-      path[2] = tokenOut;
-      return _getQuoteV3WithPath(path, amountIn, factory);
+    bool isToken0Stable = isStableToken(token0);
+    bool isToken1Stable = isStableToken(token1);
+
+    if (isToken0Stable) token0Price = 1 * PRECISION;
+    if (isToken1Stable) token1Price = 1 * PRECISION;
+
+    if (!isToken0Stable) {
+      token0Price = getPrice(token0, vault);
     }
 
-    IUniswapV3Pool pool = IUniswapV3Pool(poolAddress);
-    (, int24 tick, , , , , ) = pool.slot0();
+    if (!isToken1Stable) {
+      token1Price = getPrice(token1, vault);
+    }
 
-    // Call Oracle to get the price at the given tick
-    amountOut = OracleLibrary.getQuoteAtTick(
-      tick,
-      uint128(amountIn), // Casting to uint128 since the library expects this type
-      tokenIn,
-      tokenOut
-    );
+    return (token0Price, token1Price);
   }
 
-  function _getQuoteV3WithPath(
-    address[] memory path,
-    uint256 amountIn,
-    address factory
-  ) internal returns (uint256 amountOut) {
-    for (uint256 i = 0; i < path.length - 2; i++) {
-      address poolAddress = fetchPool(address(path[i]), path[i + 1], factory);
-
-      require(poolAddress != address(0), "No pool found for multihop qoute");
-
-      IUniswapV3Pool pool = IUniswapV3Pool(poolAddress);
-      (, int24 tick, , , , , ) = pool.slot0();
-
-      // Call Oracle to get the price at the given tick
-      amountOut = OracleLibrary.getQuoteAtTick(
-        tick,
-        uint128(amountIn), // Casting to uint128 since the library expects this type
-        path[i],
-        path[i + 1]
-      );
-      // amount in is now the amount out of the last pool
-      amountIn = amountOut;
+  function isStableToken(address token) internal view returns (bool) {
+    for (uint256 i = 0; i < stableTokens.length; i++) {
+      if (stableTokens[i] == token) return true;
     }
+    return false;
+  }
+
+  function getPrice(address token, IVault vault) internal returns (uint256) {
+    if (token == weth) {
+      return calculateEthPriceInUsdc();
+    } else {
+      (address token0, address token1) = gammaVaultTokens(vault);
+      // get pair address from factory contract for weth and desired token
+      address pair;
+      if (token == token0) {
+        pair = fetchPool(token0, weth, V3Factory);
+
+        return calculateTokenPriceInUsd(token0, pair);
+      }
+
+      pair = fetchPool(token1, weth, V3Factory);
+
+      return calculateTokenPriceInUsd(token1, pair);
+    }
+  }
+
+  function gammaVaultTokens(IVault vault) internal view returns (address token0, address token1) {
+    IHypervisor gammaVault = IHypervisor(address(IVault(vault).token()));
+    (token0, token1) = (gammaVault.token0(), gammaVault.token1());
+  }
+
+  function getTotalAmounts(IVault _localVault) public view returns (uint256 amount0, uint256 amount1) {
+    (amount0, amount1) = IHypervisor(address(IVault(_localVault).token())).getTotalAmounts();
   }
 }

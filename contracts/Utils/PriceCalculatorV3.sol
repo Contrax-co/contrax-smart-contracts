@@ -15,7 +15,7 @@ contract PriceCalculatorV3 is SphereXProtected {
 
   uint256 public constant PRECISION = 1_000_000_000;
 
-  uint24[] public poolsFee = [3000, 500, 100, 350, 80, 10000];
+  uint24[] public poolsFee = [3000, 500, 100, 10000];
 
   // Array of stable tokens
   address[] public stableTokens;

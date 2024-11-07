@@ -6,13 +6,13 @@ import {WETH} from "../../../interfaces/weth.sol";
 import {ISwapRouter, IUniswapV3Factory, IUniswapV3Pool} from "../../../interfaces/uniswapv3.sol";
 import {IVault} from "../../../interfaces/vault.sol";
 import {IZapper} from "../../../interfaces/IZapper.sol";
+import {PriceCalculatorV3} from "../../../Utils/PriceCalculatorV3.sol";
 
-abstract contract ZapperBase is IZapper {
+abstract contract ZapperBase is IZapper, PriceCalculatorV3 {
   using Address for address;
   using SafeERC20 for IERC20;
   using SafeERC20 for IVault;
 
-  address public governance;
   ISwapRouter public swapRouter;
   WETH public wrappedNative;
   IERC20 public usdcToken;
@@ -20,18 +20,20 @@ abstract contract ZapperBase is IZapper {
   uint256 public constant minimumAmount = 1000;
   mapping(address => bool) public whitelistedVaults;
 
-  uint24[] public poolsFee = [3000, 500, 100, 10000];
-
   // tokenIn => tokenOut => poolFee
   mapping(address => mapping(address => uint24)) public poolFees;
 
   constructor(
     address _wrappedNative,
     address _usdcToken,
-    address _V3Factory,
     address _swapRouter,
+    address _V3Factory,
+    address _governance,
+    address _weth_usdc_pool,
+    address _weth,
+    address[] memory _stableTokens,
     address[] memory _vaultsToWhitelist
-  ) {
+  ) PriceCalculatorV3(_governance, _weth_usdc_pool, _weth, _stableTokens) {
     // Safety checks to ensure wrappedNative token address
     wrappedNative = WETH(_wrappedNative);
 
@@ -47,11 +49,6 @@ abstract contract ZapperBase is IZapper {
     for (uint i = 0; i < _vaultsToWhitelist.length; i++) {
       _setWhitelistVault(_vaultsToWhitelist[i], true);
     }
-  }
-
-  modifier onlyGovernance() {
-    require(msg.sender == governance, "Caller is not the governance");
-    _;
   }
 
   modifier onlyWhitelistedVaults(address vault) {

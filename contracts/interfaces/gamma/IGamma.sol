@@ -49,4 +49,6 @@ interface IHypervisor is IERC20 {
   function token0() external view returns (address);
 
   function token1() external view returns (address);
+
+  function getTotalAmounts() external view returns (uint256 total0, uint256 total1);
 }
