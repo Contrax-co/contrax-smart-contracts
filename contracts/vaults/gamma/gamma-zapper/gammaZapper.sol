@@ -69,9 +69,12 @@ contract GammaZapper is ZapperBase {
 
     uint256[4] memory minInAmounts = [uint256(0), uint256(0), uint256(0), uint256(0)];
 
+    _approveTokenIfNeeded(token0, gammaVault);
+    _approveTokenIfNeeded(token1, gammaVault);
+
     tokenOutAmount = IUniProxy(gammaUniProxy).deposit(
-      amount0,
-      amount1,
+      IERC20(token0).balanceOf(address(this)),
+      IERC20(token1).balanceOf(address(this)),
       address(this),
       address(vault.token()), // gamma vault
       minInAmounts
@@ -159,7 +162,7 @@ contract GammaZapper is ZapperBase {
     address token1,
     uint256 tokenInAmount
   ) public returns (uint256 amount0, uint256 amount1) {
-    uint256 predictedAmount0 = tokenInAmount / 2;
+    uint256 predictedAmount0 = tokenInAmount;
 
     // If tokenIn is not equal to token0, get the quote, otherwise use the predictedAmount0 directly
     if (token0 != tokenIn) {
@@ -174,7 +177,7 @@ contract GammaZapper is ZapperBase {
       ? predictedAmount0
       : _getQuoteV3(token0, address(wrappedNative), predictedAmount0, V3Factory);
     uint256 predictedAmount1InEth = (token1 == address(wrappedNative))
-      ? predictedAmount0
+      ? predictedAmount1
       : _getQuoteV3(token1, address(wrappedNative), predictedAmount1, V3Factory);
 
     // Calculate amount0 and amount1 in the same ratio as the predictedAmount0InEth and predictedAmount1InEth ratios

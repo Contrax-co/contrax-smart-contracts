@@ -83,9 +83,23 @@ abstract contract ZapperBase is IZapper {
     assert(msg.sender == address(wrappedNative));
   }
 
-  //returns DUST
   function _returnAssets(address[] memory tokens) internal returns (ReturnedAsset[] memory returnedAssets) {
     uint256 balance;
+    uint256 assetCount = 0;
+
+    // Count the number of non-zero balance assets
+    for (uint256 i; i < tokens.length; i++) {
+      balance = IERC20(tokens[i]).balanceOf(address(this));
+      if (balance > 0) {
+        assetCount++;
+      }
+    }
+
+    // Initialize returnedAssets with the correct length
+    returnedAssets = new ReturnedAsset[](assetCount);
+    uint256 index = 0;
+
+    // Transfer assets and populate returnedAssets
     for (uint256 i; i < tokens.length; i++) {
       balance = IERC20(tokens[i]).balanceOf(address(this));
       if (balance > 0) {
@@ -96,7 +110,10 @@ abstract contract ZapperBase is IZapper {
         } else {
           IERC20(tokens[i]).safeTransfer(msg.sender, balance);
         }
-        returnedAssets[i] = ReturnedAsset({tokens: tokens[i], amounts: balance});
+
+        // Populate the returnedAssets array
+        returnedAssets[index] = ReturnedAsset({tokens: tokens[i], amounts: balance});
+        index++;
       }
     }
   }
