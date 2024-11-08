@@ -60,9 +60,6 @@ contract GammaZapper is ZapperBase {
 
     (uint256 amount0, uint256 amount1) = _getDepositAmounts(vault, tokenInAmount);
 
-    console.log("amount0: ", amount0);
-    console.log("amount1: ", amount1);
-
     if (token0 != address(tokenIn) && token1 != address(tokenIn)) {
       _swap(address(tokenIn), address(token0), amount0);
       _swap(address(tokenIn), address(token1), amount1);
@@ -79,7 +76,6 @@ contract GammaZapper is ZapperBase {
 
     uint256[4] memory minInAmounts = [uint256(0), uint256(0), uint256(0), uint256(0)];
 
-    
     _approveTokenIfNeeded(token0, gammaVault);
     _approveTokenIfNeeded(token1, gammaVault);
 
@@ -168,15 +164,26 @@ contract GammaZapper is ZapperBase {
 
   function _getDepositAmounts(IVault vault, uint256 _amountIn) public returns (uint256, uint256) {
     (address token0, address token1) = gammaVaultTokens(vault);
+
     (uint256 amount0, uint256 amount1) = getTotalAmounts(vault);
+
     (uint256 token0Price, uint256 token1Price) = calculateGammaVaultTokensPrices(vault);
 
-    uint256 token0Value = ((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals())));
-    uint256 token1Value = ((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals())));
+    console.log("token0Price: ", token0Price);
+    console.log("token1Price: ", token1Price);
+
+    console.log("amount0: ", amount0);
+    console.log("amount1: ", amount1);
+
+    uint256 token0Value = (((token0Price * amount0) / (10 ** uint256(IERC20(token0).decimals()))));
+    uint256 token1Value = (((token1Price * amount1) / (10 ** uint256(IERC20(token1).decimals()))));
 
     uint256 totalValue = token0Value + token1Value;
     uint256 token0Amount = (_amountIn * token0Value) / totalValue;
     uint256 token1Amount = _amountIn - token0Amount;
+
+    console.log("token0Amount: ", token0Amount);
+    console.log("token1Amount: ", token1Amount);
 
     return (token0Amount, token1Amount);
   }

@@ -151,7 +151,7 @@ describe("Steer Zapper Test", async () => {
         uniV3RouterPol,
         uniV3FactoryPol,
         governanceSigner.getAddress(),
-        WETH_USDC_POOL_POLYGON,
+        WETH_USDC_POOL_POLYGON, 
         wethPol,
         [vaultContract.address],
         stableTokensPolygon,

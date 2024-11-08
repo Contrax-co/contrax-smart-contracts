@@ -7,6 +7,8 @@ import "../interfaces/uniswapv3.sol";
 import "../lib/OracleLibrary.sol";
 import {SphereXProtected} from "@spherex-xyz/contracts/src/SphereXProtected.sol";
 
+import "hardhat/console.sol";
+
 contract PriceCalculatorV3 is SphereXProtected {
   using SafeERC20 for IERC20;
 
@@ -100,8 +102,8 @@ contract PriceCalculatorV3 is SphereXProtected {
     IUniswapV3Pool pool = IUniswapV3Pool(WETH_USDC_POOLV3);
     (, int24 tick, , , , , ) = pool.slot0();
 
-    uint256 PriceFromOracle = getPriceInTermsOfToken0(tick);
-    //removing usdc decimals
+    uint256 PriceFromOracle = getPriceInTermsOfToken1(tick);
+   
     return (PriceFromOracle * PRECISION) / 1e6;
   }
 }
