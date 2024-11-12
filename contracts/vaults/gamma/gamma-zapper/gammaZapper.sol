@@ -14,6 +14,8 @@ contract GammaZapper is ZapperBase {
   using SafeERC20 for IERC20;
   IUniProxy public gammaUniProxy;
 
+  uint256[4] minInAmounts = [uint256(0), uint256(0), uint256(0), uint256(0)];
+
   constructor(
     address _wrappedNative,
     address _usdcToken,
@@ -38,45 +40,48 @@ contract GammaZapper is ZapperBase {
     IVault vault,
     IERC20 tokenIn
   ) public virtual override returns (uint256 tokenOutAmount, ReturnedAsset[] memory returnedAssets) {
-    address gammaVault = address(IVault(vault).token());
+    address gammaVault = address(vault.token());
     (address token0, address token1) = (IHypervisor(gammaVault).token0(), IHypervisor(gammaVault).token1());
 
-    uint256 tokenInAmount = tokenIn.balanceOf(address(this));
     (uint256 amount0, uint256 amount1) = _getDepositAmounts(
       gammaVault,
       address(tokenIn),
       token0,
       token1,
-      tokenInAmount
+      tokenIn.balanceOf(address(this))
     );
 
-    console.log("amount0: ", amount0);
-    console.log("amount1: ", amount1);
-
     if (token0 != address(tokenIn) && token1 != address(tokenIn)) {
-      _swap(address(tokenIn), address(token0), amount0);
-      _swap(address(tokenIn), address(token1), amount1);
+      _swap(address(tokenIn), token0, amount0);
+      _swap(address(tokenIn), token1, amount1);
     } else {
-      address tokenOut = address(token0);
-      uint256 amountToSwap = amount0;
-      if (address(tokenIn) == address(token0)) {
-        tokenOut = address(token1);
-        amountToSwap = amount1;
-      }
-
-      _swap(address(tokenIn), tokenOut, amountToSwap);
+      _processSingleTokenSwap(tokenIn, token0, token1, amount0, amount1);
     }
-
-    uint256[4] memory minInAmounts = [uint256(0), uint256(0), uint256(0), uint256(0)];
-
     _approveTokenIfNeeded(token0, gammaVault);
     _approveTokenIfNeeded(token1, gammaVault);
 
+    (uint256 token0Amount, uint256 token1Amount) = _getTokenBalances(token0, token1);
+    (uint token1MinAmount, uint token1MaxAmount) = getGammaVaultDepoistAmount(gammaVault, token0, token0Amount);
+
+    if (token1Amount > token1MaxAmount) {
+      token1Amount = token1MaxAmount;
+    } else if (token1Amount < token1MinAmount) {
+      (uint token0MinAmount, uint token0MaxAmount) = getGammaVaultDepoistAmount(gammaVault, token1, token1Amount);
+
+      if (token0Amount < token0MinAmount) {
+        revert("min amount too low");
+      }
+
+      if (token0Amount > token0MaxAmount) {
+        token0Amount = token0MaxAmount;
+      }
+    }
+
     tokenOutAmount = IUniProxy(gammaUniProxy).deposit(
-      IERC20(token0).balanceOf(address(this)),
-      IERC20(token1).balanceOf(address(this)),
+      token0Amount,
+      token1Amount,
       address(this),
-      address(vault.token()), // gamma vault
+      gammaVault,
       minInAmounts
     );
 
@@ -87,6 +92,36 @@ contract GammaZapper is ZapperBase {
     returnedAssets = _returnAssets(tokens);
   }
 
+  function _processSingleTokenSwap(
+    IERC20 tokenIn,
+    address token0,
+    address token1,
+    uint256 amount0,
+    uint256 amount1
+  ) internal {
+    address tokenOut = token0;
+    uint256 amountToSwap = amount0;
+
+    if (address(tokenIn) == token0) {
+      tokenOut = token1;
+      amountToSwap = amount1;
+    }
+
+    _swap(address(tokenIn), tokenOut, amountToSwap);
+  }
+
+  function _getTokenBalances(address token0, address token1) internal view returns (uint256, uint256) {
+    return (IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)));
+  }
+
+  function getGammaVaultDepoistAmount(
+    address gammaVault,
+    address token,
+    uint256 _depositAmount
+  ) public view returns (uint256 minAmount, uint256 maxAmount) {
+    (minAmount, maxAmount) = IUniProxy(gammaUniProxy).getDepositAmount(gammaVault, token, _depositAmount);
+  }
+
   function _afterWithdraw(
     IVault vault,
     IERC20 desiredToken
@@ -94,7 +129,6 @@ contract GammaZapper is ZapperBase {
     IHypervisor gammaVault = IHypervisor(address(IVault(vault).token()));
     (address token0, address token1) = (gammaVault.token0(), gammaVault.token1());
 
-    uint256[4] memory minInAmounts = [uint256(0), uint256(0), uint256(0), uint256(0)];
     uint256 gammaVaultBalance = IERC20(gammaVault).balanceOf(address(this));
     (uint256 amount0, uint256 amount1) = gammaVault.withdraw(
       gammaVaultBalance,
@@ -131,30 +165,6 @@ contract GammaZapper is ZapperBase {
    * @return amount1 The amount of the second token
    */
 
-  // function _getDepositAmounts(
-  //   address gammaVault,
-  //   address tokenIn,
-  //   address token0,
-  //   address token1,
-  //   uint256 tokenInAmount
-  // ) public returns (uint256 amount0, uint256 amount1) {
-  //   uint256 predictedAmount0 = tokenInAmount / 2;
-  //   if (token0 != address(tokenIn)) {
-  //     // get qoute for tokenIn -> token0
-  //     predictedAmount0 = _getQuoteV3(address(tokenIn), address(token0), predictedAmount0, V3Factory);
-  //   }
-
-  //   (, uint256 predictedAmount1) = IUniProxy(gammaUniProxy).getDepositAmount(gammaVault, token0, predictedAmount0);
-
-  //   uint256 predictedAmount0InEth =  _getQuoteV3(address(token0), address(wrappedNative), predictedAmount0, V3Factory);
-
-  //   uint256 predictedAmount1InEth = _getQuoteV3(address(token1), address(wrappedNative), predictedAmount1, V3Factory);
-
-  //   // calculate amount0 and amount1 in the same ratio as the predictedAmount0InEth and predictedAmount1InEth ratios
-  //   amount0 = (tokenInAmount * predictedAmount0InEth) / (predictedAmount0InEth + predictedAmount1InEth);
-  //   amount1 = tokenInAmount - amount0;
-  // }
-
   function _getDepositAmounts(
     address gammaVault,
     address tokenIn,
@@ -162,25 +172,24 @@ contract GammaZapper is ZapperBase {
     address token1,
     uint256 tokenInAmount
   ) public returns (uint256 amount0, uint256 amount1) {
-    uint256 predictedAmount0 = tokenInAmount;
+    uint256 predictedAmount0 = tokenInAmount / 2;
 
-    // If tokenIn is not equal to token0, get the quote, otherwise use the predictedAmount0 directly
-    if (token0 != tokenIn) {
-      // Get quote for tokenIn -> token0
-      predictedAmount0 = _getQuoteV3(tokenIn, token0, predictedAmount0, V3Factory);
+    if (token0 != address(tokenIn)) {
+      // get qoute for tokenIn -> token0
+      predictedAmount0 = _getQuoteV3(address(tokenIn), address(token0), predictedAmount0, V3Factory);
     }
 
     (, uint256 predictedAmount1) = IUniProxy(gammaUniProxy).getDepositAmount(gammaVault, token0, predictedAmount0);
 
-    // If tokenIn matches token0 or token1, use predicted amounts directly without converting to wrappedNative
     uint256 predictedAmount0InEth = (token0 == address(wrappedNative))
       ? predictedAmount0
-      : _getQuoteV3(token0, address(wrappedNative), predictedAmount0, V3Factory);
+      : _getQuoteV3(address(token0), address(wrappedNative), predictedAmount0, V3Factory);
+
     uint256 predictedAmount1InEth = (token1 == address(wrappedNative))
       ? predictedAmount1
-      : _getQuoteV3(token1, address(wrappedNative), predictedAmount1, V3Factory);
+      : _getQuoteV3(address(token1), address(wrappedNative), predictedAmount1, V3Factory);
 
-    // Calculate amount0 and amount1 in the same ratio as the predictedAmount0InEth and predictedAmount1InEth ratios
+    // calculate amount0 and amount1 in the same ratio as the predictedAmount0InEth and predictedAmount1InEth ratios
     amount0 = (tokenInAmount * predictedAmount0InEth) / (predictedAmount0InEth + predictedAmount1InEth);
     amount1 = tokenInAmount - amount0;
   }

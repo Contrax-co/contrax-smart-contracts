@@ -262,7 +262,7 @@ abstract contract ZapperBase is IZapper {
     onlyWhitelistedVaults(address(vault))
     returns (uint256 tokenOutAmount, ReturnedAsset[] memory returnedAssets)
   {
-    return zapOutAndSwap(vault, withdrawAmount, IERC20(address(0)), desiredTokenOutMin);
+    return zapOutAndSwap(vault, withdrawAmount, IERC20(address(wrappedNative)), desiredTokenOutMin);
   }
 
   function _approveTokenIfNeeded(address token, address spender) internal {
